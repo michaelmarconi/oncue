@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry including="**/*.java" kind="src" output="target/test-classes" path="src/test/java"/>
+	<classpathentry including="**/*.java" kind="src" path="src/main/java"/>
+	<classpathentry excluding="**/*.java" kind="src" path="src/main/resources"/>
+	<classpathentry kind="src" path="src/test/resources"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="var" path="M2_REPO/junit/junit/4.8.1/junit-4.8.1.jar"/>
+	<classpathentry kind="var" path="M2_REPO/joda-time/joda-time/2.1/joda-time-2.1.jar"/>
+	<classpathentry kind="var" path="M2_REPO/com/googlecode/json-simple/json-simple/1.1.1/json-simple-1.1.1.jar"/>
+	<classpathentry kind="var" path="M2_REPO/com/beust/jcommander/1.30/jcommander-1.30.jar"/>
+	<classpathentry kind="var" path="M2_REPO/com/typesafe/akka/akka-actor_2.10/2.1.0/akka-actor_2.10-2.1.0.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/scala-lang/scala-library/2.10.0/scala-library-2.10.0.jar"/>
+	<classpathentry kind="var" path="M2_REPO/com/typesafe/config/1.0.0/config-1.0.0.jar"/>
+	<classpathentry kind="var" path="M2_REPO/com/typesafe/akka/akka-remote_2.10/2.1.0/akka-remote_2.10-2.1.0.jar"/>
+	<classpathentry kind="var" path="M2_REPO/io/netty/netty/3.5.8.Final/netty-3.5.8.Final.jar"/>
+	<classpathentry kind="var" path="M2_REPO/com/google/protobuf/protobuf-java/2.4.1/protobuf-java-2.4.1.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/uncommons/maths/uncommons-maths/1.2.2a/uncommons-maths-1.2.2a.jar"/>
+	<classpathentry kind="var" path="M2_REPO/com/typesafe/akka/akka-testkit_2.10/2.1.0/akka-testkit_2.10-2.1.0.jar"/>
+	<classpathentry kind="var" path="M2_REPO/redis/clients/jedis/2.0.0/jedis-2.0.0.jar"/>
+	<classpathentry kind="var" path="M2_REPO/commons-pool/commons-pool/1.5.5/commons-pool-1.5.5.jar"/>
+	<classpathentry kind="output" path="target/classes"/>
+</classpath>
