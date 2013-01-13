@@ -15,6 +15,8 @@
  ******************************************************************************/
 package oncue.scheduler.internal;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
@@ -60,10 +62,26 @@ public class UnscheduledJobs {
 	}
 
 	/**
+	 * @return the entire list of sorted, unscheduled {@linkplain Job}s
+	 */
+	public List<Job> getJobs() {
+		List<Job> jobs = new ArrayList<Job>(unscheduledJobs);
+		Collections.sort(jobs, new JobComparator());
+		return jobs;
+	}
+
+	/**
 	 * @return the number of jobs in the queue
 	 */
 	public int getSize() {
 		return unscheduledJobs.size();
+	}
+
+	/**
+	 * @return true if there are no more unscheduled jobs
+	 */
+	public boolean isEmpty() {
+		return unscheduledJobs.isEmpty();
 	}
 
 	public Job popJob() throws NoJobsException {

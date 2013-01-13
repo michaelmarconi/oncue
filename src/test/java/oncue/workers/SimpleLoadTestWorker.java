@@ -13,22 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package oncue.basic;
+package oncue.workers;
 
-import static org.junit.Assert.*;
+import oncue.messages.internal.Job;
+import oncue.worker.internal.AbstractWorker;
 
-import org.junit.Test;
+public class SimpleLoadTestWorker extends AbstractWorker {
 
-import oncue.base.AbstractActorSystemTest;
+	private static final int LOAD_FACTOR = 10000;
 
-/**
- * When all the jobs assigned to an agent 
- */
-public class JobCompletionTest extends AbstractActorSystemTest {
+	@Override
+	protected void doWork(Job job) {
 
-	@Test
-	public void test() {
-		fail("Not yet implemented");
+		int count = 0;
+		while (count < LOAD_FACTOR) {
+			count++;
+
+			/*
+			 * Yield occasionally, so we don't starve the Agent of CPU and
+			 * prevent its heart beat.
+			 */
+			if (count % 10 == 0)
+				Thread.yield();
+		}
+
+		workComplete();
 	}
 
 }

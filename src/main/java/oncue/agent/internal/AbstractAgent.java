@@ -53,7 +53,9 @@ public abstract class AbstractAgent extends UntypedActor {
 
 	protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 	final protected Settings settings = SettingsProvider.SettingsProvider.get(getContext().system());
-	private ActorRef testProbe;
+	
+	// A probe for testing
+	protected ActorRef testProbe;
 
 	// The scheduled heartbeat
 	private Cancellable heartbeat;

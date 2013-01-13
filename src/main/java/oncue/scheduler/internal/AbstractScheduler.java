@@ -72,6 +72,9 @@ public abstract class AbstractScheduler extends UntypedActor {
 	// A scheduled check for jobs to broadcast
 	private Cancellable jobsBroadcast;
 
+	// A flag to indicate that jobs should not be scheduled temporarily
+	private boolean paused = false;
+
 	/**
 	 * @param backingStore
 	 *            is either an implementation of {@linkplain IBackingStore} or
@@ -79,7 +82,7 @@ public abstract class AbstractScheduler extends UntypedActor {
 	 * @throws NoSuchJobException
 	 */
 	public AbstractScheduler(Class<? extends IBackingStore> backingStore) {
-		
+
 		if (backingStore == null) {
 			unscheduledJobs = new UnscheduledJobs(null, log);
 			scheduledJobs = new ScheduledJobs(null);
@@ -106,8 +109,11 @@ public abstract class AbstractScheduler extends UntypedActor {
 	 */
 	private void broadcastJobs() {
 
-		// Don't bother if there are no agents
-		if (agents.size() == 0)
+		/*
+		 * Don't broadcast jobs if there are no agents, no more jobs on the
+		 * unscheduled queue or scheduling is paused
+		 */
+		if (agents.size() == 0 || unscheduledJobs.isEmpty() || paused)
 			return;
 
 		log.debug("Broadcasting jobs");
@@ -270,7 +276,7 @@ public abstract class AbstractScheduler extends UntypedActor {
 
 		else if (message instanceof AbstractWorkRequest) {
 			log.debug("Got a work request from agent {}: {}", getSender(), message);
-			if (unscheduledJobs.getSize() == 0)
+			if (unscheduledJobs.getSize() == 0 || paused)
 				replyWithNoWork(getSender());
 			else
 				scheduleJobs((AbstractWorkRequest) message);
@@ -292,6 +298,13 @@ public abstract class AbstractScheduler extends UntypedActor {
 			log.error("Unrecognised message: {}", message);
 			unhandled(message);
 		}
+	}
+
+	/**
+	 * Pause job scheduling temporarily
+	 */
+	public void pause() {
+		paused = true;
 	}
 
 	@Override
@@ -387,5 +400,12 @@ public abstract class AbstractScheduler extends UntypedActor {
 						broadcastJobs();
 					}
 				}, getContext().dispatcher());
+	}
+
+	/**
+	 * Allow the scheduler to continue scheduling jobs.
+	 */
+	public void unpause() {
+		paused = false;
 	}
 }

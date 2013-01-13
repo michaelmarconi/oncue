@@ -13,30 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package oncue.worker;
+package oncue.workers;
 
 import oncue.messages.internal.Job;
 import oncue.worker.internal.AbstractWorker;
 
-public class SimpleLoadTestWorker extends AbstractWorker {
-
-	private static final int LOAD_FACTOR = 10000;
+public class TestWorker extends AbstractWorker {
 
 	@Override
-	protected void doWork(Job job) {
-
-		int count = 0;
-		while (count < LOAD_FACTOR) {
-			count++;
-
-			/*
-			 * Yield occasionally, so we don't starve the Agent of CPU and
-			 * prevent its heart beat.
-			 */
-			if (count % 10 == 0)
-				Thread.yield();
+	public void doWork(Job job) {
+		double progress = 0.0;
+		for (int i = 0; i < 3; i++) {
+			progress += 0.25;
+			try {
+				Thread.sleep(500);
+				reportProgress(progress);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 		}
-
 		workComplete();
 	}
 

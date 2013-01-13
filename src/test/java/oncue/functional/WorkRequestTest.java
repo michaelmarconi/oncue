@@ -13,48 +13,63 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package oncue.robustness;
+package oncue.functional;
 
 import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertTrue;
 import oncue.agent.UnlimitedCapacityAgent;
 import oncue.base.AbstractActorSystemTest;
+import oncue.messages.internal.AbstractWorkRequest;
 import oncue.messages.internal.EnqueueJob;
 import oncue.messages.internal.Job;
-import oncue.messages.internal.JobFailed;
+import oncue.messages.internal.WorkResponse;
 import oncue.queueManager.InMemoryQueueManager;
 import oncue.scheduler.SimpleQueuePopScheduler;
-import oncue.worker.IncompetentTestWorker;
+import oncue.workers.TestWorker;
 
 import org.junit.Test;
 
+import sun.management.Agent;
 import akka.actor.Actor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.actor.UntypedActorFactory;
 import akka.testkit.JavaTestKit;
-import akka.testkit.TestActorRef;
 
 /**
- * An {@linkplain IWorker} may die while it is trying to complete a job. In this
- * case, it should be shut down gracefully and the problem noted by the
- * scheduler.
+ * When an {@linkplain Agent} has received a broadcast stating that work is
+ * available, it will respond by asking for work (by sending a
+ * {@linkplain WorkRequest} message.
  */
-public class WorkerDiesTest extends AbstractActorSystemTest {
+public class WorkRequestTest extends AbstractActorSystemTest {
 
 	@Test
 	@SuppressWarnings("serial")
-	public void testWorkerDies() {
+	public void requestWorkAndReceiveAJob() {
 		new JavaTestKit(system) {
 			{
 				// Create a scheduler probe
 				final JavaTestKit schedulerProbe = new JavaTestKit(system) {
 					{
 						new IgnoreMsg() {
-
-							@Override
 							protected boolean ignore(Object message) {
-								return !(message instanceof JobFailed);
+								if (message instanceof AbstractWorkRequest)
+									return false;
+								else
+									return true;
+							}
+						};
+					}
+				};
+
+				// Create an agent probe
+				final JavaTestKit agentProbe = new JavaTestKit(system) {
+					{
+						new IgnoreMsg() {
+							protected boolean ignore(Object message) {
+								if (message instanceof WorkResponse)
+									return false;
+								else
+									return true;
 							}
 						};
 					}
@@ -72,33 +87,35 @@ public class WorkerDiesTest extends AbstractActorSystemTest {
 						scheduler.injectProbe(schedulerProbe.getRef());
 						return scheduler;
 					}
-				}), settings.SCHEDULER_NAME);
+				}), "scheduler");
 
-				// Create and expose an agent
-				TestActorRef<UnlimitedCapacityAgent> agentRef = TestActorRef.create(system, new Props(UnlimitedCapacityAgent.class), settings.AGENT_NAME);
-				final UnlimitedCapacityAgent agent = agentRef.underlyingActor();
+				// Create an agent
+				system.actorOf(new Props(new UntypedActorFactory() {
+					@Override
+					public Actor create() throws Exception {
+						UnlimitedCapacityAgent agent = new UnlimitedCapacityAgent();
+						agent.injectProbe(agentProbe.getRef());
+						return agent;
+					}
+				}), "agent");
+
+				// Wait until the agent receives an empty work response
+				WorkResponse workResponse = agentProbe.expectMsgClass(WorkResponse.class);
+				assertEquals(0, workResponse.getJobs().size());
 
 				// Enqueue a job
-				queueManager.tell(new EnqueueJob(IncompetentTestWorker.class.getName()), getRef());
+				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
 				Job job = expectMsgClass(Job.class);
 
-				// Expect a job failure message at the scheduler
-				JobFailed jobFailed = schedulerProbe.expectMsgClass(JobFailed.class);
-				Job failedJob = jobFailed.getJob();
+				// Expect a request for work from the agent
+				schedulerProbe.expectMsgClass(AbstractWorkRequest.class);
 
-				assertEquals("Job IDs don't match", job.getId(), failedJob.getId());
-				assertTrue("Wrong exception type", jobFailed.getError() instanceof ArithmeticException);
+				// Expect a work response from the scheduler
+				workResponse = agentProbe.expectMsgClass(WorkResponse.class);
 
-				// Check that there are no workers
-				new AwaitCond(duration("5 second"), duration("1 second")) {
-
-					@Override
-					protected boolean cond() {
-						return !agent.getContext().getChildren().iterator().hasNext();
-					}
-				};
+				assertEquals("Expected a single job", 1, workResponse.getJobs().size());
+				assertEquals("Wrong job ID", job.getId(), workResponse.getJobs().get(0).getId());
 			}
 		};
 	}
-
 }

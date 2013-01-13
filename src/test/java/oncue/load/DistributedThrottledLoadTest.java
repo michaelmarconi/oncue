@@ -25,7 +25,7 @@ import oncue.queueManager.InMemoryQueueManager;
 import oncue.scheduler.ThrottledScheduler;
 import oncue.settings.Settings;
 import oncue.settings.SettingsProvider;
-import oncue.worker.SimpleLoadTestWorker;
+import oncue.workers.SimpleLoadTestWorker;
 
 import org.junit.After;
 import org.junit.Before;

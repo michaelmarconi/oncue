@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package oncue.basic;
+package oncue.functional;
 
 import junit.framework.Assert;
 import oncue.agent.UnlimitedCapacityAgent;
@@ -22,7 +22,7 @@ import oncue.messages.internal.EnqueueJob;
 import oncue.messages.internal.JobProgress;
 import oncue.queueManager.InMemoryQueueManager;
 import oncue.scheduler.SimpleQueuePopScheduler;
-import oncue.worker.TestWorker;
+import oncue.workers.TestWorker;
 
 import org.junit.Test;
 

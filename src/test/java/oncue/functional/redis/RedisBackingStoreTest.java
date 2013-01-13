@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package oncue.redis;
+package oncue.functional.redis;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
@@ -32,8 +32,8 @@ import oncue.messages.internal.JobFailed;
 import oncue.messages.internal.JobProgress;
 import oncue.queueManager.InMemoryQueueManager;
 import oncue.scheduler.SimpleQueuePopScheduler;
-import oncue.worker.IncompetentTestWorker;
-import oncue.worker.TestWorker;
+import oncue.workers.IncompetentTestWorker;
+import oncue.workers.TestWorker;
 
 import org.joda.time.DateTime;
 import org.junit.Before;

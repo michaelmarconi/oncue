@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package oncue.redis;
+package oncue.functional.redis;
 
 import static junit.framework.Assert.assertEquals;
 
@@ -23,7 +23,7 @@ import oncue.messages.internal.EnqueueJob;
 import oncue.messages.internal.Job;
 import oncue.queueManager.RedisQueueManager;
 import oncue.scheduler.SimpleQueuePopScheduler;
-import oncue.worker.TestWorker;
+import oncue.workers.TestWorker;
 
 import org.junit.Before;
 import org.junit.Test;

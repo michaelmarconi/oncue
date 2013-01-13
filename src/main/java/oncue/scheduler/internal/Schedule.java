@@ -54,5 +54,4 @@ public class Schedule {
 	public void setJobs(ActorRef agent, List<Job> jobs) {
 		schedule.put(agent.path().toString(), new WorkResponse(jobs));
 	}
-
 }

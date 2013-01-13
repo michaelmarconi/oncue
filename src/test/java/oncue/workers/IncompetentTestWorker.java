@@ -13,18 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package oncue.worker;
+package oncue.workers;
 
 import oncue.messages.internal.Job;
 import oncue.worker.internal.AbstractWorker;
 
-public class TestWorker extends AbstractWorker {
+/**
+ * This test worker has a nasty habit of performing dodgy arithmetic!
+ */
+public class IncompetentTestWorker extends AbstractWorker {
 
 	@Override
 	public void doWork(Job job) {
 		double progress = 0.0;
 		for (int i = 0; i < 3; i++) {
 			progress += 0.25;
+
+			/*
+			 * WOOP WOOP!
+			 */
+			@SuppressWarnings("unused")
+			int result;
+			if (i == 1)
+				result = 3 / 0;
+
 			try {
 				Thread.sleep(500);
 				reportProgress(progress);
@@ -34,5 +46,4 @@ public class TestWorker extends AbstractWorker {
 		}
 		workComplete();
 	}
-
 }

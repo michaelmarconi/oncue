@@ -18,6 +18,6 @@ package oncue.messages.internal;
 public class SimpleMessages {
 
 	public enum SimpleMessage {
-		HEARTBEAT, REGISTERED, WORK_AVAILABLE, CHECK_AGENTS, DEAD_AGENT
+		HEARTBEAT, REGISTERED, WORK_AVAILABLE, CHECK_AGENTS, DEAD_AGENT, SCHEDULE_JOBS
 	}
 }

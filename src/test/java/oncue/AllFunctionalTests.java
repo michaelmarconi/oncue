@@ -16,18 +16,20 @@
 package oncue;
 
 
-import oncue.basic.AgentPresenceTest;
-import oncue.basic.AgentRegistrationTest;
-import oncue.basic.BroadcastWorkTest;
-import oncue.basic.EnqueueJobTest;
-import oncue.basic.JobProgressTest;
-import oncue.basic.WorkRequestTest;
-import oncue.basic.WorkerTest;
-import oncue.redis.RedisBackingStoreTest;
-import oncue.redis.RedisQueueManagerTest;
-import oncue.robustness.AgentDiesTest;
-import oncue.robustness.SchedulerDiesTest;
-import oncue.robustness.WorkerDiesTest;
+import oncue.functional.AgentPresenceTest;
+import oncue.functional.AgentRegistrationTest;
+import oncue.functional.BroadcastWorkTest;
+import oncue.functional.EnqueueJobTest;
+import oncue.functional.JobCompletionTest;
+import oncue.functional.JobProgressTest;
+import oncue.functional.WorkRequestTest;
+import oncue.functional.WorkerTest;
+import oncue.functional.redis.RedisBackingStoreTest;
+import oncue.functional.redis.RedisQueueManagerTest;
+import oncue.functional.robustness.AgentDiesTest;
+import oncue.functional.robustness.SchedulerDiesTest;
+import oncue.functional.robustness.WorkerDiesTest;
+import oncue.functional.strategies.JVMCapacityStrategyTest;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -38,15 +40,20 @@ import org.junit.runners.Suite.SuiteClasses;
 				AgentRegistrationTest.class, 
 				BroadcastWorkTest.class,
 				EnqueueJobTest.class,
+				JobCompletionTest.class,
 				JobProgressTest.class,
 				WorkerTest.class, 
 				WorkRequestTest.class, 
+				
 				RedisBackingStoreTest.class,
 				RedisQueueManagerTest.class,
+				
 				WorkerDiesTest.class,
 				AgentDiesTest.class,
-				SchedulerDiesTest.class
+				SchedulerDiesTest.class,
+				
+				JVMCapacityStrategyTest.class
 				 })
-public class FunctionalTests {
+public class AllFunctionalTests {
 
 }

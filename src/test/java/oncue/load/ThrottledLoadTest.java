@@ -24,7 +24,7 @@ import oncue.messages.internal.Job;
 import oncue.messages.internal.JobProgress;
 import oncue.queueManager.InMemoryQueueManager;
 import oncue.scheduler.ThrottledScheduler;
-import oncue.worker.SimpleLoadTestWorker;
+import oncue.workers.SimpleLoadTestWorker;
 
 import org.junit.After;
 import org.junit.Before;
@@ -56,7 +56,7 @@ public class ThrottledLoadTest extends AbstractActorSystemTest {
 
 	@Test
 	@SuppressWarnings("serial")
-	public void simpleLoadTest() {
+	public void throttledLoadTest() {
 		new JavaTestKit(system) {
 			{
 				// Create an in-memory queue manager

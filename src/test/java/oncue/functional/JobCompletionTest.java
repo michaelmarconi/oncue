@@ -13,37 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package oncue.worker;
+package oncue.functional;
 
-import oncue.messages.internal.Job;
-import oncue.worker.internal.AbstractWorker;
+import static org.junit.Assert.*;
+
+import org.junit.Test;
+
+import oncue.base.AbstractActorSystemTest;
 
 /**
- * This test worker has a nasty habit of performing dodgy arithmetic!
+ * When all the jobs assigned to an agent 
  */
-public class IncompetentTestWorker extends AbstractWorker {
+public class JobCompletionTest extends AbstractActorSystemTest {
 
-	@Override
-	public void doWork(Job job) {
-		double progress = 0.0;
-		for (int i = 0; i < 3; i++) {
-			progress += 0.25;
-
-			/*
-			 * WOOP WOOP!
-			 */
-			@SuppressWarnings("unused")
-			int result;
-			if (i == 1)
-				result = 3 / 0;
-
-			try {
-				Thread.sleep(500);
-				reportProgress(progress);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-		workComplete();
+	@Test
+	public void test() {
+		fail("Not yet implemented");
 	}
+
 }
