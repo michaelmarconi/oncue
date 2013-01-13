@@ -15,6 +15,13 @@
  ******************************************************************************/
 package oncue;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import oncue.api.API;
+import oncue.api.APIException;
+import oncue.messages.internal.Job;
 import oncue.settings.Settings;
 import oncue.settings.SettingsProvider;
 import akka.actor.Actor;
@@ -24,22 +31,44 @@ import akka.actor.UntypedActorFactory;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
+import com.beust.jcommander.Parameters;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
+/**
+ * Defines the entry points into the OnCue job scheduling framework.
+ * 
+ * -start scheduler/agent -api
+ */
 public class OnCue {
 
-	@Parameter(names = "-environment", description = "The environment configuration to load")
-	private String environment = "production";
+	@Parameters(commandDescription = "Enqueue a new job")
+	private static class EnqueueJobCommand {
 
-	@Parameter(names = "-components", required = true, validateWith = ComponentParameterValidator.class, description = "The components to run (one of 'service', 'agent' or 'api')")
-	private String componentType;
+		@Parameter(names = "-worker", required = true, description = "The type of worker required to run this job")
+		private static String workerType;
 
-	@Parameter(names = { "-help", "-h" }, hidden = true, help = true)
-	private boolean help;
+		@Parameter(names = "-param", validateWith = ParamValidator.class, description = "One or more parameters to pass to the worker, e.g. -param age=20 -param weight=\"200 kilos\"")
+		private static List<String> params;
 
-	// The app configuration
-	private static Config config;
+	}
+
+	@Parameters
+	private static class MainOptions {
+
+		@Parameter(names = { "-help", "-h" }, hidden = true, help = true)
+		private static boolean help;
+
+		@Parameter(names = { "-env", "e" }, description = "The environment configuration to load")
+		private static String environment = "production";
+	}
+
+	@Parameters(commandDescription = "Run a component")
+	private static class RunComponentCommand {
+
+		@Parameter(names = "-component", required = true, description = "The component to run ('service' or 'agent')", validateValueWith = RunComponentValidator.class)
+		private static String component;
+	}
 
 	@SuppressWarnings("all")
 	private static void createServiceComponents(ActorSystem system, final Settings settings) {
@@ -65,39 +94,71 @@ public class OnCue {
 		}), settings.SCHEDULER_NAME);
 	}
 
-	@SuppressWarnings("serial")
-	public static void main(String[] args) {
-		OnCue onCue = new OnCue();
-		JCommander commander = new JCommander(onCue, args);
+	private static void enqueueJob(String workerType, List<String> params) throws APIException {
 
-		if (onCue.help) {
+		// Load the environment configuration
+		Config config = ConfigFactory.load(OnCue.MainOptions.environment);
+
+		// Create the map of parameters
+		Map<String, String> paramMap = new HashMap<String, String>();
+		for (String param : params) {
+			String[] components = param.split("=");
+			paramMap.put(components[0], components[1]);
+		}
+
+		Job job = API.getInstance(config).enqueueJob(workerType, paramMap);
+		System.out.println("Enqueued " + job);
+		API.shutdown();
+	}
+
+	public static void main(String[] args) throws APIException {
+
+		JCommander commander = new JCommander(new OnCue.MainOptions());
+		commander.addCommand("run", new OnCue.RunComponentCommand());
+		commander.addCommand("enqueue", new OnCue.EnqueueJobCommand());
+		commander.parse(args);
+
+		if (OnCue.MainOptions.help) {
 			commander.usage();
 			return;
 		}
 
-		// Load the environment configuration
-		config = ConfigFactory.load(onCue.environment);
+		switch (commander.getParsedCommand()) {
+		case "run":
+			runComponent(OnCue.RunComponentCommand.component);
+			break;
 
-		// Load the components
-		switch (onCue.componentType) {
+		case "enqueue":
+			enqueueJob(OnCue.EnqueueJobCommand.workerType, OnCue.EnqueueJobCommand.params);
+			break;
+		}
+	}
+
+	@SuppressWarnings("serial")
+	private static void runComponent(String component) {
+
+		// Load the environment configuration
+		Config config = ConfigFactory.load(OnCue.MainOptions.environment);
+		final ActorSystem system;
+		final Settings settings;
+
+		switch (component) {
 		case "service":
-			ActorSystem system = ActorSystem.create("oncue-service", config.getConfig("service").withFallback(config));
-			final Settings serviceSettings = SettingsProvider.SettingsProvider.get(system);
-			createServiceComponents(system, serviceSettings);
+			system = ActorSystem.create("oncue-service", config.getConfig("service").withFallback(config));
+			settings = SettingsProvider.SettingsProvider.get(system);
+			createServiceComponents(system, settings);
 			break;
 
 		case "agent":
 			system = ActorSystem.create("oncue-agent", config.getConfig("client").withFallback(config));
-			final Settings agentSettings = SettingsProvider.SettingsProvider.get(system);
+			settings = SettingsProvider.SettingsProvider.get(system);
 			system.actorOf(new Props(new UntypedActorFactory() {
-
 				@Override
 				public Actor create() throws Exception {
-					return (Actor) Class.forName(agentSettings.AGENT_CLASS).newInstance();
+					return (Actor) Class.forName(settings.AGENT_CLASS).newInstance();
 				}
-			}), agentSettings.AGENT_NAME);
+			}), settings.AGENT_NAME);
 			break;
-
 		}
 	}
 }

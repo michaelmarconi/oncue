@@ -15,19 +15,19 @@
  ******************************************************************************/
 package oncue;
 
-import com.beust.jcommander.IParameterValidator;
+import com.beust.jcommander.IValueValidator;
 import com.beust.jcommander.ParameterException;
 
 /**
- * Valid components include 'service', 'agent' and 'api'
+ * Validate the run component parameter
  */
-public class ComponentParameterValidator implements IParameterValidator {
+public class RunComponentValidator implements IValueValidator<String> {
 
 	@Override
 	public void validate(String name, String value) throws ParameterException {
-		if (!value.equals("service") && !value.equals("agent") && !value.equals("api"))
+		if (!value.equals("service") && !value.equals("agent"))
 			throw new ParameterException(value
-					+ " is an unrecognised component type. Valid components are include 'service', 'agent' and 'api'");
+					+ " is an unrecognised component type. Valid components are 'service' or 'agent'");
 	}
 
 }

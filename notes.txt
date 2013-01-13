@@ -11,3 +11,4 @@
 - Everywhere there is a Long(jobID), you need a null check!
 - Since queue prioritisation happens in Java, any point treating Redis lists like queues?
 - Should we send the type of agent along with the registration info?
+- How to deal with ClassNotFound exceptions when an incorrect worker type is specified?

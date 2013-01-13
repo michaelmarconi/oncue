@@ -43,6 +43,9 @@ public class Settings implements Extension {
 	public final String AGENT_CLASS;
 	public final FiniteDuration AGENT_HEARTBEAT_FREQUENCY;
 
+	public final String API_NAME;
+	public final FiniteDuration API_TIMEOUT;
+
 	public Integer THROTTLED_AGENT_JOB_LIMIT;
 
 	public Settings(Config config) {
@@ -71,6 +74,9 @@ public class Settings implements Extension {
 		QUEUE_MANAGER_NAME = config.getString("oncue.queue-manager.name");
 		QUEUE_MANAGER_CLASS = config.getString("oncue.queue-manager.class");
 		QUEUE_MANAGER_PATH = config.getString("oncue.queue-manager.path");
+
+		API_NAME = config.getString("oncue.api.name");
+		API_TIMEOUT = Duration.create(config.getMilliseconds("oncue.api.timeout"), TimeUnit.MILLISECONDS);
 
 		AGENT_NAME = config.getString("oncue.agent.name");
 		AGENT_CLASS = config.getString("oncue.agent.class");

@@ -16,6 +16,7 @@
 package oncue;
 
 
+import oncue.api.APITests;
 import oncue.functional.AgentPresenceTest;
 import oncue.functional.AgentRegistrationTest;
 import oncue.functional.BroadcastWorkTest;
@@ -52,7 +53,9 @@ import org.junit.runners.Suite.SuiteClasses;
 				AgentDiesTest.class,
 				SchedulerDiesTest.class,
 				
-				JVMCapacityStrategyTest.class
+				JVMCapacityStrategyTest.class,
+				
+				APITests.class
 				 })
 public class AllFunctionalTests {
 
