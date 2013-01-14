@@ -18,6 +18,7 @@ package oncue.scheduler;
 import java.util.ArrayList;
 import java.util.List;
 
+import oncue.agent.ThrottledAgent;
 import oncue.backingstore.internal.IBackingStore;
 import oncue.messages.ThrottledWorkRequest;
 import oncue.messages.internal.AbstractWorkRequest;
@@ -26,6 +27,15 @@ import oncue.scheduler.internal.AbstractScheduler;
 import oncue.scheduler.internal.NoJobsException;
 import oncue.scheduler.internal.Schedule;
 
+/**
+ * This implementation of {@linkplain AbstractScheduler} employs a throttling
+ * strategy to ensure that agents are never overwhelmed with work.
+ * 
+ * A {@linkplain ThrottledAgent} will send a {@linkplain ThrottledWorkRequest},
+ * stating the number of jobs it is able to process in parallel. This scheduler
+ * will pop just enough jobs off the queue to satisfy this throttled request for
+ * work.
+ */
 public class ThrottledScheduler extends AbstractScheduler {
 
 	public ThrottledScheduler(Class<? extends IBackingStore> backingStore) {
