@@ -17,12 +17,12 @@ package oncue.scheduler.internal;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
-import oncue.backingstore.internal.IBackingStore;
+import oncue.backingstore.internal.BackingStore;
 import oncue.messages.internal.AbstractWorkRequest;
 import oncue.messages.internal.Job;
 import oncue.messages.internal.JobFailed;
@@ -40,7 +40,6 @@ import akka.actor.Cancellable;
 import akka.actor.UntypedActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
-import akka.testkit.JavaTestKit;
 
 /**
  * A scheduler is responsible for keeping a list of registered
@@ -55,7 +54,7 @@ public abstract class AbstractScheduler extends UntypedActor {
 	protected Settings settings = SettingsProvider.SettingsProvider.get(getContext().system());
 
 	// Map an agent to a deadline for deregistration
-	private Map<ActorRef, Deadline> agents = new HashMap<ActorRef, Deadline>();
+	private Map<ActorRef, Deadline> agents = new ConcurrentHashMap<ActorRef, Deadline>();
 
 	// The queue of unscheduled jobs
 	protected UnscheduledJobs unscheduledJobs;
@@ -64,7 +63,7 @@ public abstract class AbstractScheduler extends UntypedActor {
 	private ScheduledJobs scheduledJobs;
 
 	// The optional persistent backing store
-	protected IBackingStore backingStore;
+	protected BackingStore backingStore;
 
 	// A periodic check for dead agents
 	private Cancellable agentMonitor;
@@ -77,11 +76,11 @@ public abstract class AbstractScheduler extends UntypedActor {
 
 	/**
 	 * @param backingStore
-	 *            is either an implementation of {@linkplain IBackingStore} or
+	 *            is either an implementation of {@linkplain BackingStore} or
 	 *            null
 	 * @throws NoSuchJobException
 	 */
-	public AbstractScheduler(Class<? extends IBackingStore> backingStore) {
+	public AbstractScheduler(Class<? extends BackingStore> backingStore) {
 
 		if (backingStore == null) {
 			unscheduledJobs = new UnscheduledJobs(null, log);
@@ -229,7 +228,7 @@ public abstract class AbstractScheduler extends UntypedActor {
 	 * Inject a probe into this actor for testing
 	 * 
 	 * @param testProbe
-	 *            is a {@linkplain JavaTestKit} probe
+	 *            is a JavaTestKit probe
 	 */
 	public void injectProbe(ActorRef testProbe) {
 		this.testProbe = testProbe;

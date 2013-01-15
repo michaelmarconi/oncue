@@ -24,7 +24,7 @@ import oncue.messages.internal.JobProgress;
 /**
  * The contract for all persistent data stores.
  */
-public interface IBackingStore {
+public interface BackingStore {
 
 	/**
 	 * Persist the jobs to the list of scheduled jobs

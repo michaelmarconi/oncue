@@ -16,11 +16,11 @@
 package oncue.scheduler.internal;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-import oncue.backingstore.internal.IBackingStore;
+import oncue.backingstore.internal.BackingStore;
 import oncue.messages.internal.Job;
 import sun.management.Agent;
 import akka.actor.ActorRef;
@@ -32,16 +32,16 @@ import akka.actor.ActorRef;
 public class ScheduledJobs {
 
 	// Map a list of scheduled jobs to logical agent address
-	private Map<String, List<Job>> scheduledJobs = new HashMap<String, List<Job>>();
+	private Map<String, List<Job>> scheduledJobs = new ConcurrentHashMap<String, List<Job>>();
 
 	// An optional, persistent backing store
-	private IBackingStore backingStore;
+	private BackingStore backingStore;
 
 	/**
 	 * @param backingStore
-	 *            is an optional instance of {@linkplain IBackingStore}
+	 *            is an optional instance of {@linkplain BackingStore}
 	 */
-	public ScheduledJobs(IBackingStore backingStore) {
+	public ScheduledJobs(BackingStore backingStore) {
 		this.backingStore = backingStore;
 	}
 

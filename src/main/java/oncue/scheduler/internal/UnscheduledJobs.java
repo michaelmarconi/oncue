@@ -19,9 +19,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.PriorityQueue;
+import java.util.concurrent.PriorityBlockingQueue;
 
-import oncue.backingstore.internal.IBackingStore;
+import oncue.backingstore.internal.BackingStore;
 import oncue.comparators.JobComparator;
 import oncue.messages.internal.Job;
 import akka.event.LoggingAdapter;
@@ -33,18 +33,18 @@ import akka.event.LoggingAdapter;
 public class UnscheduledJobs {
 
 	// The prioritised queue of jobs
-	private PriorityQueue<Job> unscheduledJobs = new PriorityQueue<>(10, new JobComparator());
+	private PriorityBlockingQueue<Job> unscheduledJobs = new PriorityBlockingQueue<>(10, new JobComparator());
 
 	// An optional, persistent backing store
-	private IBackingStore backingStore;
+	private BackingStore backingStore;
 
 	private LoggingAdapter log;
 
 	/**
 	 * @param backingStore
-	 *            is an optional instance of {@linkplain IBackingStore}
+	 *            is an optional instance of {@linkplain BackingStore}
 	 */
-	public UnscheduledJobs(IBackingStore backingStore, LoggingAdapter log) {
+	public UnscheduledJobs(BackingStore backingStore, LoggingAdapter log) {
 		this.backingStore = backingStore;
 		this.log = log;
 		if (backingStore != null)
