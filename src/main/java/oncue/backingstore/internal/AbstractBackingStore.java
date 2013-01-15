@@ -21,7 +21,7 @@ import akka.actor.ActorSystem;
 /**
  * Extend this class to create a new persistent backing store.
  */
-public abstract class AbstractBackingStore implements IBackingStore {
+public abstract class AbstractBackingStore implements BackingStore {
 
 	protected Settings settings;
 	protected ActorSystem system;

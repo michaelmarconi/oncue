@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import oncue.agent.ThrottledAgent;
-import oncue.backingstore.internal.IBackingStore;
+import oncue.backingstore.internal.BackingStore;
 import oncue.messages.ThrottledWorkRequest;
 import oncue.messages.internal.AbstractWorkRequest;
 import oncue.messages.internal.Job;
@@ -38,7 +38,7 @@ import oncue.scheduler.internal.Schedule;
  */
 public class ThrottledScheduler extends AbstractScheduler {
 
-	public ThrottledScheduler(Class<? extends IBackingStore> backingStore) {
+	public ThrottledScheduler(Class<? extends BackingStore> backingStore) {
 		super(backingStore);
 	}
 

@@ -13,22 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package oncue.functional;
+package oncue.workers;
 
-import static org.junit.Assert.*;
-
-import org.junit.Test;
-
-import oncue.base.AbstractActorSystemTest;
+import oncue.messages.internal.Job;
+import oncue.workers.internal.AbstractWorker;
 
 /**
- * When all the jobs assigned to an agent 
+ * A simple sample worker, for demonstration purposes
  */
-public class JobCompletionTest extends AbstractActorSystemTest {
+public class SampleWorker extends AbstractWorker {
 
-	@Test
-	public void test() {
-		fail("Not yet implemented");
+	@Override
+	protected void doWork(Job job) {
+		double progress = 0.0;
+		System.out.print("Sample worker doing work on Job " + job.getId() + ".");
+		for (int i = 0; i < 3; i++) {
+			progress += 0.25;
+			System.out.print(".");
+			try {
+				Thread.sleep(500);
+				reportProgress(progress);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		System.out.println("Complete!");
+		workComplete();
 	}
 
 }

@@ -15,7 +15,7 @@
  ******************************************************************************/
 package oncue.scheduler;
 
-import oncue.backingstore.internal.IBackingStore;
+import oncue.backingstore.internal.BackingStore;
 import oncue.messages.internal.AbstractWorkRequest;
 import oncue.scheduler.internal.AbstractScheduler;
 import oncue.scheduler.internal.NoJobsException;
@@ -31,7 +31,7 @@ import oncue.scheduler.internal.Schedule;
  */
 public class SimpleQueuePopScheduler extends AbstractScheduler {
 
-	public SimpleQueuePopScheduler(Class<? extends IBackingStore> backingStore) {
+	public SimpleQueuePopScheduler(Class<? extends BackingStore> backingStore) {
 		super(backingStore);
 	}
 

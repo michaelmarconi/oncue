@@ -99,14 +99,21 @@ public class OnCue {
 		// Load the environment configuration
 		Config config = ConfigFactory.load(OnCue.MainOptions.environment);
 
-		// Create the map of parameters
-		Map<String, String> paramMap = new HashMap<String, String>();
-		for (String param : params) {
-			String[] components = param.split("=");
-			paramMap.put(components[0], components[1]);
+		Job job;
+		if (params != null) {
+
+			// Create the map of parameters
+			Map<String, String> paramMap = new HashMap<String, String>();
+			for (String param : params) {
+				String[] components = param.split("=");
+				paramMap.put(components[0], components[1]);
+			}
+
+			job = API.getInstance(config).enqueueJob(workerType, paramMap);
+		} else {
+			job = API.getInstance(config).enqueueJob(workerType);
 		}
 
-		Job job = API.getInstance(config).enqueueJob(workerType, paramMap);
 		System.out.println("Enqueued " + job);
 		API.shutdown();
 	}
@@ -118,7 +125,7 @@ public class OnCue {
 		commander.addCommand("enqueue", new OnCue.EnqueueJobCommand());
 		commander.parse(args);
 
-		if (OnCue.MainOptions.help) {
+		if (OnCue.MainOptions.help || commander.getParsedCommand() == null) {
 			commander.usage();
 			return;
 		}

@@ -30,7 +30,7 @@ import oncue.messages.internal.SimpleMessages.SimpleMessage;
 import oncue.messages.internal.WorkResponse;
 import oncue.settings.Settings;
 import oncue.settings.SettingsProvider;
-import oncue.worker.internal.AbstractWorker;
+import oncue.workers.internal.AbstractWorker;
 
 import org.jboss.netty.channel.socket.Worker;
 

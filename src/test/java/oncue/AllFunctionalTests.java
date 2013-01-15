@@ -21,7 +21,6 @@ import oncue.functional.AgentPresenceTest;
 import oncue.functional.AgentRegistrationTest;
 import oncue.functional.BroadcastWorkTest;
 import oncue.functional.EnqueueJobTest;
-import oncue.functional.JobCompletionTest;
 import oncue.functional.JobProgressTest;
 import oncue.functional.WorkRequestTest;
 import oncue.functional.WorkerTest;
@@ -41,7 +40,6 @@ import org.junit.runners.Suite.SuiteClasses;
 				AgentRegistrationTest.class, 
 				BroadcastWorkTest.class,
 				EnqueueJobTest.class,
-				JobCompletionTest.class,
 				JobProgressTest.class,
 				WorkerTest.class, 
 				WorkRequestTest.class, 

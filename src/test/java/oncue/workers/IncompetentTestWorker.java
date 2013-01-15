@@ -16,7 +16,7 @@
 package oncue.workers;
 
 import oncue.messages.internal.Job;
-import oncue.worker.internal.AbstractWorker;
+import oncue.workers.internal.AbstractWorker;
 
 /**
  * This test worker has a nasty habit of performing dodgy arithmetic!

@@ -16,7 +16,7 @@
 package oncue.workers;
 
 import oncue.messages.internal.Job;
-import oncue.worker.internal.AbstractWorker;
+import oncue.workers.internal.AbstractWorker;
 
 public class TestWorker extends AbstractWorker {
 
