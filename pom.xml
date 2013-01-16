@@ -25,12 +25,20 @@
 	<name>onCue</name>
 	<url>https://github.com/michaelmarconi/oncue</url>
 
+	<licenses>
+	    <license>
+	      <name>The Apache Software License, Version 2.0</name>
+	      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+	      <distribution>repo</distribution>
+	    </license>
+	</licenses>
+
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<java.version>1.7</java.version>
 		<skipTests>true</skipTests>
 	</properties>
-
+	
 	<repositories>
 		<repository>
 			<id>typesafe</id>
