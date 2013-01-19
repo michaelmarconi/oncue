@@ -29,7 +29,7 @@ import oncue.scheduler.internal.Schedule;
  * This is strictly first-come-first-served: which ever agent makes the request
  * first will get the job.
  */
-public class SimpleQueuePopScheduler extends AbstractScheduler {
+public class SimpleQueuePopScheduler extends AbstractScheduler<AbstractWorkRequest> {
 
 	public SimpleQueuePopScheduler(Class<? extends BackingStore> backingStore) {
 		super(backingStore);

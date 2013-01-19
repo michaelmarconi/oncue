@@ -36,19 +36,18 @@ import oncue.scheduler.internal.Schedule;
  * will pop just enough jobs off the queue to satisfy this throttled request for
  * work.
  */
-public class ThrottledScheduler extends AbstractScheduler {
+public class ThrottledScheduler extends AbstractScheduler<ThrottledWorkRequest> {
 
 	public ThrottledScheduler(Class<? extends BackingStore> backingStore) {
 		super(backingStore);
 	}
 
 	@Override
-	protected void scheduleJobs(AbstractWorkRequest workRequest) {
-		ThrottledWorkRequest throttledWorkRequest = (ThrottledWorkRequest) workRequest;
+	protected void scheduleJobs(ThrottledWorkRequest workRequest) {
 
 		// Pop the requested number of jobs
 		List<Job> jobs = new ArrayList<>();
-		for (int i = 0; i < throttledWorkRequest.getJobs(); i++) {
+		for (int i = 0; i < workRequest.getJobs(); i++) {
 			try {
 				jobs.add(unscheduledJobs.popJob());
 			} catch (NoJobsException e) {

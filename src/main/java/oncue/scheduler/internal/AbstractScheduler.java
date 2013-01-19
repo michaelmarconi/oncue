@@ -47,7 +47,7 @@ import akka.event.LoggingAdapter;
  * distributing the work using a variety of scheduling algorithms, depending on
  * the concrete implementation.
  */
-public abstract class AbstractScheduler extends UntypedActor {
+public abstract class AbstractScheduler<R extends AbstractWorkRequest> extends UntypedActor {
 
 	private ActorRef testProbe;
 	protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
@@ -251,6 +251,7 @@ public abstract class AbstractScheduler extends UntypedActor {
 						}, getContext().dispatcher());
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void onReceive(Object message) throws Exception {
 
@@ -278,7 +279,7 @@ public abstract class AbstractScheduler extends UntypedActor {
 			if (unscheduledJobs.getSize() == 0 || paused)
 				replyWithNoWork(getSender());
 			else
-				scheduleJobs((AbstractWorkRequest) message);
+				scheduleJobs((R) message);
 		}
 
 		else if (message instanceof JobProgress) {
@@ -380,7 +381,7 @@ public abstract class AbstractScheduler extends UntypedActor {
 	 * has been created, the work should be dispatched by calling the
 	 * <i>dispatchJobs</i> method.
 	 */
-	protected abstract void scheduleJobs(AbstractWorkRequest workRequest);
+	protected abstract void  scheduleJobs(R workRequest);
 
 	/**
 	 * Schedule a jobs broadcast. Cancel any previously scheduled broadcast, to
