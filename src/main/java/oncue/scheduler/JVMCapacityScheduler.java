@@ -24,7 +24,6 @@ import java.util.Map;
 
 import oncue.backingstore.internal.BackingStore;
 import oncue.messages.JVMCapacityWorkRequest;
-import oncue.messages.internal.AbstractWorkRequest;
 import oncue.messages.internal.Job;
 import oncue.messages.internal.SimpleMessages.SimpleMessage;
 import oncue.scheduler.internal.AbstractScheduler;
@@ -40,7 +39,7 @@ import akka.actor.Cancellable;
  * broadcast) and then schedule jobs according to the memory capacity reported
  * by each agent.
  */
-public class JVMCapacityScheduler extends AbstractScheduler {
+public class JVMCapacityScheduler extends AbstractScheduler<JVMCapacityWorkRequest> {
 
 	// The list of work requests in this time window
 	List<JVMCapacityWorkRequest> workRequests = new ArrayList<>();
@@ -138,10 +137,10 @@ public class JVMCapacityScheduler extends AbstractScheduler {
 	}
 
 	@Override
-	protected void scheduleJobs(AbstractWorkRequest workRequest) {
+	protected void scheduleJobs(JVMCapacityWorkRequest workRequest) {
 
 		// Add to the map of unserviced work requests
-		workRequests.add((JVMCapacityWorkRequest) workRequest);
+		workRequests.add(workRequest);
 
 		/*
 		 * Give agents the specified amount of time to react to a jobs broadcast
