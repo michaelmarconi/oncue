@@ -25,7 +25,6 @@ import org.junit.Test;
 
 import sun.management.Agent;
 import akka.actor.Actor;
-import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.actor.UntypedActorFactory;
@@ -89,7 +88,7 @@ public class AgentShutdownTest {
 
 				// Create an agent with a probe
 				final JavaTestKit agentProbe = new JavaTestKit(system);
-				ActorRef agent = agentSystem.actorOf(new Props(new UntypedActorFactory() {
+				agentSystem.actorOf(new Props(new UntypedActorFactory() {
 					@Override
 					public Actor create() throws Exception {
 						UnlimitedCapacityAgent agent = new UnlimitedCapacityAgent();
@@ -100,16 +99,12 @@ public class AgentShutdownTest {
 
 				// Wait until the agent is registered
 				agentProbe.expectMsgEquals(SimpleMessage.AGENT_REGISTERED);
-				
-				expectNoMsg(duration("5 seconds"));
 
 				// Tell the agent to stop
 				agentSystem.shutdown();
-				
-				expectNoMsg(duration("30 seconds"));
 
 				// Expect the agent shutdown message
-//				schedulerProbe.expectMsgEquals(duration("5 seconds"), SimpleMessage.AGENT_SHUTDOWN);
+				schedulerProbe.expectMsgEquals(duration("5 seconds"), SimpleMessage.AGENT_SHUTDOWN);
 			}
 		};
 	}

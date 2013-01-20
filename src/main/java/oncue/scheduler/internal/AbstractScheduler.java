@@ -180,7 +180,12 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	private void deregisterAgent(String agent) {
 		agents.remove(agent);
 
-		// Stop listening to remote events
+		/*
+		 * TODO Is this necessary? If an agent is dead, we can't look it up
+		 * anyway!
+		 * 
+		 * Stop listening to remote events
+		 */
 		getContext().system().eventStream().unsubscribe(getContext().actorFor(agent));
 	}
 
