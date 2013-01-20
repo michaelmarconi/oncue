@@ -19,6 +19,7 @@ import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertTrue;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -89,7 +90,12 @@ public class RedisBackingStoreTest extends AbstractActorSystemTest {
 				Job job = expectMsgClass(Job.class);
 
 				// Start an Agent
-				system.actorOf(new Props(UnlimitedCapacityAgent.class), settings.AGENT_NAME);
+				system.actorOf(new Props(new UntypedActorFactory() {
+					@Override
+					public Actor create() throws Exception {
+						return new UnlimitedCapacityAgent(Arrays.asList(TestWorker.class.getName()));
+					}
+				}), settings.AGENT_NAME);
 
 				// Wait for some progress
 				schedulerProbe.expectMsgClass(JobProgress.class);
@@ -196,7 +202,12 @@ public class RedisBackingStoreTest extends AbstractActorSystemTest {
 				Job job = expectMsgClass(Job.class);
 
 				// Start an Agent
-				system.actorOf(new Props(UnlimitedCapacityAgent.class), settings.AGENT_NAME);
+				system.actorOf(new Props(new UntypedActorFactory() {
+					@Override
+					public Actor create() throws Exception {
+						return new UnlimitedCapacityAgent(Arrays.asList(TestWorker.class.getName()));
+					}
+				}), settings.AGENT_NAME);
 
 				// Expect a job failure message at the scheduler
 				JobFailed jobFailed = schedulerProbe.expectMsgClass(JobFailed.class);
@@ -256,7 +267,12 @@ public class RedisBackingStoreTest extends AbstractActorSystemTest {
 				Job job = expectMsgClass(Job.class);
 
 				// Start an Agent
-				system.actorOf(new Props(UnlimitedCapacityAgent.class), settings.AGENT_NAME);
+				system.actorOf(new Props(new UntypedActorFactory() {
+					@Override
+					public Actor create() throws Exception {
+						return new UnlimitedCapacityAgent(Arrays.asList(TestWorker.class.getName()));
+					}
+				}), settings.AGENT_NAME);
 
 				// Expect a series of progress reports
 				double expectedProgress = 0;

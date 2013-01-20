@@ -15,7 +15,10 @@
  ******************************************************************************/
 package oncue.agent;
 
+import java.util.List;
+
 import oncue.agent.internal.AbstractAgent;
+import oncue.agent.internal.WorkerTypeException;
 import oncue.messages.ThrottledWorkRequest;
 
 /**
@@ -24,9 +27,11 @@ import oncue.messages.ThrottledWorkRequest;
  */
 public class ThrottledAgent extends AbstractAgent {
 
+	// The maximum number of concurrent workers
 	private final Integer MAX_JOBS;
 
-	public ThrottledAgent() {
+	public ThrottledAgent(List<String> workerTypes) throws WorkerTypeException {
+		super(workerTypes);
 		if (settings.THROTTLED_AGENT_JOB_LIMIT == null)
 			throw new RuntimeException(
 					"Configuration is missing the maximum concurrent jobs configuration for the throttled agent.");

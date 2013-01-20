@@ -15,7 +15,10 @@
  ******************************************************************************/
 package oncue.agent;
 
+import java.util.List;
+
 import oncue.agent.internal.AbstractAgent;
+import oncue.agent.internal.WorkerTypeException;
 import oncue.messages.SimpleWorkRequest;
 
 /**
@@ -26,6 +29,10 @@ import oncue.messages.SimpleWorkRequest;
  * enough jobs!
  */
 public class UnlimitedCapacityAgent extends AbstractAgent {
+
+	public UnlimitedCapacityAgent(List<String> workerTypes) throws WorkerTypeException {
+		super(workerTypes);
+	}
 
 	@Override
 	protected void requestWork() {

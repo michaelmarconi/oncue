@@ -51,20 +51,47 @@ import akka.japi.Function;
 
 public abstract class AbstractAgent extends UntypedActor {
 
+	// The scheduled heartbeat
+	private Cancellable heartbeat;
+	// Map jobs in progress to their workers
+	protected Map<ActorRef, Job> jobsInProgress = new HashMap<ActorRef, Job>();
+
 	protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
+
 	final protected Settings settings = SettingsProvider.SettingsProvider.get(getContext().system());
 
 	// A probe for testing
 	protected ActorRef testProbe;
 
-	// The scheduled heartbeat
-	private Cancellable heartbeat;
-
 	// A scheduled request for new work
 	private Cancellable workRequest;
 
-	// Map jobs in progress to their workers
-	protected Map<ActorRef, Job> jobsInProgress = new HashMap<ActorRef, Job>();
+	/**
+	 * An agent must be initialised with a list of worker types it is capable of
+	 * spawning.
+	 * 
+	 * @param workerTypes
+	 *            is a list of Strings that correspond with the classes of
+	 *            available worker types.
+	 * 
+	 * @throws WorkerTypeException
+	 *             thrown if a class representing a worker cannot be found
+	 */
+	public AbstractAgent(List<String> workerTypes) throws WorkerTypeException {
+		for (String workerType : workerTypes) {
+			try {
+				@SuppressWarnings({ "unchecked", "unused" })
+				Class<? extends AbstractWorker> workerClass = (Class<? extends AbstractWorker>) Class
+						.forName(workerType);
+			} catch (ClassNotFoundException e) {
+				throw new WorkerTypeException(
+						String.format("Cannot find a class for the worker type '%s'", workerType), e);
+			} catch (ClassCastException e) {
+				throw new WorkerTypeException(String.format(
+						"The class for worker type '%s' doesn't extend the AbstractWorker base class", workerType), e);
+			}
+		}
+	}
 
 	/**
 	 * @return a reference to the scheduler
@@ -75,40 +102,6 @@ public abstract class AbstractAgent extends UntypedActor {
 
 	public void injectProbe(ActorRef testProbe) {
 		this.testProbe = testProbe;
-	}
-
-	/**
-	 * Note the progress against a job. If it is complete, remove it from the
-	 * jobs in progress map.
-	 * 
-	 * @param progress
-	 *            is the {@linkplain JobProgress} made against a job
-	 * @param worker
-	 *            is the {@linkplain AbstractWorker} completing the job
-	 */
-	private void recordProgress(JobProgress progress, ActorRef worker) {
-		getScheduler().tell(progress, getSelf());
-		if (progress.getProgress() == 1.0) {
-			jobsInProgress.remove(worker);
-			scheduleWorkRequest();
-		}
-	}
-
-	/**
-	 * Schedule a work request to take place to allow for a period of quiesence
-	 * after job completion.
-	 */
-	private void scheduleWorkRequest() {
-		if (workRequest != null && !workRequest.isCancelled())
-			workRequest.cancel();
-
-		workRequest = getContext().system().scheduler().scheduleOnce(Duration.Zero(), new Runnable() {
-
-			@Override
-			public void run() {
-				requestWork();
-			}
-		}, getContext().dispatcher());
 	}
 
 	@Override
@@ -168,9 +161,43 @@ public abstract class AbstractAgent extends UntypedActor {
 	}
 
 	/**
+	 * Note the progress against a job. If it is complete, remove it from the
+	 * jobs in progress map.
+	 * 
+	 * @param progress
+	 *            is the {@linkplain JobProgress} made against a job
+	 * @param worker
+	 *            is the {@linkplain AbstractWorker} completing the job
+	 */
+	private void recordProgress(JobProgress progress, ActorRef worker) {
+		getScheduler().tell(progress, getSelf());
+		if (progress.getProgress() == 1.0) {
+			jobsInProgress.remove(worker);
+			scheduleWorkRequest();
+		}
+	}
+
+	/**
 	 * Request work from the {@linkplain Scheduler}.
 	 */
 	protected abstract void requestWork();
+
+	/**
+	 * Schedule a work request to take place to allow for a period of quiesence
+	 * after job completion.
+	 */
+	private void scheduleWorkRequest() {
+		if (workRequest != null && !workRequest.isCancelled())
+			workRequest.cancel();
+
+		workRequest = getContext().system().scheduler().scheduleOnce(Duration.Zero(), new Runnable() {
+
+			@Override
+			public void run() {
+				requestWork();
+			}
+		}, getContext().dispatcher());
+	}
 
 	/**
 	 * Spawn a new worker to complete a job.

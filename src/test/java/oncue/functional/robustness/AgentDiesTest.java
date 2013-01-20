@@ -15,6 +15,8 @@
  ******************************************************************************/
 package oncue.functional.robustness;
 
+import java.util.Arrays;
+
 import junit.framework.Assert;
 import oncue.agent.UnlimitedCapacityAgent;
 import oncue.base.AbstractActorSystemTest;
@@ -80,7 +82,12 @@ public class AgentDiesTest extends AbstractActorSystemTest {
 				}), settings.SCHEDULER_NAME);
 
 				// Create an agent
-				ActorRef agent1 = system.actorOf(new Props(UnlimitedCapacityAgent.class), "agent1");
+				ActorRef agent1 = system.actorOf(new Props(new UntypedActorFactory() {
+					@Override
+					public Actor create() throws Exception {
+						return new UnlimitedCapacityAgent(Arrays.asList(TestWorker.class.getName()));
+					}
+				}), "agent1");
 
 				// Enqueue a job
 				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
@@ -100,7 +107,12 @@ public class AgentDiesTest extends AbstractActorSystemTest {
 				schedulerProbe.expectNoMsg(settings.AGENT_HEARTBEAT_FREQUENCY);
 
 				// Now, create a second agent
-				system.actorOf(new Props(UnlimitedCapacityAgent.class), "agent2");
+				system.actorOf(new Props(new UntypedActorFactory() {
+					@Override
+					public Actor create() throws Exception {
+						return new UnlimitedCapacityAgent(Arrays.asList(TestWorker.class.getName()));
+					}
+				}), "agent2");
 
 				// Wait for some progress on the original job
 				JobProgress jobProgress = schedulerProbe.expectMsgClass(JobProgress.class);

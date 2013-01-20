@@ -15,6 +15,8 @@
  ******************************************************************************/
 package oncue.functional;
 
+import java.util.Arrays;
+
 import junit.framework.Assert;
 import oncue.agent.UnlimitedCapacityAgent;
 import oncue.base.AbstractActorSystemTest;
@@ -88,7 +90,8 @@ public class JobProgressTest extends AbstractActorSystemTest {
 				system.actorOf(new Props(new UntypedActorFactory() {
 					@Override
 					public Actor create() throws Exception {
-						UnlimitedCapacityAgent agent = new UnlimitedCapacityAgent();
+						UnlimitedCapacityAgent agent = new UnlimitedCapacityAgent(Arrays.asList(TestWorker.class
+								.getName()));
 						agent.injectProbe(agentProbe.getRef());
 						return agent;
 					}

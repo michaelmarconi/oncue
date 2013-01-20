@@ -15,6 +15,8 @@
  ******************************************************************************/
 package oncue.functional.robustness;
 
+import java.util.Arrays;
+
 import junit.framework.Assert;
 import oncue.agent.UnlimitedCapacityAgent;
 import oncue.backingstore.RedisBackingStore;
@@ -108,7 +110,8 @@ public class SchedulerDiesTest extends AbstractActorSystemTest {
 
 					@Override
 					public Actor create() throws Exception {
-						UnlimitedCapacityAgent agent = new UnlimitedCapacityAgent();
+						UnlimitedCapacityAgent agent = new UnlimitedCapacityAgent(Arrays.asList(TestWorker.class
+								.getName()));
 						agent.injectProbe(agentProbe.getRef());
 						return agent;
 					}

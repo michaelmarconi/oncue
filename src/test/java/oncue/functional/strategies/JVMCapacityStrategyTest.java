@@ -15,6 +15,7 @@
  ******************************************************************************/
 package oncue.functional.strategies;
 
+import java.util.Arrays;
 import java.util.HashMap;
 
 import junit.framework.Assert;
@@ -208,7 +209,7 @@ public class JVMCapacityStrategyTest extends AbstractActorSystemTest {
 		system.actorOf(new Props(new UntypedActorFactory() {
 			@Override
 			public Actor create() throws Exception {
-				JVMCapacityAgent agent = new JVMCapacityAgent(capacity);
+				JVMCapacityAgent agent = new JVMCapacityAgent(Arrays.asList(TestWorker.class.getName()), capacity);
 				agent.injectProbe(agentProbe.getRef());
 				return agent;
 			}

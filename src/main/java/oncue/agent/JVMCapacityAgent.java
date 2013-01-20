@@ -15,7 +15,10 @@
  ******************************************************************************/
 package oncue.agent;
 
+import java.util.List;
+
 import oncue.agent.internal.AbstractAgent;
+import oncue.agent.internal.WorkerTypeException;
 import oncue.messages.JVMCapacityWorkRequest;
 
 /**
@@ -27,12 +30,19 @@ public class JVMCapacityAgent extends AbstractAgent {
 	// Only used for testing
 	private long testCapacity;
 
-	public JVMCapacityAgent() {
+	public JVMCapacityAgent(List<String> workerTypes) throws WorkerTypeException {
+		super(workerTypes);
 	}
 
-	public JVMCapacityAgent(long testCapacity) {
+	/**
+	 * This constructor should only be used for testing!
+	 * 
+	 * @param testCapacity
+	 *            overrides the maximum number of jobs to deal with concurrently
+	 */
+	public JVMCapacityAgent(List<String> workerTypes, long testCapacity) throws WorkerTypeException {
+		super(workerTypes);
 		this.testCapacity = testCapacity;
-
 	}
 
 	@Override

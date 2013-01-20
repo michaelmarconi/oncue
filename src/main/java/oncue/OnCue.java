@@ -15,6 +15,7 @@
  ******************************************************************************/
 package oncue;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,6 +62,13 @@ public class OnCue {
 
 		@Parameter(names = { "-env", "e" }, description = "The environment configuration to load")
 		private static String environment = "production";
+	}
+
+	@Parameters(commandDescription = "Run an agent")
+	private static class RunAgentCommand {
+
+		@Parameter(names = "-workers", required = true, description = "A comma-delimited list of worker types that can spawned by this agent", validateValueWith = RunAgentValidator.class)
+		private static String workers;
 	}
 
 	@Parameters(commandDescription = "Run a component")
@@ -121,7 +129,7 @@ public class OnCue {
 	public static void main(String[] args) throws APIException {
 
 		JCommander commander = new JCommander(new OnCue.MainOptions());
-		commander.addCommand("run", new OnCue.RunComponentCommand());
+		commander.addCommand("agent", new OnCue.RunAgentCommand());
 		commander.addCommand("enqueue", new OnCue.EnqueueJobCommand());
 		commander.parse(args);
 
@@ -162,7 +170,8 @@ public class OnCue {
 			system.actorOf(new Props(new UntypedActorFactory() {
 				@Override
 				public Actor create() throws Exception {
-					return (Actor) Class.forName(settings.AGENT_CLASS).newInstance();
+					return (Actor) Class.forName(settings.AGENT_CLASS).getConstructor(List.class)
+							.newInstance(Arrays.asList("oncue.workers.WTFWorker"));
 				}
 			}), settings.AGENT_NAME);
 			break;

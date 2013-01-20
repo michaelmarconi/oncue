@@ -16,6 +16,9 @@
 package oncue.functional;
 
 import static junit.framework.Assert.assertEquals;
+
+import java.util.Arrays;
+
 import oncue.agent.UnlimitedCapacityAgent;
 import oncue.base.AbstractActorSystemTest;
 import oncue.messages.internal.AbstractWorkRequest;
@@ -127,7 +130,8 @@ public class BroadcastWorkTest extends AbstractActorSystemTest {
 				system.actorOf(new Props(new UntypedActorFactory() {
 					@Override
 					public Actor create() throws Exception {
-						UnlimitedCapacityAgent agent = new UnlimitedCapacityAgent();
+						UnlimitedCapacityAgent agent = new UnlimitedCapacityAgent(Arrays.asList(TestWorker.class
+								.getName()));
 						agent.injectProbe(agentProbe.getRef());
 						return agent;
 					}
