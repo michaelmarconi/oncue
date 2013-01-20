@@ -66,7 +66,18 @@ public class AgentShutdownTest {
 		new JavaTestKit(system) {
 			{
 				// Create a simple scheduler with a probe
-				final JavaTestKit schedulerProbe = new JavaTestKit(system);
+				final JavaTestKit schedulerProbe = new JavaTestKit(system) {
+					{
+						new IgnoreMsg() {
+
+							@Override
+							protected boolean ignore(Object message) {
+								return !(message.equals(SimpleMessage.AGENT_SHUTDOWN));
+							}
+						};
+					}
+				};
+
 				system.actorOf(new Props(new UntypedActorFactory() {
 					@Override
 					public Actor create() throws Exception {
@@ -76,22 +87,29 @@ public class AgentShutdownTest {
 					}
 				}), "scheduler");
 
-				// Create an agent
+				// Create an agent with a probe
+				final JavaTestKit agentProbe = new JavaTestKit(system);
 				ActorRef agent = agentSystem.actorOf(new Props(new UntypedActorFactory() {
 					@Override
 					public Actor create() throws Exception {
 						UnlimitedCapacityAgent agent = new UnlimitedCapacityAgent();
+						agent.injectProbe(agentProbe.getRef());
 						return agent;
 					}
 				}), "agent");
+
+				// Wait until the agent is registered
+				agentProbe.expectMsgEquals(SimpleMessage.AGENT_REGISTERED);
 				
 				expectNoMsg(duration("5 seconds"));
 
 				// Tell the agent to stop
-				agentSystem.stop(agent);
+				agentSystem.shutdown();
+				
+				expectNoMsg(duration("30 seconds"));
 
 				// Expect the agent shutdown message
-				schedulerProbe.expectMsgEquals(duration("5 seconds"), SimpleMessage.AGENT_SHUTDOWN);
+//				schedulerProbe.expectMsgEquals(duration("5 seconds"), SimpleMessage.AGENT_SHUTDOWN);
 			}
 		};
 	}

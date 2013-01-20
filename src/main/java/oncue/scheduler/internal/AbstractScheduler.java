@@ -179,6 +179,9 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	 */
 	private void deregisterAgent(String agent) {
 		agents.remove(agent);
+
+		// Stop listening to remote events
+		getContext().system().eventStream().unsubscribe(getContext().actorFor(agent));
 	}
 
 	/**
