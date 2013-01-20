@@ -38,7 +38,7 @@ import akka.testkit.JavaTestKit;
 
 /**
  * An {@linkplain Agent} may die unexpectedly while it is processing jobs. Since
- * we cannot rely on the agent sending a message in its death throes (the entire
+ * we cannot rely on the agent sending a message in its death-throes (the entire
  * JVM may have exploded), we need to detect that its heart beat has stopped and
  * take action back at the scheduler.
  */
@@ -56,7 +56,7 @@ public class AgentDiesTest extends AbstractActorSystemTest {
 
 							@Override
 							protected boolean ignore(Object message) {
-								if (message.equals(SimpleMessage.DEAD_AGENT) || message instanceof JobProgress)
+								if (message.equals(SimpleMessage.AGENT_DEAD) || message instanceof JobProgress)
 									return false;
 								else
 									return true;
@@ -94,7 +94,7 @@ public class AgentDiesTest extends AbstractActorSystemTest {
 
 				// Expect a message about agent death
 				schedulerProbe.expectMsgEquals(settings.SCHEDULER_AGENT_HEARTBEAT_TIMEOUT.plus(duration("5 seconds")),
-						SimpleMessage.DEAD_AGENT);
+						SimpleMessage.AGENT_DEAD);
 
 				// The heartbeat of the original agent should die
 				schedulerProbe.expectNoMsg(settings.AGENT_HEARTBEAT_FREQUENCY);

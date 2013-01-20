@@ -57,17 +57,17 @@ public class AgentPresenceTest extends AbstractActorSystemTest {
 				// Ignore everything except heartbeats
 				new IgnoreMsg() {
 					protected boolean ignore(Object message) {
-						return !message.equals(SimpleMessage.HEARTBEAT);
+						return !message.equals(SimpleMessage.AGENT_HEARTBEAT);
 					}
 				};
 
 				ActorRef agent = system.actorOf(new Props(UnlimitedCapacityAgent.class), settings.AGENT_NAME);
 
 				// Expect the initial heartbeat
-				expectMsgEquals(SimpleMessage.HEARTBEAT);
+				expectMsgEquals(SimpleMessage.AGENT_HEARTBEAT);
 
 				// Wait for a second heartbeat
-				expectMsgEquals(settings.AGENT_HEARTBEAT_FREQUENCY.plus(duration("2 seconds")), SimpleMessage.HEARTBEAT);
+				expectMsgEquals(settings.AGENT_HEARTBEAT_FREQUENCY.plus(duration("2 seconds")), SimpleMessage.AGENT_HEARTBEAT);
 
 				// Stop the Agent and associated heartbeat
 				system.stop(agent);
@@ -98,7 +98,7 @@ public class AgentPresenceTest extends AbstractActorSystemTest {
 				// Ignore everything except heartbeats and dead agents
 				new IgnoreMsg() {
 					protected boolean ignore(Object message) {
-						if (message.equals(SimpleMessage.HEARTBEAT) || message.equals(SimpleMessage.DEAD_AGENT))
+						if (message.equals(SimpleMessage.AGENT_HEARTBEAT) || message.equals(SimpleMessage.AGENT_DEAD))
 							return false;
 						else
 							return true;
@@ -108,13 +108,13 @@ public class AgentPresenceTest extends AbstractActorSystemTest {
 				ActorRef agent = system.actorOf(new Props(UnlimitedCapacityAgent.class), settings.AGENT_NAME);
 
 				// Expect the initial heartbeat
-				expectMsgEquals(SimpleMessage.HEARTBEAT);
+				expectMsgEquals(SimpleMessage.AGENT_HEARTBEAT);
 
 				// Stop the Agent
 				system.stop(agent);
 
 				// Wait for a "dead agent" message
-				expectMsgEquals(duration("30 seconds"), SimpleMessage.DEAD_AGENT);
+				expectMsgEquals(duration("30 seconds"), SimpleMessage.AGENT_DEAD);
 			}
 		};
 	}

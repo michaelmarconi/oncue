@@ -73,8 +73,8 @@ public class ScheduledJobs {
 	 *            is the {@linkplain Agent} the jobs are associated with
 	 * @return a list of {@linkplain Job}s associated with the agent
 	 */
-	public List<Job> getJobs(ActorRef agent) {
-		List<Job> jobs = scheduledJobs.get(agent.path().toString());
+	public List<Job> getJobs(String agent) {
+		List<Job> jobs = scheduledJobs.get(agent);
 		if (jobs == null)
 			return new ArrayList<>();
 		else
@@ -87,8 +87,8 @@ public class ScheduledJobs {
 	 * @param job
 	 *            is the {@linkplain Job} to remove
 	 */
-	public void removeJob(Job job, ActorRef agent) {
-		scheduledJobs.get(agent.path().toString()).remove(job);
+	public void removeJob(Job job, String agent) {
+		scheduledJobs.get(agent).remove(job);
 
 		if (backingStore != null)
 			backingStore.removeScheduledJob(job);

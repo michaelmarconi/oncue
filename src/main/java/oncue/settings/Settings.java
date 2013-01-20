@@ -40,6 +40,7 @@ public class Settings implements Extension {
 	public final String QUEUE_MANAGER_PATH;
 
 	public final String AGENT_NAME;
+	public final String AGENT_PATH;
 	public final String AGENT_CLASS;
 	public final FiniteDuration AGENT_HEARTBEAT_FREQUENCY;
 
@@ -79,6 +80,7 @@ public class Settings implements Extension {
 		API_TIMEOUT = Duration.create(config.getMilliseconds("oncue.api.timeout"), TimeUnit.MILLISECONDS);
 
 		AGENT_NAME = config.getString("oncue.agent.name");
+		AGENT_PATH = config.getString("oncue.agent.path");
 		AGENT_CLASS = config.getString("oncue.agent.class");
 
 		AGENT_HEARTBEAT_FREQUENCY = Duration.create(config.getMilliseconds("oncue.agent.heartbeat-frequency"),

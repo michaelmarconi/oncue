@@ -19,6 +19,7 @@ package oncue;
 import oncue.api.APITests;
 import oncue.functional.AgentPresenceTest;
 import oncue.functional.AgentRegistrationTest;
+import oncue.functional.AgentShutdownTest;
 import oncue.functional.BroadcastWorkTest;
 import oncue.functional.EnqueueJobTest;
 import oncue.functional.JobProgressTest;
@@ -38,6 +39,7 @@ import org.junit.runners.Suite.SuiteClasses;
 @RunWith(Suite.class)
 @SuiteClasses({ AgentPresenceTest.class, 
 				AgentRegistrationTest.class, 
+				AgentShutdownTest.class,
 				BroadcastWorkTest.class,
 				EnqueueJobTest.class,
 				JobProgressTest.class,

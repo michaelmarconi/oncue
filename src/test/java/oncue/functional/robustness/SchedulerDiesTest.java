@@ -64,7 +64,7 @@ public class SchedulerDiesTest extends AbstractActorSystemTest {
 
 							@Override
 							protected boolean ignore(Object message) {
-								if (message.equals(SimpleMessage.DEAD_AGENT) || message instanceof JobProgress)
+								if (message.equals(SimpleMessage.AGENT_DEAD) || message instanceof JobProgress)
 									return false;
 								else
 									return true;
