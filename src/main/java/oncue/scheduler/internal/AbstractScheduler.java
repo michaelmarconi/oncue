@@ -40,6 +40,7 @@ import akka.actor.Cancellable;
 import akka.actor.UntypedActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
+import akka.remote.RemoteClientShutdown;
 
 /**
  * A scheduler is responsible for keeping a list of registered
@@ -49,30 +50,32 @@ import akka.event.LoggingAdapter;
  */
 public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest> extends UntypedActor {
 
-	private ActorRef testProbe;
-	protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
-	protected Settings settings = SettingsProvider.SettingsProvider.get(getContext().system());
+	// A periodic check for dead agents
+	private Cancellable agentMonitor;
 
 	// Map an agent to a deadline for deregistration
-	private Map<ActorRef, Deadline> agents = new ConcurrentHashMap<ActorRef, Deadline>();
-
-	// The queue of unscheduled jobs
-	protected UnscheduledJobs unscheduledJobs;
-
-	// The map of scheduled jobs
-	private ScheduledJobs scheduledJobs;
+	private Map<String, Deadline> agents = new ConcurrentHashMap<>();
 
 	// The optional persistent backing store
 	protected BackingStore backingStore;
 
-	// A periodic check for dead agents
-	private Cancellable agentMonitor;
-
 	// A scheduled check for jobs to broadcast
 	private Cancellable jobsBroadcast;
 
+	protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
+
 	// A flag to indicate that jobs should not be scheduled temporarily
 	private boolean paused = false;
+
+	// The map of scheduled jobs
+	private ScheduledJobs scheduledJobs;
+
+	protected Settings settings = SettingsProvider.SettingsProvider.get(getContext().system());
+
+	private ActorRef testProbe;
+
+	// The queue of unscheduled jobs
+	protected UnscheduledJobs unscheduledJobs;
 
 	/**
 	 * @param backingStore
@@ -117,10 +120,10 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 
 		log.debug("Broadcasting jobs");
 
-		for (ActorRef agent : agents.keySet()) {
+		for (String agent : agents.keySet()) {
 			if (testProbe != null)
 				testProbe.tell(SimpleMessage.WORK_AVAILABLE, getSelf());
-			agent.tell(SimpleMessage.WORK_AVAILABLE, getSelf());
+			getContext().actorFor(agent).tell(SimpleMessage.WORK_AVAILABLE, getSelf());
 		}
 
 		// Tee-up another broadcast if necessary
@@ -145,35 +148,17 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	 * Check to see that each agent has sent a heart beat by the deadline.
 	 */
 	private void checkAgents() {
-		for (ActorRef agent : agents.keySet()) {
+		for (String agent : agents.keySet()) {
 			Deadline deadline = agents.get(agent);
 
 			if (deadline.isOverdue()) {
 				log.error("Found a dead agent: {}", agent);
 
 				if (testProbe != null)
-					testProbe.tell(SimpleMessage.DEAD_AGENT, getSelf());
+					testProbe.tell(SimpleMessage.AGENT_DEAD, getSelf());
 
 				deregisterAgent(agent);
-
-				if (!scheduledJobs.getJobs(agent).isEmpty()) {
-
-					// Grab the list of jobs scheduled for this agent
-					List<Job> agentJobs = new ArrayList<>();
-					for (Job scheduledJob : scheduledJobs.getJobs(agent)) {
-						agentJobs.add(scheduledJob);
-					}
-
-					for (Job job : agentJobs) {
-
-						// Remove job from the agent
-						scheduledJobs.removeJob(job, agent);
-
-						// Add jobs back onto the unscheduled queue
-						unscheduledJobs.addJob(job);
-					}
-				}
-				broadcastJobs();
+				rebroadcastJobs(agent);
 			}
 		}
 	}
@@ -185,14 +170,14 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	 * @param job
 	 *            is the {@linkplain Job} to clean up after
 	 */
-	private void cleanupJob(Job job, ActorRef agent) {
+	private void cleanupJob(Job job, String agent) {
 		scheduledJobs.removeJob(job, agent);
 	}
 
 	/**
 	 * Deregister an agent
 	 */
-	private void deregisterAgent(ActorRef agent) {
+	private void deregisterAgent(String agent) {
 		agents.remove(agent);
 	}
 
@@ -220,7 +205,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	/**
 	 * @return the set of all registered {@linkplain Agent}s
 	 */
-	protected Set<ActorRef> getAgents() {
+	protected Set<String> getAgents() {
 		return agents.keySet();
 	}
 
@@ -258,9 +243,22 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 		if (testProbe != null)
 			testProbe.forward(message, getContext());
 
-		if (message.equals(SimpleMessage.HEARTBEAT)) {
+		if (message.equals(SimpleMessage.AGENT_HEARTBEAT)) {
 			log.debug("Got a heartbeat from agent {}", getSender());
-			registerAgent(getSender());
+			registerAgent(getSender().path().toString());
+		}
+
+		else if (message instanceof RemoteClientShutdown) {
+			String system = ((RemoteClientShutdown) message).getRemoteAddress().system();
+			if (system.equals("oncue-agent")) {
+				String agent = ((RemoteClientShutdown) message).getRemoteAddress().toString() + settings.AGENT_PATH;
+				log.info("Agent {} has shut down", agent);
+				deregisterAgent(agent);
+				rebroadcastJobs(agent);
+
+				if (testProbe != null)
+					testProbe.tell(SimpleMessage.AGENT_SHUTDOWN, getSelf());
+			}
 		}
 
 		else if (message.equals(SimpleMessage.CHECK_AGENTS)) {
@@ -285,7 +283,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 		else if (message instanceof JobProgress) {
 			log.debug("Agent reported progress of {} on job {}", ((JobProgress) message).getProgress(),
 					((JobProgress) message).getJob());
-			recordJobProgress((JobProgress) message, getSender());
+			recordJobProgress((JobProgress) message, getSender().path().toString());
 		}
 
 		else if (message instanceof JobFailed) {
@@ -325,6 +323,35 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	}
 
 	/**
+	 * In the case where an Agent has died or shutdown before completing the
+	 * jobs assigned to it, we need to re-broadcast the jobs so they are run by
+	 * another agent.
+	 * 
+	 * @param agent
+	 *            is the Agent to check for incomplete jobs
+	 */
+	private void rebroadcastJobs(String agent) {
+		if (!scheduledJobs.getJobs(agent).isEmpty()) {
+
+			// Grab the list of jobs scheduled for this agent
+			List<Job> agentJobs = new ArrayList<>();
+			for (Job scheduledJob : scheduledJobs.getJobs(agent)) {
+				agentJobs.add(scheduledJob);
+			}
+
+			for (Job job : agentJobs) {
+
+				// Remove job from the agent
+				scheduledJobs.removeJob(job, agent);
+
+				// Add jobs back onto the unscheduled queue
+				unscheduledJobs.addJob(job);
+			}
+		}
+		broadcastJobs();
+	}
+
+	/**
 	 * Record the details of a failed job
 	 * 
 	 * @param jobFailed
@@ -342,7 +369,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	 * @param jobProgress
 	 *            describes the job and associated progress.
 	 */
-	private void recordJobProgress(JobProgress jobProgress, ActorRef agent) {
+	private void recordJobProgress(JobProgress jobProgress, String agent) {
 		if (backingStore != null)
 			backingStore.persistJobProgress(jobProgress);
 		if (jobProgress.getProgress() == 1.0) {
@@ -359,9 +386,10 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	 * @param agent
 	 *            is the {@linkplain Agent} to register
 	 */
-	private void registerAgent(ActorRef agent) {
+	private void registerAgent(String agent) {
 		if (!agents.containsKey(agent)) {
-			agent.tell(SimpleMessage.REGISTERED, getSelf());
+			getContext().actorFor(agent).tell(SimpleMessage.AGENT_REGISTERED, getSelf());
+			getContext().system().eventStream().subscribe(getSelf(), RemoteClientShutdown.class);
 			log.info("Registered agent: {}", agent);
 		}
 

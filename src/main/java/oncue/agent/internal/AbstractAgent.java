@@ -53,7 +53,7 @@ public abstract class AbstractAgent extends UntypedActor {
 
 	protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 	final protected Settings settings = SettingsProvider.SettingsProvider.get(getContext().system());
-	
+
 	// A probe for testing
 	protected ActorRef testProbe;
 
@@ -116,7 +116,7 @@ public abstract class AbstractAgent extends UntypedActor {
 		if (testProbe != null)
 			testProbe.forward(message, getContext());
 
-		if (message.equals(SimpleMessage.REGISTERED)) {
+		if (message.equals(SimpleMessage.AGENT_REGISTERED)) {
 			log.info("Registered with scheduler");
 			requestWork();
 		}
@@ -162,7 +162,7 @@ public abstract class AbstractAgent extends UntypedActor {
 
 					@Override
 					public void run() {
-						getScheduler().tell(SimpleMessage.HEARTBEAT, getSelf());
+						getScheduler().tell(SimpleMessage.AGENT_HEARTBEAT, getSelf());
 					}
 				}, getContext().dispatcher());
 	}

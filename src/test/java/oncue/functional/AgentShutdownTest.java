@@ -15,35 +15,54 @@
  ******************************************************************************/
 package oncue.functional;
 
-import static junit.framework.Assert.assertEquals;
 import oncue.agent.UnlimitedCapacityAgent;
-import oncue.base.AbstractActorSystemTest;
-import oncue.messages.internal.AbstractWorkRequest;
-import oncue.messages.internal.WorkResponse;
 import oncue.messages.internal.SimpleMessages.SimpleMessage;
 import oncue.scheduler.SimpleQueuePopScheduler;
+import oncue.settings.Settings;
+import oncue.settings.SettingsProvider;
 
 import org.junit.Test;
 
 import sun.management.Agent;
 import akka.actor.Actor;
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.actor.UntypedActorFactory;
+import akka.event.Logging;
+import akka.event.LoggingAdapter;
 import akka.testkit.JavaTestKit;
 
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
+
 /**
- * Agents should register themselves with the central Scheduler when they start
- * up. After receiving confirmation that they are registered, they should
- * request work.
+ * When a remote agent shuts down gracefully (i.e. a final remote client
+ * shutdown event is broadcast), the scheduler should note this and deregister
+ * the agent, before it becomes a dead agent.
  */
-public class AgentRegistrationTest extends AbstractActorSystemTest {
+public class AgentShutdownTest {
+
+	static Config config;
+	final ActorSystem system;
+	final ActorSystem agentSystem;
+	final Settings settings;
+	LoggingAdapter log;
+
+	public AgentShutdownTest() {
+		config = ConfigFactory.load("agent-shutdown-test");
+		system = ActorSystem.create("oncue-service", config.getConfig("service").withFallback(config));
+		agentSystem = ActorSystem.create("oncue-agent", config.getConfig("client").withFallback(config));
+		settings = SettingsProvider.SettingsProvider.get(system);
+		log = Logging.getLogger(system, this);
+	}
 
 	/**
 	 * An {@linkplain Agent} should emit a steady heartbeat while it is alive.
 	 */
 	@SuppressWarnings("serial")
 	@Test
-	public void agentRegistersAndRequestsWorkButReceivesNoWork() {
+	public void agentShutsDownGracefully() {
 		new JavaTestKit(system) {
 			{
 				// Create a simple scheduler with a probe
@@ -57,29 +76,22 @@ public class AgentRegistrationTest extends AbstractActorSystemTest {
 					}
 				}), "scheduler");
 
-				// Create an agent with a probe
-				final JavaTestKit agentProbe = new JavaTestKit(system);
-				system.actorOf(new Props(new UntypedActorFactory() {
+				// Create an agent
+				ActorRef agent = agentSystem.actorOf(new Props(new UntypedActorFactory() {
 					@Override
 					public Actor create() throws Exception {
 						UnlimitedCapacityAgent agent = new UnlimitedCapacityAgent();
-						agent.injectProbe(agentProbe.getRef());
 						return agent;
 					}
 				}), "agent");
+				
+				expectNoMsg(duration("5 seconds"));
 
-				// Expect the initial heartbeat from the agent
-				schedulerProbe.expectMsgEquals(SimpleMessage.AGENT_HEARTBEAT);
+				// Tell the agent to stop
+				agentSystem.stop(agent);
 
-				// Expect the registration message from the scheduler
-				agentProbe.expectMsgEquals(SimpleMessage.AGENT_REGISTERED);
-
-				// Expect the agent to request work
-				schedulerProbe.expectMsgClass(AbstractWorkRequest.class);
-
-				// Expect no work from the scheduler
-				WorkResponse workResponse = agentProbe.expectMsgClass(WorkResponse.class);
-				assertEquals("Expected no jobs", 0, workResponse.getJobs().size());
+				// Expect the agent shutdown message
+				schedulerProbe.expectMsgEquals(duration("5 seconds"), SimpleMessage.AGENT_SHUTDOWN);
 			}
 		};
 	}
