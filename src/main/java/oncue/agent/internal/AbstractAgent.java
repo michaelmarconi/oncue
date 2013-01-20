@@ -53,6 +53,7 @@ public abstract class AbstractAgent extends UntypedActor {
 
 	// The scheduled heartbeat
 	private Cancellable heartbeat;
+
 	// Map jobs in progress to their workers
 	protected Map<ActorRef, Job> jobsInProgress = new HashMap<ActorRef, Job>();
 
@@ -84,11 +85,12 @@ public abstract class AbstractAgent extends UntypedActor {
 				Class<? extends AbstractWorker> workerClass = (Class<? extends AbstractWorker>) Class
 						.forName(workerType);
 			} catch (ClassNotFoundException e) {
-				throw new WorkerTypeException(
-						String.format("Cannot find a class for the worker type '%s'", workerType), e);
+				throw new WorkerTypeException(String.format("Cannot find a class for the worker type '%s'",
+						workerType.trim()), e);
 			} catch (ClassCastException e) {
 				throw new WorkerTypeException(String.format(
-						"The class for worker type '%s' doesn't extend the AbstractWorker base class", workerType), e);
+						"The class for worker type '%s' doesn't extend the AbstractWorker base class",
+						workerType.trim()), e);
 			}
 		}
 	}

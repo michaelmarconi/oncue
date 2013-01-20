@@ -38,10 +38,23 @@ import com.typesafe.config.ConfigFactory;
 
 /**
  * Defines the entry points into the OnCue job scheduling framework.
- * 
- * -start scheduler/agent -api
  */
 public class OnCue {
+
+	private enum Component {
+		SERVICE {
+			@Override
+			public String toString() {
+				return "service";
+			}
+		},
+		AGENT {
+			@Override
+			public String toString() {
+				return "agent";
+			}
+		}
+	}
 
 	@Parameters(commandDescription = "Enqueue a new job")
 	private static class EnqueueJobCommand {
@@ -67,16 +80,23 @@ public class OnCue {
 	@Parameters(commandDescription = "Run an agent")
 	private static class RunAgentCommand {
 
-		@Parameter(names = "-workers", required = true, description = "A comma-delimited list of worker types that can spawned by this agent", validateValueWith = RunAgentValidator.class)
+		@Parameter(names = "-workers", required = true, description = "A comma-delimited list of worker types that can spawned by this agent")
 		private static String workers;
 	}
 
-	@Parameters(commandDescription = "Run a component")
-	private static class RunComponentCommand {
+	@Parameters(commandDescription = "Run the service")
+	private static class RunServiceCommand {
 
-		@Parameter(names = "-component", required = true, description = "The component to run ('service' or 'agent')", validateValueWith = RunComponentValidator.class)
-		private static String component;
 	}
+
+	// @Parameters(commandDescription = "Run a component")
+	// private static class RunComponentCommand {
+	//
+	// @Parameter(names = "-component", required = true, description =
+	// "The component to run ('service' or 'agent')", validateValueWith =
+	// RunComponentValidator.class)
+	// private static String component;
+	// }
 
 	@SuppressWarnings("all")
 	private static void createServiceComponents(ActorSystem system, final Settings settings) {
@@ -129,7 +149,8 @@ public class OnCue {
 	public static void main(String[] args) throws APIException {
 
 		JCommander commander = new JCommander(new OnCue.MainOptions());
-		commander.addCommand("agent", new OnCue.RunAgentCommand());
+		commander.addCommand(Component.SERVICE.toString(), new OnCue.RunServiceCommand());
+		commander.addCommand(Component.AGENT.toString(), new OnCue.RunAgentCommand());
 		commander.addCommand("enqueue", new OnCue.EnqueueJobCommand());
 		commander.parse(args);
 
@@ -139,8 +160,12 @@ public class OnCue {
 		}
 
 		switch (commander.getParsedCommand()) {
-		case "run":
-			runComponent(OnCue.RunComponentCommand.component);
+		case "service":
+			runComponent(Component.SERVICE);
+			break;
+
+		case "agent":
+			runComponent(Component.AGENT);
 			break;
 
 		case "enqueue":
@@ -150,7 +175,7 @@ public class OnCue {
 	}
 
 	@SuppressWarnings("serial")
-	private static void runComponent(String component) {
+	private static void runComponent(Component component) {
 
 		// Load the environment configuration
 		Config config = ConfigFactory.load(OnCue.MainOptions.environment);
@@ -158,23 +183,30 @@ public class OnCue {
 		final Settings settings;
 
 		switch (component) {
-		case "service":
+		case SERVICE:
 			system = ActorSystem.create("oncue-service", config.getConfig("service").withFallback(config));
 			settings = SettingsProvider.SettingsProvider.get(system);
 			createServiceComponents(system, settings);
 			break;
 
-		case "agent":
+		case AGENT:
 			system = ActorSystem.create("oncue-agent", config.getConfig("client").withFallback(config));
 			settings = SettingsProvider.SettingsProvider.get(system);
 			system.actorOf(new Props(new UntypedActorFactory() {
 				@Override
 				public Actor create() throws Exception {
 					return (Actor) Class.forName(settings.AGENT_CLASS).getConstructor(List.class)
-							.newInstance(Arrays.asList("oncue.workers.WTFWorker"));
+							.newInstance(getWorkers());
 				}
 			}), settings.AGENT_NAME);
 			break;
 		}
+	}
+
+	/**
+	 * @return the list of worker types that an agent can run
+	 */
+	private static List<String> getWorkers() {
+		return Arrays.asList(RunAgentCommand.workers.split(","));
 	}
 }
