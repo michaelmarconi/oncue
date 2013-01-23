@@ -25,7 +25,7 @@ import oncue.functional.EnqueueJobTest;
 import oncue.functional.JobProgressTest;
 import oncue.functional.WorkRequestTest;
 import oncue.functional.WorkerTest;
-import oncue.functional.MissingWorkerTypeTest;
+import oncue.functional.MissingWorkerTest;
 import oncue.functional.redis.RedisBackingStoreTest;
 import oncue.functional.redis.RedisQueueManagerTest;
 import oncue.functional.robustness.AgentDiesTest;
@@ -44,7 +44,7 @@ import org.junit.runners.Suite.SuiteClasses;
 				BroadcastWorkTest.class,
 				EnqueueJobTest.class,
 				JobProgressTest.class,
-				MissingWorkerTypeTest.class,
+				MissingWorkerTest.class,
 				WorkerTest.class, 
 				WorkRequestTest.class, 
 				

@@ -64,6 +64,9 @@ public abstract class AbstractAgent extends UntypedActor {
 	// A probe for testing
 	protected ActorRef testProbe;
 
+	// The list of worker types this agent can spawn
+	private final List<String> workerTypes;
+
 	// A scheduled request for new work
 	private Cancellable workRequest;
 
@@ -75,20 +78,21 @@ public abstract class AbstractAgent extends UntypedActor {
 	 *            is a list of Strings that correspond with the classes of
 	 *            available worker types.
 	 * 
-	 * @throws WorkerTypeException
+	 * @throws MissingWorkerException
 	 *             thrown if a class representing a worker cannot be found
 	 */
-	public AbstractAgent(List<String> workerTypes) throws WorkerTypeException {
+	public AbstractAgent(List<String> workerTypes) throws MissingWorkerException {
+		this.workerTypes = workerTypes;
 		for (String workerType : workerTypes) {
 			try {
 				@SuppressWarnings({ "unchecked", "unused" })
 				Class<? extends AbstractWorker> workerClass = (Class<? extends AbstractWorker>) Class
 						.forName(workerType);
 			} catch (ClassNotFoundException e) {
-				throw new WorkerTypeException(String.format("Cannot find a class for the worker type '%s'",
+				throw new MissingWorkerException(String.format("Cannot find a class for the worker type '%s'",
 						workerType.trim()), e);
 			} catch (ClassCastException e) {
-				throw new WorkerTypeException(String.format(
+				throw new MissingWorkerException(String.format(
 						"The class for worker type '%s' doesn't extend the AbstractWorker base class",
 						workerType.trim()), e);
 			}
@@ -100,6 +104,14 @@ public abstract class AbstractAgent extends UntypedActor {
 	 */
 	protected ActorRef getScheduler() {
 		return getContext().actorFor(settings.SCHEDULER_PATH);
+	}
+
+	/**
+	 * @return the list of {@linkplain AbstractWorker} types this agent is
+	 *         capable of spawning.
+	 */
+	public List<String> getWorkerTypes() {
+		return workerTypes;
 	}
 
 	public void injectProbe(ActorRef testProbe) {
@@ -206,11 +218,20 @@ public abstract class AbstractAgent extends UntypedActor {
 	 * 
 	 * @param job
 	 *            is the job that a {@linkplain Worker} should complete.
+	 * @throws MissingWorkerException
 	 * @throws ClassNotFoundException
 	 */
 	@SuppressWarnings("serial")
-	private void spawnWorker(Job job) throws InstantiationException, ClassNotFoundException {
-		final Class<?> workerClass = Class.forName(job.getWorkerType());
+	private void spawnWorker(Job job) throws InstantiationException, MissingWorkerException {
+		final Class<?> workerClass;
+		try {
+			workerClass = Class.forName(job.getWorkerType());
+		} catch (ClassNotFoundException e) {
+			MissingWorkerException missingWorkerException = new MissingWorkerException("Failed to spawn a worker for "
+					+ job.toString(), e);
+			getScheduler().tell(new JobFailed(job, missingWorkerException), getSelf());
+			throw missingWorkerException;
+		}
 
 		if (!AbstractWorker.class.isAssignableFrom(workerClass))
 			throw new InstantiationException(
