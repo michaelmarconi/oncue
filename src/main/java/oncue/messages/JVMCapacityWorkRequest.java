@@ -15,7 +15,7 @@
  ******************************************************************************/
 package oncue.messages;
 
-import java.util.List;
+import java.util.Collection;
 
 import oncue.messages.internal.AbstractWorkRequest;
 import akka.actor.ActorRef;
@@ -28,7 +28,7 @@ public class JVMCapacityWorkRequest extends AbstractWorkRequest {
 
 	private static final long serialVersionUID = -4503173564405936817L;
 
-	public JVMCapacityWorkRequest(ActorRef agent, List<String> workerTypes, long freeMemory, long totalMemory,
+	public JVMCapacityWorkRequest(ActorRef agent, Collection<String> workerTypes, long freeMemory, long totalMemory,
 			long maxMemory) {
 		super(agent, workerTypes);
 		this.setFreeMemory(freeMemory);

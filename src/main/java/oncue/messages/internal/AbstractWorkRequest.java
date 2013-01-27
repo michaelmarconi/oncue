@@ -16,7 +16,7 @@
 package oncue.messages.internal;
 
 import java.io.Serializable;
-import java.util.List;
+import java.util.Collection;
 
 import oncue.agent.internal.AbstractAgent;
 import akka.actor.ActorRef;
@@ -31,9 +31,9 @@ public abstract class AbstractWorkRequest implements Serializable {
 	private static final long serialVersionUID = -3802453222882202468L;
 
 	private final ActorRef agent;
-	private final List<String> workerTypes;
+	private final Collection<String> workerTypes;
 
-	public AbstractWorkRequest(ActorRef agent, List<String> workerTypes) {
+	public AbstractWorkRequest(ActorRef agent, Collection<String> workerTypes) {
 		this.agent = agent;
 		this.workerTypes = workerTypes;
 	}
@@ -42,7 +42,7 @@ public abstract class AbstractWorkRequest implements Serializable {
 		return agent;
 	}
 
-	public List<String> getWorkerTypes() {
+	public Collection<String> getWorkerTypes() {
 		return workerTypes;
 	}
 

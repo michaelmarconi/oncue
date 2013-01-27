@@ -21,7 +21,6 @@ import oncue.messages.internal.EnqueueJob;
 import oncue.messages.internal.Job;
 import oncue.settings.Settings;
 import oncue.settings.SettingsProvider;
-
 import akka.actor.UntypedActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
@@ -71,7 +70,7 @@ public abstract class AbstractQueueManager extends UntypedActor {
 
 	@Override
 	public void postStop() {
-		log.info("Shutting down.");
 		super.postStop();
+		log.info("Shut down.");
 	}
 }

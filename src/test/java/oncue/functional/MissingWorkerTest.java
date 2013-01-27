@@ -18,6 +18,7 @@ package oncue.functional;
 import static junit.framework.Assert.assertEquals;
 
 import java.util.Arrays;
+import java.util.List;
 
 import oncue.agent.UnlimitedCapacityAgent;
 import oncue.agent.internal.MissingWorkerException;
@@ -134,7 +135,7 @@ public class MissingWorkerTest extends AbstractActorSystemTest {
 				// Expect agent to report available worker types
 				AbstractWorkRequest workRequest = schedulerProbe.expectMsgClass(AbstractWorkRequest.class);
 				assertEquals(1, workRequest.getWorkerTypes().size());
-				assertEquals(TestWorker.class.getName(), workRequest.getWorkerTypes().get(0));
+				assertEquals(TestWorker.class.getName(), ((List<String>) workRequest.getWorkerTypes()).get(0));
 
 				// Enqueue a job
 				queueManager.tell(new EnqueueJob("oncue.workers.MissingWorker"), getRef());

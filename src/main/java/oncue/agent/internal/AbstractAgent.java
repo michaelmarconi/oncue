@@ -17,6 +17,7 @@ package oncue.agent.internal;
 
 import static akka.actor.SupervisorStrategy.stop;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -65,7 +66,7 @@ public abstract class AbstractAgent extends UntypedActor {
 	protected ActorRef testProbe;
 
 	// The list of worker types this agent can spawn
-	private final List<String> workerTypes;
+	private final Collection<String> workerTypes;
 
 	// A scheduled request for new work
 	private Cancellable workRequest;
@@ -81,7 +82,7 @@ public abstract class AbstractAgent extends UntypedActor {
 	 * @throws MissingWorkerException
 	 *             thrown if a class representing a worker cannot be found
 	 */
-	public AbstractAgent(List<String> workerTypes) throws MissingWorkerException {
+	public AbstractAgent(Collection<String> workerTypes) throws MissingWorkerException {
 		this.workerTypes = workerTypes;
 		for (String workerType : workerTypes) {
 			try {
@@ -107,10 +108,10 @@ public abstract class AbstractAgent extends UntypedActor {
 	}
 
 	/**
-	 * @return the list of {@linkplain AbstractWorker} types this agent is
+	 * @return the set of {@linkplain AbstractWorker} types this agent is
 	 *         capable of spawning.
 	 */
-	public List<String> getWorkerTypes() {
+	public Collection<String> getWorkerTypes() {
 		return workerTypes;
 	}
 
@@ -163,7 +164,7 @@ public abstract class AbstractAgent extends UntypedActor {
 	@Override
 	public void preStart() {
 		super.preStart();
-		log.info("{} is running", getClass().getSimpleName());
+		log.info("{} is running with worker types: {}", getClass().getSimpleName(), workerTypes.toString());
 		heartbeat = getContext().system().scheduler()
 				.schedule(Duration.Zero(), settings.AGENT_HEARTBEAT_FREQUENCY, new Runnable() {
 

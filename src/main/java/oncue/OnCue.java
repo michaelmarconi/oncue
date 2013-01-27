@@ -16,9 +16,12 @@
 package oncue;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import oncue.api.API;
 import oncue.api.APIException;
@@ -88,15 +91,6 @@ public class OnCue {
 	private static class RunServiceCommand {
 
 	}
-
-	// @Parameters(commandDescription = "Run a component")
-	// private static class RunComponentCommand {
-	//
-	// @Parameter(names = "-component", required = true, description =
-	// "The component to run ('service' or 'agent')", validateValueWith =
-	// RunComponentValidator.class)
-	// private static String component;
-	// }
 
 	@SuppressWarnings("all")
 	private static void createServiceComponents(ActorSystem system, final Settings settings) {
@@ -195,7 +189,7 @@ public class OnCue {
 			system.actorOf(new Props(new UntypedActorFactory() {
 				@Override
 				public Actor create() throws Exception {
-					return (Actor) Class.forName(settings.AGENT_CLASS).getConstructor(List.class)
+					return (Actor) Class.forName(settings.AGENT_CLASS).getConstructor(Collection.class)
 							.newInstance(getWorkers());
 				}
 			}), settings.AGENT_NAME);
@@ -206,7 +200,7 @@ public class OnCue {
 	/**
 	 * @return the list of worker types that an agent can run
 	 */
-	private static List<String> getWorkers() {
-		return Arrays.asList(RunAgentCommand.workers.split(","));
+	private static Set<String> getWorkers() {
+		return new HashSet<String>(Arrays.asList(RunAgentCommand.workers.split(",")));
 	}
 }

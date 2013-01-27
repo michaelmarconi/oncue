@@ -15,7 +15,7 @@
  ******************************************************************************/
 package oncue.agent;
 
-import java.util.List;
+import java.util.Collection;
 
 import oncue.agent.internal.AbstractAgent;
 import oncue.agent.internal.MissingWorkerException;
@@ -30,7 +30,7 @@ import oncue.messages.SimpleWorkRequest;
  */
 public class UnlimitedCapacityAgent extends AbstractAgent {
 
-	public UnlimitedCapacityAgent(List<String> workerTypes) throws MissingWorkerException {
+	public UnlimitedCapacityAgent(Collection<String> workerTypes) throws MissingWorkerException {
 		super(workerTypes);
 	}
 

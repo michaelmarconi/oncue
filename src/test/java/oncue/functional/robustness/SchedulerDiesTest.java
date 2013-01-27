@@ -35,7 +35,7 @@ import org.junit.Test;
 import redis.clients.jedis.Jedis;
 import akka.actor.Actor;
 import akka.actor.ActorRef;
-import akka.actor.Kill;
+import akka.actor.PoisonPill;
 import akka.actor.Props;
 import akka.actor.UntypedActorFactory;
 import akka.testkit.JavaTestKit;
@@ -125,7 +125,7 @@ public class SchedulerDiesTest extends AbstractActorSystemTest {
 				schedulerProbe.expectMsgClass(JobProgress.class);
 
 				// Tell the scheduler to commit seppuku
-				scheduler.tell(Kill.getInstance(), getRef());
+				scheduler.tell(PoisonPill.getInstance(), getRef());
 
 				// Wait until the scheduler dies
 				new AwaitCond(duration("5 seconds"), duration("1 second")) {
@@ -136,7 +136,7 @@ public class SchedulerDiesTest extends AbstractActorSystemTest {
 					}
 				};
 
-				// Wait until the job is finished
+				// Wait until the job is finished at the agent
 				for (int i = 0; i < 5; i++) {
 					agentProbe.expectMsgClass(JobProgress.class);
 				}
