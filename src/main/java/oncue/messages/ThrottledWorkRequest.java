@@ -15,7 +15,8 @@
  ******************************************************************************/
 package oncue.messages;
 
-import oncue.agent.ThrottledAgent;
+import java.util.Collection;
+
 import oncue.messages.internal.AbstractWorkRequest;
 import akka.actor.ActorRef;
 
@@ -26,13 +27,11 @@ public class ThrottledWorkRequest extends AbstractWorkRequest {
 	private static final long serialVersionUID = -6509063237201496945L;
 
 	/**
-	 * @param agent
-	 *            is the {@linkplain ThrottledAgent} requesting work
 	 * @param jobs
 	 *            is the number of jobs the agent can cope with
 	 */
-	public ThrottledWorkRequest(ActorRef agent, int jobs) {
-		super(agent);
+	public ThrottledWorkRequest(ActorRef agent, Collection<String> workerTypes, int jobs) {
+		super(agent, workerTypes);
 		this.jobs = jobs;
 	}
 

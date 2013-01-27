@@ -17,6 +17,9 @@ package oncue.functional.robustness;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
+
+import java.util.Arrays;
+
 import oncue.agent.UnlimitedCapacityAgent;
 import oncue.base.AbstractActorSystemTest;
 import oncue.messages.internal.EnqueueJob;
@@ -25,6 +28,7 @@ import oncue.messages.internal.JobFailed;
 import oncue.queueManager.InMemoryQueueManager;
 import oncue.scheduler.SimpleQueuePopScheduler;
 import oncue.workers.IncompetentTestWorker;
+import oncue.workers.TestWorker;
 
 import org.junit.Test;
 
@@ -75,7 +79,13 @@ public class WorkerDiesTest extends AbstractActorSystemTest {
 				}), settings.SCHEDULER_NAME);
 
 				// Create and expose an agent
-				TestActorRef<UnlimitedCapacityAgent> agentRef = TestActorRef.create(system, new Props(UnlimitedCapacityAgent.class), settings.AGENT_NAME);
+				TestActorRef<UnlimitedCapacityAgent> agentRef = TestActorRef.create(system, new Props(
+						new UntypedActorFactory() {
+							@Override
+							public Actor create() throws Exception {
+								return new UnlimitedCapacityAgent(Arrays.asList(TestWorker.class.getName()));
+							}
+						}), settings.AGENT_NAME);
 				final UnlimitedCapacityAgent agent = agentRef.underlyingActor();
 
 				// Enqueue a job

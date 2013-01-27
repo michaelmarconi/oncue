@@ -16,7 +16,6 @@
 package oncue.functional.redis;
 
 import static junit.framework.Assert.assertEquals;
-
 import oncue.backingstore.RedisBackingStore;
 import oncue.base.AbstractActorSystemTest;
 import oncue.messages.internal.EnqueueJob;
@@ -29,7 +28,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import redis.clients.jedis.Jedis;
-
 import akka.actor.Actor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
@@ -42,10 +40,9 @@ import akka.testkit.JavaTestKit;
  * are found.
  */
 public class RedisQueueManagerTest extends AbstractActorSystemTest {
-	
+
 	@Before
-	public void cleanRedis()
-	{
+	public void cleanRedis() {
 		Jedis redis = RedisBackingStore.getConnection();
 		redis.flushDB();
 		RedisBackingStore.releaseConnection(redis);
@@ -57,11 +54,21 @@ public class RedisQueueManagerTest extends AbstractActorSystemTest {
 		new JavaTestKit(system) {
 			{
 				// Create a Redis-backed queue manager
-				ActorRef queueManager = system.actorOf(new Props(RedisQueueManager.class),
-						settings.QUEUE_MANAGER_NAME);
-				
+				ActorRef queueManager = system.actorOf(new Props(RedisQueueManager.class), settings.QUEUE_MANAGER_NAME);
+
 				// Create a scheduler with a probe
-				final JavaTestKit schedulerProbe = new JavaTestKit(system);
+				final JavaTestKit schedulerProbe = new JavaTestKit(system) {
+					{
+						new IgnoreMsg() {
+
+							@Override
+							protected boolean ignore(Object message) {
+								return !(message instanceof Job);
+							}
+						};
+					}
+				};
+
 				system.actorOf(new Props(new UntypedActorFactory() {
 					@Override
 					public Actor create() throws Exception {
@@ -81,6 +88,18 @@ public class RedisQueueManagerTest extends AbstractActorSystemTest {
 				assertEquals(job.getId(), schedulerJob.getId());
 				assertEquals(job.getEnqueuedAt().toString(), schedulerJob.getEnqueuedAt().toString());
 				assertEquals(job.getWorkerType(), schedulerJob.getWorkerType());
+
+				/*
+				 * Rinse, repeat, in order to ensure that the Future-based
+				 * mechanism for picking up new jobs works!
+				 */
+
+				// Enqueue a job
+				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
+				expectMsgClass(Job.class);
+
+				// Expect the scheduler to see the new job
+				schedulerProbe.expectMsgClass(Job.class);
 			}
 		};
 	}

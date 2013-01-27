@@ -15,6 +15,8 @@
  ******************************************************************************/
 package oncue.messages;
 
+import java.util.Collection;
+
 import oncue.messages.internal.AbstractWorkRequest;
 import akka.actor.ActorRef;
 
@@ -26,8 +28,8 @@ public class SimpleWorkRequest extends AbstractWorkRequest {
 
 	private static final long serialVersionUID = -9114194566914906613L;
 
-	public SimpleWorkRequest(ActorRef agent) {
-		super(agent);
+	public SimpleWorkRequest(ActorRef agent, Collection<String> workerTypes) {
+		super(agent, workerTypes);
 	}
 
 }

@@ -15,11 +15,14 @@
  ******************************************************************************/
 package oncue.functional;
 
+import java.util.Arrays;
+
 import oncue.agent.UnlimitedCapacityAgent;
 import oncue.messages.internal.SimpleMessages.SimpleMessage;
 import oncue.scheduler.SimpleQueuePopScheduler;
 import oncue.settings.Settings;
 import oncue.settings.SettingsProvider;
+import oncue.workers.TestWorker;
 
 import org.junit.Test;
 
@@ -91,7 +94,8 @@ public class AgentShutdownTest {
 				agentSystem.actorOf(new Props(new UntypedActorFactory() {
 					@Override
 					public Actor create() throws Exception {
-						UnlimitedCapacityAgent agent = new UnlimitedCapacityAgent();
+						UnlimitedCapacityAgent agent = new UnlimitedCapacityAgent(Arrays.asList(TestWorker.class
+								.getName()));
 						agent.injectProbe(agentProbe.getRef());
 						return agent;
 					}

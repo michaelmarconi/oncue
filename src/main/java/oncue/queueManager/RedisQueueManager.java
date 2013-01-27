@@ -15,8 +15,12 @@
  ******************************************************************************/
 package oncue.queueManager;
 
+import static akka.dispatch.Futures.future;
+import static akka.pattern.Patterns.pipe;
+
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 import oncue.backingstore.RedisBackingStore;
 import oncue.messages.internal.Job;
@@ -25,11 +29,7 @@ import oncue.queueManager.internal.AbstractQueueManager;
 import org.joda.time.DateTime;
 
 import redis.clients.jedis.Jedis;
-import akka.actor.ActorRef;
-import akka.actor.Props;
-import akka.actor.UntypedActor;
-import akka.event.Logging;
-import akka.event.LoggingAdapter;
+import scala.concurrent.Future;
 
 /**
  * A persistent, Redis-backed queue manager implementation. This component
@@ -37,32 +37,6 @@ import akka.event.LoggingAdapter;
  * from a connection pool.
  */
 public class RedisQueueManager extends AbstractQueueManager {
-
-	/**
-	 * This component is responsible for monitoring a Redis-backed queue using
-	 * the 'BRPOP' command, which blocks until a new item arrives on the queue.
-	 */
-	static class QueueMonitor extends UntypedActor {
-
-		private LoggingAdapter log = Logging.getLogger(getContext().system(), this);
-
-		public QueueMonitor() {
-			log.info("The Redis Queue Monitor is watching for new jobs");
-			Jedis redis = RedisBackingStore.getConnection();
-			while (true) {
-				List<String> jobIDs = redis.brpop(0, RedisBackingStore.NEW_JOBS_QUEUE);
-				Job job = RedisBackingStore.loadJob(new Long(jobIDs.get(1)), redis);
-				log.debug("Found a new job: {}", job);
-				getContext().parent().tell(job, getSelf());
-			}
-		}
-
-		@Override
-		public void onReceive(Object message) throws Exception {
-		}
-	}
-
-	private ActorRef queueMonitor;
 
 	@Override
 	protected Job createJob(String workerType, Map<String, String> jobParams) {
@@ -84,25 +58,40 @@ public class RedisQueueManager extends AbstractQueueManager {
 		return job;
 	}
 
+	/**
+	 * Monitor the new jobs queue using the Redis BRPOP command, which blocks
+	 * until a new item arrives on the queue.
+	 */
+	private void listenForNewJobs() {
+		Future<Job> jobListener = future(new Callable<Job>() {
+			public Job call() {
+				Jedis redis = RedisBackingStore.getConnection();
+				List<String> jobIDs = redis.brpop(0, RedisBackingStore.NEW_JOBS_QUEUE);
+				Job job = RedisBackingStore.loadJob(new Long(jobIDs.get(1)), redis);
+				return job;
+			}
+		}, getContext().dispatcher());
+		pipe(jobListener, getContext().dispatcher()).to(getSelf());
+	}
+
 	@Override
 	public void onReceive(Object message) throws Exception {
 		if (message instanceof Job) {
+			log.debug("Found a new job: {}", message);
+
 			// Tell the scheduler about it
 			getContext().actorFor(getSettings().SCHEDULER_PATH).tell(message, getSelf());
+
+			// Keep listening for new jobs
+			listenForNewJobs();
 		}
 		super.onReceive(message);
 	}
 
 	@Override
-	public void postStop() {
-		super.postStop();
-		getContext().stop(queueMonitor);
-	}
-
-	@Override
 	public void preStart() {
 		super.preStart();
-		queueMonitor = getContext().actorOf(new Props(QueueMonitor.class), "queueMonitor");
+		listenForNewJobs();
 	}
 
 }
