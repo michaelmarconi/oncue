@@ -17,6 +17,7 @@ package oncue.agent.internal;
 
 import static akka.actor.SupervisorStrategy.stop;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -51,20 +52,53 @@ import akka.japi.Function;
 
 public abstract class AbstractAgent extends UntypedActor {
 
+	// The scheduled heartbeat
+	private Cancellable heartbeat;
+
+	// Map jobs in progress to their workers
+	protected Map<ActorRef, Job> jobsInProgress = new HashMap<ActorRef, Job>();
+
 	protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
+
 	final protected Settings settings = SettingsProvider.SettingsProvider.get(getContext().system());
 
 	// A probe for testing
 	protected ActorRef testProbe;
 
-	// The scheduled heartbeat
-	private Cancellable heartbeat;
+	// The list of worker types this agent can spawn
+	private final Collection<String> workerTypes;
 
 	// A scheduled request for new work
 	private Cancellable workRequest;
 
-	// Map jobs in progress to their workers
-	protected Map<ActorRef, Job> jobsInProgress = new HashMap<ActorRef, Job>();
+	/**
+	 * An agent must be initialised with a list of worker types it is capable of
+	 * spawning.
+	 * 
+	 * @param workerTypes
+	 *            is a list of Strings that correspond with the classes of
+	 *            available worker types.
+	 * 
+	 * @throws MissingWorkerException
+	 *             thrown if a class representing a worker cannot be found
+	 */
+	public AbstractAgent(Collection<String> workerTypes) throws MissingWorkerException {
+		this.workerTypes = workerTypes;
+		for (String workerType : workerTypes) {
+			try {
+				@SuppressWarnings({ "unchecked", "unused" })
+				Class<? extends AbstractWorker> workerClass = (Class<? extends AbstractWorker>) Class
+						.forName(workerType);
+			} catch (ClassNotFoundException e) {
+				throw new MissingWorkerException(String.format("Cannot find a class for the worker type '%s'",
+						workerType.trim()), e);
+			} catch (ClassCastException e) {
+				throw new MissingWorkerException(String.format(
+						"The class for worker type '%s' doesn't extend the AbstractWorker base class",
+						workerType.trim()), e);
+			}
+		}
+	}
 
 	/**
 	 * @return a reference to the scheduler
@@ -73,42 +107,16 @@ public abstract class AbstractAgent extends UntypedActor {
 		return getContext().actorFor(settings.SCHEDULER_PATH);
 	}
 
+	/**
+	 * @return the set of {@linkplain AbstractWorker} types this agent is
+	 *         capable of spawning.
+	 */
+	public Collection<String> getWorkerTypes() {
+		return workerTypes;
+	}
+
 	public void injectProbe(ActorRef testProbe) {
 		this.testProbe = testProbe;
-	}
-
-	/**
-	 * Note the progress against a job. If it is complete, remove it from the
-	 * jobs in progress map.
-	 * 
-	 * @param progress
-	 *            is the {@linkplain JobProgress} made against a job
-	 * @param worker
-	 *            is the {@linkplain AbstractWorker} completing the job
-	 */
-	private void recordProgress(JobProgress progress, ActorRef worker) {
-		getScheduler().tell(progress, getSelf());
-		if (progress.getProgress() == 1.0) {
-			jobsInProgress.remove(worker);
-			scheduleWorkRequest();
-		}
-	}
-
-	/**
-	 * Schedule a work request to take place to allow for a period of quiesence
-	 * after job completion.
-	 */
-	private void scheduleWorkRequest() {
-		if (workRequest != null && !workRequest.isCancelled())
-			workRequest.cancel();
-
-		workRequest = getContext().system().scheduler().scheduleOnce(Duration.Zero(), new Runnable() {
-
-			@Override
-			public void run() {
-				requestWork();
-			}
-		}, getContext().dispatcher());
 	}
 
 	@Override
@@ -156,7 +164,7 @@ public abstract class AbstractAgent extends UntypedActor {
 	@Override
 	public void preStart() {
 		super.preStart();
-		log.info("{} is running", getClass().getSimpleName());
+		log.info("{} is running with worker types: {}", getClass().getSimpleName(), workerTypes.toString());
 		heartbeat = getContext().system().scheduler()
 				.schedule(Duration.Zero(), settings.AGENT_HEARTBEAT_FREQUENCY, new Runnable() {
 
@@ -168,20 +176,63 @@ public abstract class AbstractAgent extends UntypedActor {
 	}
 
 	/**
+	 * Note the progress against a job. If it is complete, remove it from the
+	 * jobs in progress map.
+	 * 
+	 * @param progress
+	 *            is the {@linkplain JobProgress} made against a job
+	 * @param worker
+	 *            is the {@linkplain AbstractWorker} completing the job
+	 */
+	private void recordProgress(JobProgress progress, ActorRef worker) {
+		getScheduler().tell(progress, getSelf());
+		if (progress.getProgress() == 1.0) {
+			jobsInProgress.remove(worker);
+			scheduleWorkRequest();
+		}
+	}
+
+	/**
 	 * Request work from the {@linkplain Scheduler}.
 	 */
 	protected abstract void requestWork();
+
+	/**
+	 * Schedule a work request to take place to allow for a period of quiesence
+	 * after job completion.
+	 */
+	private void scheduleWorkRequest() {
+		if (workRequest != null && !workRequest.isCancelled())
+			workRequest.cancel();
+
+		workRequest = getContext().system().scheduler().scheduleOnce(Duration.Zero(), new Runnable() {
+
+			@Override
+			public void run() {
+				requestWork();
+			}
+		}, getContext().dispatcher());
+	}
 
 	/**
 	 * Spawn a new worker to complete a job.
 	 * 
 	 * @param job
 	 *            is the job that a {@linkplain Worker} should complete.
+	 * @throws MissingWorkerException
 	 * @throws ClassNotFoundException
 	 */
 	@SuppressWarnings("serial")
-	private void spawnWorker(Job job) throws InstantiationException, ClassNotFoundException {
-		final Class<?> workerClass = Class.forName(job.getWorkerType());
+	private void spawnWorker(Job job) throws InstantiationException, MissingWorkerException {
+		final Class<?> workerClass;
+		try {
+			workerClass = Class.forName(job.getWorkerType());
+		} catch (ClassNotFoundException e) {
+			MissingWorkerException missingWorkerException = new MissingWorkerException("Failed to spawn a worker for "
+					+ job.toString(), e);
+			getScheduler().tell(new JobFailed(job, missingWorkerException), getSelf());
+			throw missingWorkerException;
+		}
 
 		if (!AbstractWorker.class.isAssignableFrom(workerClass))
 			throw new InstantiationException(

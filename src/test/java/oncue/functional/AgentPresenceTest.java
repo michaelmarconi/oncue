@@ -15,10 +15,13 @@
  ******************************************************************************/
 package oncue.functional;
 
+import java.util.Arrays;
+
 import oncue.agent.UnlimitedCapacityAgent;
 import oncue.base.AbstractActorSystemTest;
 import oncue.messages.internal.SimpleMessages.SimpleMessage;
 import oncue.scheduler.SimpleQueuePopScheduler;
+import oncue.workers.TestWorker;
 
 import org.junit.Test;
 
@@ -61,13 +64,20 @@ public class AgentPresenceTest extends AbstractActorSystemTest {
 					}
 				};
 
-				ActorRef agent = system.actorOf(new Props(UnlimitedCapacityAgent.class), settings.AGENT_NAME);
+				// Create an agent
+				ActorRef agent = system.actorOf(new Props(new UntypedActorFactory() {
+					@Override
+					public Actor create() throws Exception {
+						return new UnlimitedCapacityAgent(Arrays.asList(TestWorker.class.getName()));
+					}
+				}), settings.AGENT_NAME);
 
 				// Expect the initial heartbeat
 				expectMsgEquals(SimpleMessage.AGENT_HEARTBEAT);
 
 				// Wait for a second heartbeat
-				expectMsgEquals(settings.AGENT_HEARTBEAT_FREQUENCY.plus(duration("2 seconds")), SimpleMessage.AGENT_HEARTBEAT);
+				expectMsgEquals(settings.AGENT_HEARTBEAT_FREQUENCY.plus(duration("2 seconds")),
+						SimpleMessage.AGENT_HEARTBEAT);
 
 				// Stop the Agent and associated heartbeat
 				system.stop(agent);
@@ -105,7 +115,13 @@ public class AgentPresenceTest extends AbstractActorSystemTest {
 					}
 				};
 
-				ActorRef agent = system.actorOf(new Props(UnlimitedCapacityAgent.class), settings.AGENT_NAME);
+				// Create an agent
+				ActorRef agent = system.actorOf(new Props(new UntypedActorFactory() {
+					@Override
+					public Actor create() throws Exception {
+						return new UnlimitedCapacityAgent(Arrays.asList(TestWorker.class.getName()));
+					}
+				}), settings.AGENT_NAME);
 
 				// Expect the initial heartbeat
 				expectMsgEquals(SimpleMessage.AGENT_HEARTBEAT);

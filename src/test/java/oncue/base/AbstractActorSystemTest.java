@@ -44,6 +44,11 @@ public abstract class AbstractActorSystemTest {
 	@After
 	public void tearDown() throws Exception {
 		system.shutdown();
+
+		while (!system.isTerminated()) {
+			log.debug("Waiting for system to shut down...");
+			Thread.sleep(1000);
+		}
 	}
 
 }

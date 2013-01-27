@@ -15,7 +15,11 @@
  ******************************************************************************/
 package oncue.agent;
 
+import java.util.Collection;
+import java.util.Set;
+
 import oncue.agent.internal.AbstractAgent;
+import oncue.agent.internal.MissingWorkerException;
 import oncue.messages.JVMCapacityWorkRequest;
 
 /**
@@ -27,18 +31,26 @@ public class JVMCapacityAgent extends AbstractAgent {
 	// Only used for testing
 	private long testCapacity;
 
-	public JVMCapacityAgent() {
+	public JVMCapacityAgent(Set<String> workerTypes) throws MissingWorkerException {
+		super(workerTypes);
 	}
 
-	public JVMCapacityAgent(long testCapacity) {
+	/**
+	 * This constructor should only be used for testing!
+	 * 
+	 * @param testCapacity
+	 *            overrides the maximum number of jobs to deal with concurrently
+	 */
+	public JVMCapacityAgent(Collection<String> workerTypes, long testCapacity) throws MissingWorkerException {
+		super(workerTypes);
 		this.testCapacity = testCapacity;
-
 	}
 
 	@Override
 	protected void requestWork() {
 		if (testProbe != null) {
-			getScheduler().tell(new JVMCapacityWorkRequest(getSelf(), testCapacity, testCapacity, testCapacity),
+			getScheduler().tell(
+					new JVMCapacityWorkRequest(getSelf(), getWorkerTypes(), testCapacity, testCapacity, testCapacity),
 					getSelf());
 			return;
 		}
@@ -47,7 +59,8 @@ public class JVMCapacityAgent extends AbstractAgent {
 		long totalMemory = Runtime.getRuntime().totalMemory();
 		long maxMemory = Runtime.getRuntime().maxMemory();
 
-		getScheduler().tell(new JVMCapacityWorkRequest(getSelf(), freeMemory, totalMemory, maxMemory), getSelf());
+		getScheduler().tell(
+				new JVMCapacityWorkRequest(getSelf(), getWorkerTypes(), freeMemory, totalMemory, maxMemory), getSelf());
 	}
 
 }

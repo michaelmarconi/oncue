@@ -316,12 +316,13 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	@Override
 	public void postStop() {
 		super.postStop();
-		log.info("Shutting down.");
 
 		if (agentMonitor != null)
 			agentMonitor.cancel();
 		if (jobsBroadcast != null)
 			jobsBroadcast.cancel();
+
+		log.info("Shut down.");
 	}
 
 	@Override
