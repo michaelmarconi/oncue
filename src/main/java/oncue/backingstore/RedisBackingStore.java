@@ -38,11 +38,32 @@ import akka.actor.ActorSystem;
 
 public class RedisBackingStore extends AbstractBackingStore {
 
-	// A Redis connection pool
-	private static JedisPool redisPool;
-
 	// The total count of persisted jobs
 	public static final String JOB_COUNT_KEY = "oncue:job_count";
+
+	// The time the job was enqueued
+	public static final String JOB_ENQUEUED_AT = "job_enqueued_at";
+
+	// The progress against a job
+	public static final String JOB_FAILURE_STACKTRACE = "job_failure_stacktrace";
+
+	// The ID of a job
+	public static final String JOB_ID = "job_id";
+
+	// The key to a particular job
+	public static final String JOB_KEY = "oncue:jobs:%s";
+
+	// The job parameters
+	public static final String JOB_PARAMS = "job_params";
+
+	// The progress against a job
+	public static final String JOB_PROGRESS = "job_progress";
+
+	// The job state
+	public static final String JOB_STATE = "job_state";
+
+	// The worker type assigned to a job
+	public static final String JOB_WORKER_TYPE = "job_worker_type";
 
 	/*
 	 * The queue of jobs that acts as an external interface; the scheduler
@@ -50,35 +71,43 @@ public class RedisBackingStore extends AbstractBackingStore {
 	 */
 	public static final String NEW_JOBS_QUEUE = "oncue:jobs:new";
 
-	// The unscheduled jobs held by the scheduler
-	public static final String UNSCHEDULED_JOBS = "oncue:jobs:unscheduled";
+	// A Redis connection pool
+	private static JedisPool redisPool;
 
 	// The scheduled jobs dispatched by the scheduler component
 	public static final String SCHEDULED_JOBS = "oncue:jobs:scheduled";
 
-	// The key to a particular job
-	public static final String JOB_KEY = "oncue:jobs:%s";
+	// The unscheduled jobs held by the scheduler
+	public static final String UNSCHEDULED_JOBS = "oncue:jobs:unscheduled";
 
-	// The ID of a job
-	public static final String JOB_ID = "job_id";
+	/**
+	 * Create a new {@linkplain Job} and persist it in Redis
+	 * 
+	 * @param workerType
+	 *            is the type of worker required to complete this job
+	 * 
+	 * @param jobParams
+	 *            is a map of String-based parameters
+	 * 
+	 * @return a new {@linkplain Job}
+	 */
+	public static Job createJob(String workerType, Map<String, String> jobParams) {
 
-	// The worker type assigned to a job
-	public static final String JOB_WORKER_TYPE = "job_worker_type";
+		// Get a connection to Redis
+		Jedis redis = getConnection();
 
-	// The time the job was enqueued
-	public static final String JOB_ENQUEUED_AT = "job_enqueued_at";
+		// Get the latest job ID
+		Long jobId = redis.incr(RedisBackingStore.JOB_COUNT_KEY);
 
-	// The job parameters
-	public static final String JOB_PARAMS = "job_params";
+		// Create a new job
+		Job job = new Job(jobId, DateTime.now(), workerType, jobParams);
 
-	// The job state
-	public static final String JOB_STATE = "job_state";
+		// Now, persist the job and release the connection
+		persistJob(job, RedisBackingStore.NEW_JOBS_QUEUE, redis);
+		releaseConnection(redis);
 
-	// The progress against a job
-	public static final String JOB_PROGRESS = "job_progress";
-
-	// The progress against a job
-	public static final String JOB_FAILURE_STACKTRACE = "job_failure_stacktrace";
+		return job;
+	}
 
 	/**
 	 * @return a {@linkplain Jedis} connection to Redis. Be sure to release this

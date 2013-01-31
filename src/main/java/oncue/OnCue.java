@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import oncue.api.API;
+import oncue.api.AkkaAPI;
 import oncue.api.APIException;
 import oncue.messages.internal.Job;
 import oncue.settings.Settings;
@@ -131,13 +131,13 @@ public class OnCue {
 				paramMap.put(components[0], components[1]);
 			}
 
-			job = API.getInstance(config).enqueueJob(workerType, paramMap);
+			job = AkkaAPI.getInstance(config).enqueueJob(workerType, paramMap);
 		} else {
-			job = API.getInstance(config).enqueueJob(workerType);
+			job = AkkaAPI.getInstance(config).enqueueJob(workerType);
 		}
 
 		System.out.println("Enqueued " + job);
-		API.shutdown();
+		AkkaAPI.shutdown();
 	}
 
 	public static void main(String[] args) throws APIException {
