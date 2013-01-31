@@ -17,16 +17,16 @@ package oncue;
 
 
 import oncue.api.AkkaAPITests;
-import oncue.api.RedisAPI;
+import oncue.api.RedisAPITests;
 import oncue.functional.AgentPresenceTest;
 import oncue.functional.AgentRegistrationTest;
 import oncue.functional.AgentShutdownTest;
 import oncue.functional.BroadcastWorkTest;
 import oncue.functional.EnqueueJobTest;
 import oncue.functional.JobProgressTest;
+import oncue.functional.MissingWorkerTest;
 import oncue.functional.WorkRequestTest;
 import oncue.functional.WorkerTest;
-import oncue.functional.MissingWorkerTest;
 import oncue.functional.redis.RedisBackingStoreTest;
 import oncue.functional.redis.RedisQueueManagerTest;
 import oncue.functional.robustness.AgentDiesTest;
@@ -60,7 +60,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	JVMCapacityStrategyTest.class,
 	
 	AkkaAPITests.class,
-	RedisAPI.class
+	RedisAPITests.class
 })
 public class AllFunctionalTests {
 
