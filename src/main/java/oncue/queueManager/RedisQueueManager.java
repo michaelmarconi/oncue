@@ -25,9 +25,6 @@ import java.util.concurrent.Callable;
 import oncue.backingstore.RedisBackingStore;
 import oncue.messages.internal.Job;
 import oncue.queueManager.internal.AbstractQueueManager;
-
-import org.joda.time.DateTime;
-
 import redis.clients.jedis.Jedis;
 import scala.concurrent.Future;
 
@@ -40,22 +37,7 @@ public class RedisQueueManager extends AbstractQueueManager {
 
 	@Override
 	protected Job createJob(String workerType, Map<String, String> jobParams) {
-
-		// Get a connection to Redis
-		Jedis redis = RedisBackingStore.getConnection();
-
-		// Get the latest job ID
-		Long jobId = redis.incr(RedisBackingStore.JOB_COUNT_KEY);
-
-		// Create a new job
-		Job job = new Job(jobId, DateTime.now(), workerType, jobParams);
-
-		// Now, persist the job
-		RedisBackingStore.persistJob(job, RedisBackingStore.NEW_JOBS_QUEUE, redis);
-
-		RedisBackingStore.releaseConnection(redis);
-
-		return job;
+		return RedisBackingStore.createJob(workerType, jobParams);
 	}
 
 	/**

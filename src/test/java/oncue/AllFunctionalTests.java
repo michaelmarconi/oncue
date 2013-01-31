@@ -16,7 +16,8 @@
 package oncue;
 
 
-import oncue.api.APITests;
+import oncue.api.AkkaAPITests;
+import oncue.api.RedisAPI;
 import oncue.functional.AgentPresenceTest;
 import oncue.functional.AgentRegistrationTest;
 import oncue.functional.AgentShutdownTest;
@@ -38,27 +39,29 @@ import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
 @RunWith(Suite.class)
-@SuiteClasses({ AgentPresenceTest.class, 
-				AgentRegistrationTest.class, 
-				AgentShutdownTest.class,
-				BroadcastWorkTest.class,
-				EnqueueJobTest.class,
-				JobProgressTest.class,
-				MissingWorkerTest.class,
-				WorkerTest.class, 
-				WorkRequestTest.class, 
-				
-				RedisBackingStoreTest.class,
-				RedisQueueManagerTest.class,
-				
-				WorkerDiesTest.class,
-				AgentDiesTest.class,
-				SchedulerDiesTest.class,
-				
-				JVMCapacityStrategyTest.class,
-				
-				APITests.class
-				 })
+@SuiteClasses({ 
+	AgentPresenceTest.class, 
+	AgentRegistrationTest.class, 
+	AgentShutdownTest.class,
+	BroadcastWorkTest.class,
+	EnqueueJobTest.class,
+	JobProgressTest.class,
+	MissingWorkerTest.class,
+	WorkerTest.class, 
+	WorkRequestTest.class, 
+	
+	RedisBackingStoreTest.class,
+	RedisQueueManagerTest.class,
+	
+	WorkerDiesTest.class,
+	AgentDiesTest.class,
+	SchedulerDiesTest.class,
+	
+	JVMCapacityStrategyTest.class,
+	
+	AkkaAPITests.class,
+	RedisAPI.class
+})
 public class AllFunctionalTests {
 
 }

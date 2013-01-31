@@ -34,7 +34,7 @@ import akka.testkit.JavaTestKit;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
-public class APITests {
+public class AkkaAPITests {
 
 	protected static Config config;
 	protected ActorSystem system;
@@ -48,7 +48,7 @@ public class APITests {
 
 	@Test(expected = APIException.class)
 	public void enqueueJobWithNoQueueManagerRunning() throws APIException {
-		API.getInstance(config).enqueueJob(TestWorker.class.getName());
+		AkkaAPI.getInstance(config).enqueueJob(TestWorker.class.getName());
 	}
 
 	@Test
@@ -63,7 +63,7 @@ public class APITests {
 				system.actorOf(new Props(InMemoryQueueManager.class), settings.QUEUE_MANAGER_NAME);
 
 				// Use the API to enqueue a new job
-				Job job = API.getInstance(config).enqueueJob(TestWorker.class.getName());
+				Job job = AkkaAPI.getInstance(config).enqueueJob(TestWorker.class.getName());
 
 				assertEquals(1, job.getId());
 				assertEquals(TestWorker.class.getName(), job.getWorkerType());
