@@ -83,8 +83,6 @@ public class RedisQueueManager extends AbstractQueueManager {
 		 */
 		redis.disconnect();
 		RedisBackingStore.releaseConnection(redis);
-		log.debug("Released blocking Redis connection");
-
 	}
 
 	@Override
