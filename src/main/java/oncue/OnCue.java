@@ -23,8 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import oncue.api.AkkaAPI;
 import oncue.api.APIException;
+import oncue.api.AkkaAPI;
 import oncue.messages.internal.Job;
 import oncue.settings.Settings;
 import oncue.settings.SettingsProvider;
@@ -116,28 +116,33 @@ public class OnCue {
 		}), settings.SCHEDULER_NAME);
 	}
 
-	private static void enqueueJob(String workerType, List<String> params) throws APIException {
+	private static void enqueueJob(String workerType, List<String> params) {
 
 		// Load the environment configuration
 		Config config = ConfigFactory.load(OnCue.MainOptions.environment);
 
-		Job job;
-		if (params != null) {
+		try {
+			Job job;
+			if (params != null) {
 
-			// Create the map of parameters
-			Map<String, String> paramMap = new HashMap<String, String>();
-			for (String param : params) {
-				String[] components = param.split("=");
-				paramMap.put(components[0], components[1]);
+				// Create the map of parameters
+				Map<String, String> paramMap = new HashMap<String, String>();
+				for (String param : params) {
+					String[] components = param.split("=");
+					paramMap.put(components[0], components[1]);
+				}
+				job = AkkaAPI.getInstance(config).enqueueJob(workerType, paramMap);
+			} else {
+				job = AkkaAPI.getInstance(config).enqueueJob(workerType);
 			}
 
-			job = AkkaAPI.getInstance(config).enqueueJob(workerType, paramMap);
-		} else {
-			job = AkkaAPI.getInstance(config).enqueueJob(workerType);
-		}
+			System.out.println("Enqueued " + job);
 
-		System.out.println("Enqueued " + job);
-		AkkaAPI.shutdown();
+		} catch (APIException e) {
+			System.err.println(e);
+			AkkaAPI.shutdown();
+			System.exit(-1);
+		}
 	}
 
 	public static void main(String[] args) throws APIException {

@@ -20,12 +20,12 @@ public class RedisAPITests {
 
 	@Before
 	public void setUp() throws Exception {
-		RedisBackingStore.getConnection().flushDB();
+		RedisBackingStore.getConnection().flushAll();
 	}
 
 	@After
 	public void tearDown() throws Exception {
-		RedisBackingStore.getConnection().flushDB();
+		RedisBackingStore.getConnection().flushAll();
 	}
 
 	@Test

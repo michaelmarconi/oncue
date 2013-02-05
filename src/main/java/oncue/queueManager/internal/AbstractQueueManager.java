@@ -21,6 +21,7 @@ import oncue.messages.internal.EnqueueJob;
 import oncue.messages.internal.Job;
 import oncue.settings.Settings;
 import oncue.settings.SettingsProvider;
+import akka.actor.ActorRef;
 import akka.actor.UntypedActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
@@ -32,6 +33,9 @@ public abstract class AbstractQueueManager extends UntypedActor {
 
 	protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 	protected Settings settings = SettingsProvider.SettingsProvider.get(getContext().system());
+
+	// A probe for testing
+	private ActorRef testProbe;
 
 	public AbstractQueueManager() {
 		log.info("{} is running", getClass().getSimpleName());
@@ -54,12 +58,26 @@ public abstract class AbstractQueueManager extends UntypedActor {
 		return log;
 	}
 
+	/**
+	 * Inject a probe into this actor for testing
+	 * 
+	 * @param testProbe
+	 *            is a JavaTestKit probe
+	 */
+	public void injectProbe(ActorRef testProbe) {
+		this.testProbe = testProbe;
+	}
+
 	public Settings getSettings() {
 		return settings;
 	}
 
 	@Override
 	public void onReceive(Object message) throws Exception {
+		
+		if (testProbe != null)
+			testProbe.forward(message, getContext());
+
 		if (message instanceof EnqueueJob) {
 			EnqueueJob enqueueJob = (EnqueueJob) message;
 			Job job = createJob(enqueueJob.getWorkerType(), enqueueJob.getJobParams());

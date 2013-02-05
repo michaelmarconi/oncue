@@ -25,6 +25,7 @@ import oncue.backingstore.internal.AbstractBackingStore;
 import oncue.messages.internal.Job;
 import oncue.messages.internal.JobFailed;
 import oncue.messages.internal.JobProgress;
+import oncue.queueManager.RedisQueueManager;
 import oncue.settings.Settings;
 
 import org.joda.time.DateTime;
@@ -69,7 +70,7 @@ public class RedisBackingStore extends AbstractBackingStore {
 	 * The queue of jobs that acts as an external interface; the scheduler
 	 * component will watch this queue for new jobs
 	 */
-	public static final String NEW_JOBS_QUEUE = "oncue:jobs:new";
+	public static final String NEW_JOBS = "oncue:jobs:new";
 
 	// A Redis connection pool
 	private static JedisPool redisPool;
@@ -103,7 +104,7 @@ public class RedisBackingStore extends AbstractBackingStore {
 		Job job = new Job(jobId, DateTime.now(), workerType, jobParams);
 
 		// Now, persist the job and release the connection
-		persistJob(job, RedisBackingStore.NEW_JOBS_QUEUE, redis);
+		persistJob(job, RedisBackingStore.NEW_JOBS, redis);
 		releaseConnection(redis);
 
 		return job;
@@ -220,8 +221,15 @@ public class RedisBackingStore extends AbstractBackingStore {
 		String jobKey = String.format(JOB_KEY, job.getId());
 		if (!redis.exists(jobKey))
 			persistJob(job, UNSCHEDULED_JOBS, redis);
-		else
-			redis.lpush(UNSCHEDULED_JOBS, new Long(job.getId()).toString());
+		else {
+			/*
+			 * A Redis-backed queue manager will have pushed the job onto the
+			 * "unscheduled" queue atomically already, so don't add it again!
+			 */
+			if (!settings.QUEUE_MANAGER_CLASS.equals(RedisQueueManager.class.getName())) {
+				redis.lpush(UNSCHEDULED_JOBS, new Long(job.getId()).toString());
+			}
+		}
 
 		RedisBackingStore.releaseConnection(redis);
 	}

@@ -72,6 +72,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 
 	protected Settings settings = SettingsProvider.SettingsProvider.get(getContext().system());
 
+	// A probe for testing
 	private ActorRef testProbe;
 
 	// The queue of unscheduled jobs

@@ -19,6 +19,7 @@ import oncue.settings.Settings;
 import oncue.settings.SettingsProvider;
 
 import org.junit.After;
+import org.junit.Before;
 
 import akka.actor.ActorSystem;
 import akka.event.Logging;
@@ -29,12 +30,13 @@ import com.typesafe.config.ConfigFactory;
 
 public abstract class AbstractActorSystemTest {
 
-	protected static Config config;
-	protected final ActorSystem system;
-	protected final Settings settings;
+	protected Config config;
+	protected ActorSystem system;
+	protected Settings settings;
 	protected LoggingAdapter log;
 
-	public AbstractActorSystemTest() {
+	@Before
+	public void startActorSystem() {
 		config = ConfigFactory.load("test");
 		system = ActorSystem.create("oncue-test", config);
 		settings = SettingsProvider.SettingsProvider.get(system);
@@ -42,13 +44,13 @@ public abstract class AbstractActorSystemTest {
 	}
 
 	@After
-	public void tearDown() throws Exception {
+	public void stopActorSystem() throws Exception {
 		system.shutdown();
-
 		while (!system.isTerminated()) {
 			log.debug("Waiting for system to shut down...");
-			Thread.sleep(1000);
+			Thread.sleep(500);
 		}
+		log.debug("System shut down");
 	}
 
 }

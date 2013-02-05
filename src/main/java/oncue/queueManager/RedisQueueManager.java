@@ -18,7 +18,6 @@ package oncue.queueManager;
 import static akka.dispatch.Futures.future;
 import static akka.pattern.Patterns.pipe;
 
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
@@ -35,22 +34,25 @@ import scala.concurrent.Future;
  */
 public class RedisQueueManager extends AbstractQueueManager {
 
+	private Jedis redis;
+
 	@Override
 	protected Job createJob(String workerType, Map<String, String> jobParams) {
 		return RedisBackingStore.createJob(workerType, jobParams);
 	}
 
 	/**
-	 * Monitor the new jobs queue using the Redis BRPOP command, which blocks
-	 * until a new item arrives on the queue.
+	 * Monitor the new jobs queue using the Redis the 'BRPOPLPUSH' command,
+	 * which blocks until a new item arrives on the queue. The new job is
+	 * atomically popped/pushed on the "unscheduled jobs" queue, to prevent a
+	 * job being lost if the service goes down.
 	 */
 	private void listenForNewJobs() {
 		Future<Job> jobListener = future(new Callable<Job>() {
 			public Job call() {
-				Jedis redis = RedisBackingStore.getConnection();
-				List<String> jobIDs = redis.brpop(0, RedisBackingStore.NEW_JOBS_QUEUE);
-				Job job = RedisBackingStore.loadJob(new Long(jobIDs.get(1)), redis);
-				return job;
+				redis = RedisBackingStore.getConnection();
+				String jobId = redis.brpoplpush(RedisBackingStore.NEW_JOBS, RedisBackingStore.UNSCHEDULED_JOBS, 0);
+				return RedisBackingStore.loadJob(new Long(jobId), redis);
 			}
 		}, getContext().dispatcher());
 		pipe(jobListener, getContext().dispatcher()).to(getSelf());
@@ -58,6 +60,7 @@ public class RedisQueueManager extends AbstractQueueManager {
 
 	@Override
 	public void onReceive(Object message) throws Exception {
+
 		if (message instanceof Job) {
 			log.debug("Found a new job: {}", message);
 
@@ -68,6 +71,20 @@ public class RedisQueueManager extends AbstractQueueManager {
 			listenForNewJobs();
 		}
 		super.onReceive(message);
+	}
+
+	@Override
+	public void postStop() {
+		super.postStop();
+
+		/*
+		 * Break the connection to redis, in order to stop the blocking job
+		 * listener!
+		 */
+		redis.disconnect();
+		RedisBackingStore.releaseConnection(redis);
+		log.debug("Released blocking Redis connection");
+
 	}
 
 	@Override

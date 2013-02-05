@@ -32,9 +32,9 @@ import akka.util.Timeout;
 import com.typesafe.config.Config;
 
 /**
- * An implementation of the {@linkplain API} that relies on Akka
- * remoting to connect to an onCue service directly. This class is typed actor
- * and acts as a bridge into Actor-space.
+ * An implementation of the {@linkplain API} that relies on Akka remoting to
+ * connect to an onCue service directly. This class is typed actor and acts as a
+ * bridge into Actor-space.
  */
 public class AkkaAPI implements API {
 
@@ -53,8 +53,7 @@ public class AkkaAPI implements API {
 	 * @param config
 	 *            is the {@linkplain Config}uration to use when making the
 	 *            instance
-	 * @return an API instance that implements the {@linkplain API}
-	 *         interface
+	 * @return an API instance that implements the {@linkplain API} interface
 	 */
 	public static API getInstance(Config config) {
 		if (instance == null) {
@@ -72,13 +71,15 @@ public class AkkaAPI implements API {
 	 * terminates.
 	 */
 	public static void shutdown() {
-		system.registerOnTermination(new Runnable() {
-			@Override
-			public void run() {
-				System.exit(0);
-			}
-		});
 		system.shutdown();
+		while (!system.isTerminated()) {
+			try {
+				Thread.sleep(100);
+				Thread.yield();
+			} catch (InterruptedException e) {
+				// Ignore this!
+			}
+		}
 	}
 
 	/*

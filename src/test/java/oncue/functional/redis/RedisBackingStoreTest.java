@@ -37,6 +37,7 @@ import oncue.workers.IncompetentTestWorker;
 import oncue.workers.TestWorker;
 
 import org.joda.time.DateTime;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -155,11 +156,13 @@ public class RedisBackingStoreTest extends AbstractActorSystemTest {
 				assertEquals("Wrong number of parameters", 2, loadedJob.getParams().size());
 				assertEquals(job.getParams().get("month"), loadedJob.getParams().get("month"));
 				assertEquals(job.getParams().get("size"), loadedJob.getParams().get("size"));
+				assertEquals("There should be no more jobs on the unscheduled queue", 0,
+						redis.llen(RedisBackingStore.UNSCHEDULED_JOBS).longValue());
 			}
 		};
 	}
 
-	@Before
+	@Before @After
 	public void cleanRedis() {
 		Jedis redis = RedisBackingStore.getConnection();
 		redis.flushDB();
