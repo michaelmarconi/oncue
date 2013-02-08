@@ -32,7 +32,7 @@ public class InMemoryQueueManager extends AbstractQueueManager {
 	private long currentJobID = 0;
 
 	@Override
-	protected Job createJob(String workerType, Map<String, String> jobParams) {
+	protected Job createJob(String workerType, Map<String, Object> jobParams) {
 
 		// Create a new job
 		Job job = new Job(getNextJobID(), DateTime.now(), workerType, jobParams);

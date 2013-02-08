@@ -126,7 +126,7 @@ public class OnCue {
 			if (params != null) {
 
 				// Create the map of parameters
-				Map<String, String> paramMap = new HashMap<String, String>();
+				Map<String, Object> paramMap = new HashMap<>();
 				for (String param : params) {
 					String[] components = param.split("=");
 					paramMap.put(components[0], components[1]);
