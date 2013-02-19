@@ -102,7 +102,6 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>2.13</version>
 				<configuration>
-					<skipTests>${skipTests}</skipTests>
 					<excludes>
 						<exclude>**/api/**</exclude>
 						<exclude>**/load/**</exclude>
