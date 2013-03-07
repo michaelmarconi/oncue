@@ -85,6 +85,7 @@ public class JVMCapacityStrategyTest extends AbstractActorSystemTest {
 							@Override
 							protected boolean ignore(Object message) {
 								return false;
+								// TODO Is this still needed?
 								// return !(message instanceof JobProgress ||
 								// message instanceof Job);
 							}

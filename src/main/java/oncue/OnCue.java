@@ -28,6 +28,8 @@ import oncue.api.AkkaAPI;
 import oncue.messages.internal.Job;
 import oncue.settings.Settings;
 import oncue.settings.SettingsProvider;
+import oncue.timetable.TimedJob;
+import oncue.timetable.TimedJobFactory;
 import akka.actor.Actor;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
@@ -114,6 +116,12 @@ public class OnCue {
 				return (Actor) schedulerClass.getConstructor(Class.class).newInstance(backingStoreClass);
 			}
 		}), settings.SCHEDULER_NAME);
+		
+		// Create timed jobs from the timetable
+		
+		for(final String workerType : settings.TIMETABLE.keySet()) {
+			TimedJobFactory.createTimedJob(system, settings);
+		}		
 	}
 
 	private static void enqueueJob(String workerType, List<String> params) {
