@@ -15,6 +15,7 @@
  ******************************************************************************/
 package oncue.settings;
 
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import scala.concurrent.duration.Duration;
@@ -23,6 +24,7 @@ import akka.actor.Extension;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
+import com.typesafe.config.ConfigObject;
 
 public class Settings implements Extension {
 
@@ -48,7 +50,9 @@ public class Settings implements Extension {
 	public final FiniteDuration API_TIMEOUT;
 
 	public Integer THROTTLED_AGENT_JOB_LIMIT;
+	public final Map<String, String> TIMETABLE;
 
+	@SuppressWarnings("unchecked")
 	public Settings(Config config) {
 		SCHEDULER_NAME = config.getString("oncue.scheduler.name");
 		SCHEDULER_PATH = config.getString("oncue.scheduler.path");
@@ -91,6 +95,7 @@ public class Settings implements Extension {
 		} catch (ConfigException.Missing e) {
 			THROTTLED_AGENT_JOB_LIMIT = null;
 		}
-
+		
+		TIMETABLE = (Map<String, String>) config.getAnyRef("oncue.timetable");
 	}
 }
