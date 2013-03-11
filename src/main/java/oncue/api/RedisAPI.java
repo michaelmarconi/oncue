@@ -31,7 +31,7 @@ public class RedisAPI implements API {
 	}
 
 	@Override
-	public Job enqueueJob(String workerType, Map<String, String> jobParams) throws APIException {
+	public Job enqueueJob(String workerType, Map<String, Object> jobParams) throws APIException {
 		return RedisBackingStore.createJob(workerType, jobParams);
 	}
 

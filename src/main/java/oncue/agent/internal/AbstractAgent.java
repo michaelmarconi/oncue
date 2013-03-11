@@ -91,7 +91,7 @@ public abstract class AbstractAgent extends UntypedActor {
 						.forName(workerType);
 			} catch (ClassNotFoundException e) {
 				throw new MissingWorkerException(String.format("Cannot find a class for the worker type '%s'",
-						workerType.trim()), e);
+						workerType), e);
 			} catch (ClassCastException e) {
 				throw new MissingWorkerException(String.format(
 						"The class for worker type '%s' doesn't extend the AbstractWorker base class",

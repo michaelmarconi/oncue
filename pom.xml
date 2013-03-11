@@ -85,7 +85,6 @@
 			<scope>compile</scope>
 		</dependency>
 	</dependencies>
-
 	<build>
 		<plugins>
 			<plugin>
@@ -113,27 +112,35 @@
 
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-assembly-plugin</artifactId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>2.0</version>
 				<executions>
 					<execution>
-						<id>package-jar-with-dependencies</id>
-						<phase>package</phase>
+						<id>shade</id>
 						<goals>
-							<goal>single</goal>
+							<goal>shade</goal>
 						</goals>
-						<configuration>
-							<appendAssemblyId>false</appendAssemblyId>
-							<descriptorRefs>
-								<descriptorRef>jar-with-dependencies</descriptorRef>
-							</descriptorRefs>
-							<archive>
-								<manifest>
-									<mainClass>oncue.OnCue</mainClass>
-								</manifest>
-							</archive>
-						</configuration>
 					</execution>
 				</executions>
+				<configuration>
+					<filters>
+						<filter>
+							<artifact>com.typesafe.akka:*</artifact>
+							<includes>
+								<include>**</include>
+							</includes>
+							<excludes>
+								<exclude>reference.conf</exclude>
+							</excludes>
+						</filter>
+					</filters>
+					<transformers>
+						<transformer
+							implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+							<mainClass>oncue.OnCue</mainClass>
+						</transformer>
+					</transformers>
+				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>

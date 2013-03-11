@@ -31,7 +31,7 @@ public class Job implements Serializable {
 	private final DateTime enqueuedAt;
 	private final String workerType;
 	private long id;
-	private Map<String, String> params;
+	private Map<String, Object> params;
 	private Double progress;
 
 	public Job(long id, DateTime enqueuedAt, String workerType) {
@@ -54,7 +54,7 @@ public class Job implements Serializable {
 	 * @param params
 	 *            is an unbounded list of String-based parameters
 	 */
-	public Job(long id, DateTime enqueuedAt, String workerType, Map<String, String> params) {
+	public Job(long id, DateTime enqueuedAt, String workerType, Map<String, Object> params) {
 		this.id = id;
 		this.enqueuedAt = enqueuedAt;
 		this.workerType = workerType;
@@ -69,7 +69,7 @@ public class Job implements Serializable {
 		return id;
 	}
 
-	public Map<String, String> getParams() {
+	public Map<String, Object> getParams() {
 		return params;
 	}
 

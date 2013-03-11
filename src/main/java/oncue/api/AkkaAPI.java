@@ -98,7 +98,7 @@ public class AkkaAPI implements API {
 	 * @see oncue.api.API#enqueueJob(java.lang.String, java.util.Map)
 	 */
 	@Override
-	public Job enqueueJob(String workerType, Map<String, String> jobParams) throws APIException {
+	public Job enqueueJob(String workerType, Map<String, Object> jobParams) throws APIException {
 		try {
 			EnqueueJob enqueueJobMessage = new EnqueueJob(workerType, jobParams);
 

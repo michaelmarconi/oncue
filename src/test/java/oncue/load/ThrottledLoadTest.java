@@ -28,6 +28,7 @@ import oncue.workers.SimpleLoadTestWorker;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import redis.clients.jedis.Jedis;
@@ -54,6 +55,7 @@ public class ThrottledLoadTest extends AbstractActorSystemTest {
 		RedisBackingStore.releaseConnection(redis);
 	}
 
+	@Ignore
 	@Test
 	@SuppressWarnings("serial")
 	public void throttledLoadTest() {

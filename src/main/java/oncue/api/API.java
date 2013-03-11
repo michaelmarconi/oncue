@@ -44,6 +44,6 @@ public interface API {
 	 * @return the {@linkplain Job} that was created
 	 * @throws APIException
 	 */
-	public Job enqueueJob(String workerType, Map<String, String> jobParams) throws APIException;
+	public Job enqueueJob(String workerType, Map<String, Object> jobParams) throws APIException;
 
 }

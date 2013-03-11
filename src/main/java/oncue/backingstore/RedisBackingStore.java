@@ -92,7 +92,7 @@ public class RedisBackingStore extends AbstractBackingStore {
 	 * 
 	 * @return a new {@linkplain Job}
 	 */
-	public static Job createJob(String workerType, Map<String, String> jobParams) {
+	public static Job createJob(String workerType, Map<String, Object> jobParams) {
 
 		// Get a connection to Redis
 		Jedis redis = getConnection();
@@ -144,7 +144,7 @@ public class RedisBackingStore extends AbstractBackingStore {
 			if (params == null)
 				job = new Job(new Long(id), enqueuedAt, workerType);
 			else
-				job = new Job(new Long(id), enqueuedAt, workerType, (Map<String, String>) JSONValue.parse(params));
+				job = new Job(new Long(id), enqueuedAt, workerType, (Map<String, Object>) JSONValue.parse(params));
 
 			if (progress != null)
 				job.setProgress(new Double(progress));
