@@ -20,7 +20,6 @@ import static junit.framework.Assert.assertFalse;
 
 import java.util.Arrays;
 
-import junit.framework.Assert;
 import oncue.agent.UnlimitedCapacityAgent;
 import oncue.base.AbstractActorSystemTest;
 import oncue.messages.internal.EnqueueJob;
@@ -58,10 +57,11 @@ public class WorkerTest extends AbstractActorSystemTest {
 					{
 						new IgnoreMsg() {
 							protected boolean ignore(Object message) {
-								if (message instanceof WorkResponse || message instanceof JobProgress)
+								if (message instanceof WorkResponse || message instanceof JobProgress) {
 									return false;
-								else
+								} else {
 									return true;
+								}
 							}
 						};
 					}
@@ -95,7 +95,7 @@ public class WorkerTest extends AbstractActorSystemTest {
 
 				// Wait until the agent receives an empty work response
 				WorkResponse workResponse = agentProbe.expectMsgClass(WorkResponse.class);
-				Assert.assertEquals(0, workResponse.getJobs().size());
+				assertEquals(0, workResponse.getJobs().size());
 
 				// Check that there are no workers
 				assertFalse("Expected no child workers", agent.getContext().getChildren().iterator().hasNext());
