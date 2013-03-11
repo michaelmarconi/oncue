@@ -37,7 +37,7 @@ public class RedisQueueManager extends AbstractQueueManager {
 	private Jedis redis;
 
 	@Override
-	protected Job createJob(String workerType, Map<String, String> jobParams) {
+	protected Job createJob(String workerType, Map<String, Object> jobParams) {
 		return RedisBackingStore.createJob(workerType, jobParams);
 	}
 

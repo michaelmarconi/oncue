@@ -30,9 +30,9 @@ public class EnqueueJob implements Serializable {
 	private static final long serialVersionUID = -1624154938276876491L;
 
 	private String workerType;
-	private Map<String, String> jobParams;
+	private Map<String, Object> jobParams;
 
-	public EnqueueJob(String workerType, Map<String, String> jobParams) {
+	public EnqueueJob(String workerType, Map<String, Object> jobParams) {
 		this.workerType = workerType;
 		this.jobParams = jobParams;
 	}
@@ -41,7 +41,7 @@ public class EnqueueJob implements Serializable {
 		this(workerType, null);
 	}
 
-	public Map<String, String> getJobParams() {
+	public Map<String, Object> getJobParams() {
 		return jobParams;
 	}
 

@@ -218,7 +218,7 @@ public class JVMCapacityStrategyTest extends AbstractActorSystemTest {
 
 	@SuppressWarnings("serial")
 	private void enqueueJob(ActorRef queueManager, ActorRef testKit, final int jobSize) {
-		queueManager.tell(new EnqueueJob(TestWorker.class.getName(), new HashMap<String, String>() {
+		queueManager.tell(new EnqueueJob(TestWorker.class.getName(), new HashMap<String, Object>() {
 			{
 				put(JVMCapacityScheduler.JOB_SIZE, new Integer(jobSize).toString());
 			}
