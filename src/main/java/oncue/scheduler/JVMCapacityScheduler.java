@@ -92,7 +92,7 @@ public class JVMCapacityScheduler extends AbstractScheduler<JVMCapacityWorkReque
 		List<Job> scheduledJobs = new ArrayList<>();
 
 		for (Job job : unscheduledJobs.getJobs()) {
-			long jobSize = new Long(job.getParams().get(JVMCapacityScheduler.JOB_SIZE));
+			long jobSize = (Long)job.getParams().get(JVMCapacityScheduler.JOB_SIZE);
 			sortWorkRequestsByFreeMemory();
 
 			for (JVMCapacityWorkRequest workRequest : workRequests) {

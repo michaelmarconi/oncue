@@ -82,7 +82,7 @@ public class RedisBackingStoreTest extends AbstractActorSystemTest {
 				}), settings.SCHEDULER_NAME);
 
 				// Construct job params
-				Map<String, String> params = new HashMap<>();
+				Map<String, Object> params = new HashMap<>();
 				params.put("month", "Jan");
 				params.put("size", "x-large");
 
@@ -136,7 +136,7 @@ public class RedisBackingStoreTest extends AbstractActorSystemTest {
 				}), settings.SCHEDULER_NAME);
 
 				// Construct job params
-				Map<String, String> params = new HashMap<>();
+				Map<String, Object> params = new HashMap<>();
 				params.put("month", "Jan");
 				params.put("size", "x-large");
 
@@ -389,7 +389,7 @@ public class RedisBackingStoreTest extends AbstractActorSystemTest {
 	public void saveAndLoadJob() {
 
 		// Construct job params
-		Map<String, String> params = new HashMap<>();
+		Map<String, Object> params = new HashMap<>();
 		params.put("month", "Jan");
 		params.put("size", "x-large");
 

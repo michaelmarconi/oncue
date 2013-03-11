@@ -52,7 +52,7 @@ public abstract class AbstractQueueManager extends UntypedActor {
 	 * 
 	 * @return a new {@linkplain Job}
 	 */
-	protected abstract Job createJob(String workerType, Map<String, String> jobParams);
+	protected abstract Job createJob(String workerType, Map<String, Object> jobParams);
 
 	public LoggingAdapter getLog() {
 		return log;

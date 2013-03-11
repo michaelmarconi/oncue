@@ -46,7 +46,7 @@ public class RedisAPITests {
 	public void enqueueJobWithParams() throws APIException {
 
 		// Create some params
-		Map<String, String> params = new HashMap<>();
+		Map<String, Object> params = new HashMap<>();
 		params.put("Colour", "Deep purple");
 
 		// Enqueue a new job
