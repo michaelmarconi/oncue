@@ -13,24 +13,30 @@ import akka.actor.UntypedActorFactory;
  */
 public class JobTimerFactory {
 
-	public static void createJobsFromJobMap(ActorSystem system, List<Map<String, String>> jobList) {
-		for (Map<String, String> jobMap : jobList) {
-			String name = jobMap.get("name");
-			String workerType = jobMap.get("type");
-			String endpointUri = jobMap.get("endpointUri");
-			createTimedJob(system, workerType, name, endpointUri);
+	public static void createJobsFromJobMap(ActorSystem system, List<Map<String, Object>> jobList) {
+		for (Map<String, Object> jobMap : jobList) {
+			String name = (String) jobMap.get("name");
+			String workerType = (String) jobMap.get("type");
+			String endpointUri = (String) jobMap.get("endpointUri");
+
+			Map<String, String> parameters = null;
+			if(jobMap.keySet().contains("parameters")) {
+				parameters = (Map<String, String>) jobMap.get("parameters");
+			}
+
+			createTimedJob(system, workerType, name, endpointUri, parameters);
 		}
 	}
 
 	public static void createTimedJob(ActorSystem system, final String workerType,
-			final String jobName, final String endpointUri) {
+			final String jobName, final String endpointUri, final Map<String, String> parameters) {
 		system.actorOf(new Props(new UntypedActorFactory() {
 
 			private static final long serialVersionUID = 1L;
 
 			@Override
 			public Actor create() throws Exception {
-				return new JobTimer(workerType, endpointUri);
+				return new JobTimer(workerType, endpointUri, parameters);
 			}
 		}), "job-timer-" + jobName);
 	}

@@ -74,6 +74,8 @@ public class JobTimerFactoryTest {
 						return !(timedJobAFound && timedJobBFound);
 					}
 				};
+
+				// TODO: Check that both jobs were created
 			}
 		};
 	}
