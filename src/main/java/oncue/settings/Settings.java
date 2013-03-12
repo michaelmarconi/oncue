@@ -51,7 +51,7 @@ public class Settings implements Extension {
 	public final FiniteDuration API_TIMEOUT;
 
 	public Integer THROTTLED_AGENT_JOB_LIMIT;
-	public final List<Map<String, String>> TIMETABLE;
+	public final List<Map<String, Object>> TIMETABLE;
 
 	public Settings(Config config) {
 		SCHEDULER_NAME = config.getString("oncue.scheduler.name");
@@ -98,7 +98,7 @@ public class Settings implements Extension {
 		
 		// Timed job schedules are optional
 		if(config.hasPath("oncue.timetable")) {
-			TIMETABLE = (ArrayList<Map<String, String>>) config.getAnyRef("oncue.timetable");
+			TIMETABLE = (ArrayList<Map<String, Object>>) config.getAnyRef("oncue.timetable");
 		} else {
 			TIMETABLE = null;
 		}

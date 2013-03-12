@@ -1,9 +1,12 @@
 package oncue.timetable;
 
+import java.util.Map;
+
 import oncue.messages.internal.EnqueueJob;
 import oncue.settings.Settings;
 import oncue.settings.SettingsProvider;
 import akka.actor.ActorRef;
+import akka.camel.CamelMessage;
 import akka.camel.javaapi.UntypedConsumerActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
@@ -23,22 +26,26 @@ public class JobTimer extends UntypedConsumerActor {
 	private String workerType;
 
 	private String schedule;
+	private Map<String, String> params;
 
-	public JobTimer(String workerType, String schedule) {
+	public JobTimer(String workerType, String schedule, Map<String, String> params) {
 		this.workerType = workerType;
 		this.schedule = schedule;
+		this.params = params;
 	}
 
 	@Override
 	public void onReceive(Object message) throws Exception {
-		log.debug(message.toString());
+		if (message instanceof CamelMessage) {
+			// Find the queue manager
+			// TODO: This should access through the AkkaAPI, but we don't have a Config here
+			ActorRef queueManager = this.getContext().actorFor(settings.QUEUE_MANAGER_PATH);
 
-		// Find the queue manager
-		ActorRef queueManager = this.getContext().actorFor(settings.QUEUE_MANAGER_PATH);
-
-		// TODO: Jobs with parameters
-		EnqueueJob msg = new EnqueueJob(workerType);
-		queueManager.tell(msg, getSelf());
+			EnqueueJob job = new EnqueueJob(workerType, params);
+			queueManager.tell(job, getSelf());
+		} else {
+			unhandled(message);
+		}
 	}
 
 	@Override
