@@ -28,7 +28,7 @@ import oncue.api.AkkaAPI;
 import oncue.messages.internal.Job;
 import oncue.settings.Settings;
 import oncue.settings.SettingsProvider;
-import oncue.timetable.JobTimerFactory;
+import oncue.timetable.TimedJobFactory;
 import akka.actor.Actor;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
@@ -118,7 +118,7 @@ public class OnCue {
 
 		if(settings.TIMETABLE != null) {
 			// Create timed jobs from the timetable
-			JobTimerFactory.createJobsFromJobMap(system, settings.TIMETABLE);
+			TimedJobFactory.createJobsFromJobMap(system, settings.TIMETABLE);
 		}
 	}
 

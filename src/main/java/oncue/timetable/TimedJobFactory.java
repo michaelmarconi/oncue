@@ -11,7 +11,7 @@ import akka.actor.UntypedActorFactory;
 /**
  * Created TimedJobs for all jobs specified in the job map.
  */
-public class JobTimerFactory {
+public class TimedJobFactory {
 
 	public static void createJobsFromJobMap(ActorSystem system, List<Map<String, Object>> jobList) {
 		for (Map<String, Object> jobMap : jobList) {
@@ -36,7 +36,7 @@ public class JobTimerFactory {
 
 			@Override
 			public Actor create() throws Exception {
-				return new JobTimer(workerType, endpointUri, parameters);
+				return new TimedJob(workerType, endpointUri, parameters);
 			}
 		}), "job-timer-" + jobName);
 	}
