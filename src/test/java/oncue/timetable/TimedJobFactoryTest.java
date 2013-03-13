@@ -29,7 +29,7 @@ import akka.testkit.JavaTestKit;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
-public class JobTimerFactoryTest {
+public class TimedJobFactoryTest {
 
 	private Config config;
 
@@ -61,7 +61,7 @@ public class JobTimerFactoryTest {
 	public void createTimedJob() {
 		new JavaTestKit(system) {
 			{
-				JobTimerFactory.createJobsFromJobMap(system, settings.TIMETABLE);
+				TimedJobFactory.createJobsFromJobMap(system, settings.TIMETABLE);
 
 				new AwaitCond(duration("5 seconds"), duration("1 second")) {
 					@Override
