@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import akka.actor.Actor;
+import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.actor.UntypedActorFactory;
@@ -13,7 +14,8 @@ import akka.actor.UntypedActorFactory;
  */
 public class TimedJobFactory {
 
-	public static void createJobsFromJobMap(ActorSystem system, List<Map<String, Object>> jobList) {
+	public static void createJobsFromJobMap(ActorSystem system, List<Map<String, Object>> jobList,
+			ActorRef testingProbe) {
 		for (Map<String, Object> jobMap : jobList) {
 			String name = (String) jobMap.get("name");
 			String workerType = (String) jobMap.get("type");
@@ -28,16 +30,27 @@ public class TimedJobFactory {
 		}
 	}
 
+	public static void createJobsFromJobMap(ActorSystem system, List<Map<String, Object>> jobList) {
+		createJobsFromJobMap(system, jobList, null);
+	}
+
 	public static void createTimedJob(ActorSystem system, final String workerType,
-			final String jobName, final String endpointUri, final Map<String, String> parameters) {
+			final String jobName, final String endpointUri, final Map<String, String> parameters,
+			final ActorRef testProbe) {
 		system.actorOf(new Props(new UntypedActorFactory() {
 
 			private static final long serialVersionUID = 1L;
 
 			@Override
 			public Actor create() throws Exception {
-				return new TimedJob(workerType, endpointUri, parameters);
+				return new TimedJob(workerType, endpointUri, parameters, testProbe);
+
 			}
 		}), "job-timer-" + jobName);
+	}
+
+	public static void createTimedJob(ActorSystem system, final String workerType,
+			final String jobName, final String endpointUri, final Map<String, String> parameters) {
+		createTimedJob(system, workerType, jobName, endpointUri, parameters, null);
 	}
 }

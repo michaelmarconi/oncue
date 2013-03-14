@@ -6,10 +6,11 @@ import static java.lang.String.format;
 import java.util.Map;
 
 import oncue.messages.internal.EnqueueJob;
+import oncue.messages.internal.RetryTimedJobMessage;
 import oncue.settings.Settings;
 import oncue.settings.SettingsProvider;
 import scala.concurrent.Await;
-import scala.concurrent.duration.FiniteDuration;
+import akka.actor.ActorRef;
 import akka.camel.CamelMessage;
 import akka.camel.javaapi.UntypedConsumerActor;
 import akka.event.Logging;
@@ -37,55 +38,85 @@ public class TimedJob extends UntypedConsumerActor {
 
 	private Map<String, String> params;
 
-	public TimedJob(String workerType, String schedule, Map<String, String> params) {
+	// An optional probe for testing
+	protected ActorRef testProbe;
+
+	public TimedJob(String workerType, String schedule, Map<String, String> params,
+			ActorRef testProbe) {
 		this.workerType = workerType;
 		this.schedule = schedule;
 		this.params = params;
+		this.testProbe = testProbe;
+		log.info("ALIIIVE");
+	}
+
+	public TimedJob() {
+		log.info("Default CONSTRUCTOR :((");
+	}
+
+	public TimedJob(String workerType, String schedule, Map<String, String> params) {
+		this(workerType, schedule, params, null);
 	}
 
 	@Override
-	public void onReceive(Object message) {
+	public void onReceive(final Object message) {
+		if (testProbe != null) {
+			testProbe.tell(message, getSelf());
+		}
+
 		if (message instanceof CamelMessage) {
-			this.log.debug("Received Camel message for timed job submission for worker type {}", this.workerType);
+			log.debug("Received Camel message for timed job submission for worker type {}",
+					workerType);
 
-			boolean success = attemptToEnqueuedJob();
-			while (!success) {
-				// Attempt to reschedule the job after the API timeout has elapsed
-				success = attemptToEnqueuedJob();
-			}
-
-			this.log.debug("WOO");
+			tryEnqueueJob(workerType, params);
+		} else if (message instanceof RetryTimedJobMessage) {
+			log.info("Retrying timed job submission for worker type {}", workerType);
+			RetryTimedJobMessage retryMessage = (RetryTimedJobMessage) message;
+			tryEnqueueJob(retryMessage.getWorkerType(), retryMessage.getJobParameters());
 		} else {
 			unhandled(message);
 		}
 	}
 
-	/**
-	 * Attempt to enqueue a job with the job parameters and worker type in the Queue Manager.
+	/*
+	 * Attempt to enqueue a job with the queue manager. If any exceptions are caught they will be
+	 * logged, then the job will be rescheduled to run in the future.
 	 * 
-	 * @return true on success false on failure
+	 * @param workerType The qualified class name of the worker to instantiate
+	 * @param jobParameters The user-defined parameters map to pass to the job
 	 */
-	private boolean attemptToEnqueuedJob() {
+	private void tryEnqueueJob(String workerType, Map<String, String> jobParameters) {
 		try {
-			EnqueueJob enqueueJobMessage = new EnqueueJob(this.workerType, this.params);
-
-			Await.result(
-					ask(getContext().actorFor(this.settings.QUEUE_MANAGER_PATH),
-							enqueueJobMessage, new Timeout(this.settings.API_TIMEOUT)),
-					this.settings.API_TIMEOUT);
-
-			return true;
+			log.debug("local workertype is {}", this.workerType);
+			enqueueJob(workerType, jobParameters);
 		} catch (Exception e) {
-			this.log.error(e, 
-					format("Failed to enqueue timed job for worker type %s in queue manager",
-							this.workerType));
-			return false;
+			log.info("Failed to enqueue timed job for worker type {}", workerType);
+			RetryTimedJobMessage retryMessage = new RetryTimedJobMessage(workerType, jobParameters);
+			getContext()
+					.system()
+					.scheduler()
+					.scheduleOnce(settings.API_TIMEOUT, getSelf(), retryMessage,
+							getContext().dispatcher());
 		}
+	}
+
+	/**
+	 * Submit the job to the specified queue manager.
+	 * 
+	 * @param workerType The qualified class name of the worker to instantiate
+	 * @param jobParameters The user-defined parameters map to pass to the job
+	 * @throws Exception If the queue manager does not exist or the job is not accepted within the
+	 * timeout
+	 */
+	private void enqueueJob(String workerType, Map<String, String> jobParameters) throws Exception {
+		Await.result(
+				ask(getContext().actorFor(settings.QUEUE_MANAGER_PATH), new EnqueueJob(workerType,
+						jobParameters), new Timeout(settings.API_TIMEOUT)), settings.API_TIMEOUT);
 	}
 
 	@Override
 	public String getEndpointUri() {
-		return this.schedule;
+		return schedule;
 	}
 
 }
