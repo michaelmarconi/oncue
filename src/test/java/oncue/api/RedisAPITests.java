@@ -12,6 +12,7 @@ import oncue.workers.TestWorker;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import redis.clients.jedis.Jedis;
@@ -42,6 +43,7 @@ public class RedisAPITests {
 		Assert.assertNull(persistedJob.getParams());
 	}
 
+	@Ignore
 	@Test
 	public void enqueueJobWithParams() throws APIException {
 
