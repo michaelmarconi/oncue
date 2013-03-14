@@ -29,7 +29,7 @@ public class TimedJobTest extends AbstractActorSystemTest {
 
 	@SuppressWarnings("serial")
 	@Test
-	public void jobTimerSendsJobMessage() {
+	public void timedJobSendsJobMessage() {
 		new JavaTestKit(system) {
 
 			{
@@ -96,7 +96,7 @@ public class TimedJobTest extends AbstractActorSystemTest {
 
 	@SuppressWarnings("serial")
 	@Test
-	public void jobTimerSendsJobMessageWithParameters() {
+	public void timedJobSendsJobMessageWithParameters() {
 		new JavaTestKit(system) {
 
 			{
@@ -163,7 +163,7 @@ public class TimedJobTest extends AbstractActorSystemTest {
 
 	@SuppressWarnings("serial")
 	@Test
-	public void jobTimerRetriesWhenQueueManagerIsNotFound() {
+	public void timedJobRetriesWhenQueueManagerIsNotFound() {
 		new JavaTestKit(system) {
 
 			{
@@ -231,7 +231,7 @@ public class TimedJobTest extends AbstractActorSystemTest {
 
 	@SuppressWarnings("serial")
 	@Test
-	public void jobTimerRetriesSpecifiedNumberOfTimes() {
+	public void timedJobRetriesSpecifiedNumberOfTimes() {
 		new JavaTestKit(system) {
 
 			{
