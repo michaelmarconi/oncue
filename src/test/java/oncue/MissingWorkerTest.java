@@ -13,22 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package oncue.functional;
+package oncue;
 
 import static junit.framework.Assert.assertEquals;
 
 import java.util.Arrays;
+import java.util.List;
 
 import oncue.agent.UnlimitedCapacityAgent;
+import oncue.agent.internal.MissingWorkerException;
 import oncue.base.AbstractActorSystemTest;
 import oncue.messages.internal.AbstractWorkRequest;
 import oncue.messages.internal.EnqueueJob;
 import oncue.messages.internal.Job;
-import oncue.messages.internal.SimpleMessages.SimpleMessage;
-import oncue.messages.internal.WorkResponse;
+import oncue.messages.internal.JobFailed;
 import oncue.queueManager.InMemoryQueueManager;
 import oncue.scheduler.SimpleQueuePopScheduler;
 import oncue.workers.TestWorker;
+import oncue.workers.internal.AbstractWorker;
 
 import org.junit.Test;
 
@@ -36,52 +38,60 @@ import sun.management.Agent;
 import akka.actor.Actor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
-import akka.actor.Scheduler;
 import akka.actor.UntypedActorFactory;
 import akka.testkit.JavaTestKit;
 
 /**
- * When the {@linkplain Scheduler} has unscheduled jobs, it broadcasts a
- * "Work available" message repeatedly, until all the unscheduled jobs have been
- * taken by an {@linkplain Agent}.
+ * <p>
+ * There are two scenarios here:
+ * </p>
+ * 
+ * <h3>Agent is missing a worker class at boot time</h3>
+ * 
+ * <p>
+ * When an {@linkplain Agent} is instantiated, it must be passed a list of
+ * worker classes that must extend the {@linkplain AbstractWorker} class. This
+ * test ensures that the agent system will shut down if this is not the case.
+ * </p>
+ * 
+ * <h3>Scheduler dispatched job to wrong agent</h3>
+ * 
+ * <p>
+ * When an {@linkplain Agent} makes a request for work, it tells the scheduler
+ * what worker types it is capable of spawning. If the scheduler ignores this
+ * and requests that the agent complete a job it has no worker for, the job
+ * should fail.
+ * </p>
  */
-public class BroadcastWorkTest extends AbstractActorSystemTest {
+public class MissingWorkerTest extends AbstractActorSystemTest {
 
 	@Test
 	@SuppressWarnings("serial")
-	public void oneJobToScheduleButNoAgents() {
+	public void startAgentWithMissingWorkerType() {
 		new JavaTestKit(system) {
 			{
-				// Create a queue manager
-				ActorRef queueManager = system.actorOf(new Props(InMemoryQueueManager.class),
-						settings.QUEUE_MANAGER_NAME);
-
-				// Create a scheduler
-				final JavaTestKit schedulerProbe = new JavaTestKit(system);
+				// Create an agent
 				system.actorOf(new Props(new UntypedActorFactory() {
 					@Override
 					public Actor create() throws Exception {
-						SimpleQueuePopScheduler scheduler = new SimpleQueuePopScheduler(null);
-						scheduler.injectProbe(schedulerProbe.getRef());
-						return scheduler;
+						return new UnlimitedCapacityAgent(Arrays.asList("oncue.workers.MissingWorker"));
 					}
-				}), "scheduler");
+				}), settings.AGENT_NAME);
 
-				// Enqueue a job
-				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
-
-				// Expect the Scheduler to see the new Job
-				schedulerProbe.expectMsgClass(Job.class);
-
-				// Expect no broadcast, as there are no agents
-				schedulerProbe.expectNoMsg();
+				// Wait for the system to shut down
+				new AwaitCond(duration("5 seconds"), duration("1 second")) {
+					@Override
+					protected boolean cond() {
+						return system.isTerminated();
+					}
+				};
 			}
 		};
 	}
 
 	@Test
 	@SuppressWarnings("serial")
-	public void oneJobToScheduleAndOneAgent() {
+	public void scheduleJobToUnqualifiedAgent() {
 		new JavaTestKit(system) {
 			{
 				// Create a scheduler probe
@@ -89,21 +99,7 @@ public class BroadcastWorkTest extends AbstractActorSystemTest {
 					{
 						new IgnoreMsg() {
 							protected boolean ignore(Object message) {
-								if (message instanceof AbstractWorkRequest || message instanceof Job)
-									return false;
-								else
-									return true;
-							}
-						};
-					}
-				};
-
-				// Create an agent probe
-				final JavaTestKit agentProbe = new JavaTestKit(system) {
-					{
-						new IgnoreMsg() {
-							protected boolean ignore(Object message) {
-								if (message instanceof WorkResponse || message.equals(SimpleMessage.WORK_AVAILABLE))
+								if (message instanceof AbstractWorkRequest || message instanceof JobFailed)
 									return false;
 								else
 									return true;
@@ -116,7 +112,7 @@ public class BroadcastWorkTest extends AbstractActorSystemTest {
 				ActorRef queueManager = system.actorOf(new Props(InMemoryQueueManager.class),
 						settings.QUEUE_MANAGER_NAME);
 
-				// Create a simple scheduler
+				// Create a simple scheduler with a probe
 				system.actorOf(new Props(new UntypedActorFactory() {
 					@Override
 					public Actor create() throws Exception {
@@ -132,22 +128,27 @@ public class BroadcastWorkTest extends AbstractActorSystemTest {
 					public Actor create() throws Exception {
 						UnlimitedCapacityAgent agent = new UnlimitedCapacityAgent(Arrays.asList(TestWorker.class
 								.getName()));
-						agent.injectProbe(agentProbe.getRef());
 						return agent;
 					}
 				}), "agent");
 
-				// Wait until the agent receives an empty work response
-				WorkResponse workResponse = agentProbe.expectMsgClass(WorkResponse.class);
-				assertEquals(0, workResponse.getJobs().size());
+				// Expect agent to report available worker types
+				AbstractWorkRequest workRequest = schedulerProbe.expectMsgClass(AbstractWorkRequest.class);
+				assertEquals(1, workRequest.getWorkerTypes().size());
+				assertEquals(TestWorker.class.getName(), ((List<String>) workRequest.getWorkerTypes()).get(0));
 
 				// Enqueue a job
-				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
+				queueManager.tell(new EnqueueJob("oncue.workers.MissingWorker"), getRef());
+				expectMsgClass(Job.class);
 
-				// Expect the broadcast about the job
-				agentProbe.expectMsgEquals(SimpleMessage.WORK_AVAILABLE);
+				// Expect a work request
+				schedulerProbe.expectMsgClass(AbstractWorkRequest.class);
+
+				// Expect the job to fail
+				JobFailed jobFailed = schedulerProbe.expectMsgClass(JobFailed.class);
+				assertEquals(MissingWorkerException.class, jobFailed.getError().getClass());
+				assertEquals(ClassNotFoundException.class, jobFailed.getError().getCause().getClass());
 			}
 		};
 	}
-
 }

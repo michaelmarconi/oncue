@@ -13,45 +13,63 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package oncue.functional;
+package oncue.robustness;
 
 import java.util.Arrays;
 
 import junit.framework.Assert;
 import oncue.agent.UnlimitedCapacityAgent;
+import oncue.backingstore.RedisBackingStore;
 import oncue.base.AbstractActorSystemTest;
 import oncue.messages.internal.EnqueueJob;
+import oncue.messages.internal.Job;
 import oncue.messages.internal.JobProgress;
+import oncue.messages.internal.SimpleMessages.SimpleMessage;
 import oncue.queueManager.InMemoryQueueManager;
 import oncue.scheduler.SimpleQueuePopScheduler;
 import oncue.workers.TestWorker;
 
+import org.junit.Before;
 import org.junit.Test;
 
+import redis.clients.jedis.Jedis;
 import akka.actor.Actor;
 import akka.actor.ActorRef;
+import akka.actor.PoisonPill;
 import akka.actor.Props;
 import akka.actor.UntypedActorFactory;
 import akka.testkit.JavaTestKit;
 
 /**
- * When a job has been scheduled, the worker may elect to send back regular
- * reports about job completion progress.
+ * It is possible to resurrect a scheduler that was running with a persistent
+ * backing store. This test ensures that we can bring a scheduler back from the
+ * dead so that no jobs are lost.
  */
-public class JobProgressTest extends AbstractActorSystemTest {
+public class SchedulerDiesTest extends AbstractActorSystemTest {
+
+	@Before
+	public void cleanRedis() {
+		Jedis redis = RedisBackingStore.getConnection();
+		redis.flushDB();
+		RedisBackingStore.releaseConnection(redis);
+	}
 
 	@Test
 	@SuppressWarnings("serial")
-	public void monitorProgress() {
+	public void testAgentDiesAndAnotherReplacesIt() {
 		new JavaTestKit(system) {
 			{
 				// Create a scheduler probe
 				final JavaTestKit schedulerProbe = new JavaTestKit(system) {
 					{
 						new IgnoreMsg() {
+
 							@Override
 							protected boolean ignore(Object message) {
-								return !(message instanceof JobProgress);
+								if (message.equals(SimpleMessage.AGENT_DEAD) || message instanceof JobProgress)
+									return false;
+								else
+									return true;
 							}
 						};
 					}
@@ -61,9 +79,13 @@ public class JobProgressTest extends AbstractActorSystemTest {
 				final JavaTestKit agentProbe = new JavaTestKit(system) {
 					{
 						new IgnoreMsg() {
+
 							@Override
 							protected boolean ignore(Object message) {
-								return !(message instanceof JobProgress);
+								if (message instanceof JobProgress)
+									return false;
+								else
+									return true;
 							}
 						};
 					}
@@ -73,21 +95,19 @@ public class JobProgressTest extends AbstractActorSystemTest {
 				ActorRef queueManager = system.actorOf(new Props(InMemoryQueueManager.class),
 						settings.QUEUE_MANAGER_NAME);
 
-				// Create a scheduler with a probe
-				system.actorOf(new Props(new UntypedActorFactory() {
+				// Create a Redis-backed scheduler
+				final ActorRef scheduler = system.actorOf(new Props(new UntypedActorFactory() {
 					@Override
 					public Actor create() throws Exception {
-						SimpleQueuePopScheduler scheduler = new SimpleQueuePopScheduler(null);
+						SimpleQueuePopScheduler scheduler = new SimpleQueuePopScheduler(RedisBackingStore.class);
 						scheduler.injectProbe(schedulerProbe.getRef());
 						return scheduler;
 					}
 				}), settings.SCHEDULER_NAME);
 
-				// Enqueue a job
-				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
-
-				// Start an agent with a probe
+				// Create an agent with a probe
 				system.actorOf(new Props(new UntypedActorFactory() {
+
 					@Override
 					public Actor create() throws Exception {
 						UnlimitedCapacityAgent agent = new UnlimitedCapacityAgent(Arrays.asList(TestWorker.class
@@ -97,18 +117,43 @@ public class JobProgressTest extends AbstractActorSystemTest {
 					}
 				}), settings.AGENT_NAME);
 
-				// Expect a series of progress reports
-				double expectedProgress = 0;
+				// Enqueue a job
+				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
+				Job job = expectMsgClass(Job.class);
+
+				// Wait for some progress
+				schedulerProbe.expectMsgClass(JobProgress.class);
+
+				// Tell the scheduler to commit seppuku
+				scheduler.tell(PoisonPill.getInstance(), getRef());
+
+				// Wait until the scheduler dies
+				new AwaitCond(duration("5 seconds"), duration("1 second")) {
+
+					@Override
+					protected boolean cond() {
+						return scheduler.isTerminated();
+					}
+				};
+
+				// Wait until the job is finished at the agent
 				for (int i = 0; i < 5; i++) {
-					JobProgress agentProgress = agentProbe.expectMsgClass(JobProgress.class);
-					JobProgress schedulerProgress = schedulerProbe.expectMsgClass(JobProgress.class);
-					Assert.assertEquals(expectedProgress, agentProgress.getProgress());
-					Assert.assertEquals(expectedProgress, schedulerProgress.getProgress());
-					expectedProgress += 0.25;
+					agentProbe.expectMsgClass(JobProgress.class);
 				}
 
-				// Expect no more progress
-				schedulerProbe.expectNoMsg();
+				// Resurrect the scheduler
+				system.actorOf(new Props(new UntypedActorFactory() {
+					@Override
+					public Actor create() throws Exception {
+						SimpleQueuePopScheduler scheduler = new SimpleQueuePopScheduler(RedisBackingStore.class);
+						scheduler.injectProbe(schedulerProbe.getRef());
+						return scheduler;
+					}
+				}), settings.SCHEDULER_NAME);
+
+				// Wait for some progress
+				JobProgress jobProgress = schedulerProbe.expectMsgClass(duration("10 seconds"), JobProgress.class);
+				Assert.assertEquals(job.getId(), jobProgress.getJob().getId());
 			}
 		};
 	}
