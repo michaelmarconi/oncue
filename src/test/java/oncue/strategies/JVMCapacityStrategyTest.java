@@ -1,6 +1,7 @@
 /*******************************************************************************
  * Copyright 2013 Michael Marconi
  * 
+<<<<<<< HEAD
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
  * 
@@ -10,6 +11,19 @@
  * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
+=======
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+>>>>>>> Move all load tests to src/test/load/{java,resources} and add @Ignore tags to
  ******************************************************************************/
 package oncue.strategies;
 
@@ -36,14 +50,20 @@ import akka.testkit.JavaTestKit;
 import akka.testkit.TestActorRef;
 
 /**
+<<<<<<< HEAD
  * Test the JVM memory capacity strategy by farming jobs of known size out to agents with known
  * capacities.
+=======
+ * Test the JVM memory capacity strategy by farming jobs of known size out to
+ * agents with known capacities.
+>>>>>>> Move all load tests to src/test/load/{java,resources} and add @Ignore tags to
  */
 public class JVMCapacityStrategyTest extends AbstractActorSystemTest {
 
 	/*-
 	 *            Jobs: J1(100), J2(200), J3(50), J4(200), J5(500) 
 	 *  Agent capacity: A1(500), A2(70), A3(200)
+<<<<<<< HEAD
 	 *
 	 *  J1(100): | A2(70) | A3(200) | A1(500) |
 	 *           | x      | J1      | -       |
@@ -64,13 +84,38 @@ public class JVMCapacityStrategyTest extends AbstractActorSystemTest {
 	 *                     A2(J3)
 	 *                     A3(J1)
 	 *                     Job 5 unscheduled!
+=======
+	 *  
+	 *  J1(100): | A2(70) | A3(200) | A1(500) |
+	 *           | x      | J1      | -       |
+	 *           
+	 *  J2(200): | A2(70) | A3(100) | A1(500) |
+	 *           | x      | x       | J2      |
+	 *           
+	 *  J3(50):  | A2(70) | A3(100) | A1(300) |
+	 *           | J3     | -       | -       |
+	 *           
+	 *  J4(200): | A2(20) | A3(100) | A1(300) |
+	 *           | x      | x       | J4      |
+	 *           
+	 *  J5(500): | A2(20) | A3(100) | A1(100) |
+	 *           | x      | x       | x       |
+	 *           
+	 *  Final allocation:  A1(J2,J4)
+	 *                     A2(J3)
+	 *                     A3(J1)
+	 *                     Job 5 unscheduled!                                                      
+>>>>>>> Move all load tests to src/test/load/{java,resources} and add @Ignore tags to
 	 */
 
 	@Test
 	@SuppressWarnings("serial")
 	public void jvmCapacityStrategyTest() {
 		new JavaTestKit(system) {
+<<<<<<< HEAD
 
+=======
+>>>>>>> Move all load tests to src/test/load/{java,resources} and add @Ignore tags to
 			{
 				// Create an in-memory queue manager
 				ActorRef queueManager = system.actorOf(new Props(InMemoryQueueManager.class),
@@ -78,7 +123,10 @@ public class JVMCapacityStrategyTest extends AbstractActorSystemTest {
 
 				// Create a scheduler probe
 				final JavaTestKit schedulerProbe = new JavaTestKit(system) {
+<<<<<<< HEAD
 
+=======
+>>>>>>> Move all load tests to src/test/load/{java,resources} and add @Ignore tags to
 					{
 						new IgnoreMsg() {
 
@@ -95,7 +143,10 @@ public class JVMCapacityStrategyTest extends AbstractActorSystemTest {
 
 				// Create a naked JVM capacity-aware scheduler
 				final Props schedulerProps = new Props(new UntypedActorFactory() {
+<<<<<<< HEAD
 
+=======
+>>>>>>> Move all load tests to src/test/load/{java,resources} and add @Ignore tags to
 					@Override
 					public Actor create() throws Exception {
 						JVMCapacityScheduler scheduler = new JVMCapacityScheduler(null);
@@ -103,8 +154,13 @@ public class JVMCapacityStrategyTest extends AbstractActorSystemTest {
 						return scheduler;
 					}
 				});
+<<<<<<< HEAD
 				final TestActorRef<JVMCapacityScheduler> schedulerRef = TestActorRef.create(system,
 						schedulerProps, settings.SCHEDULER_NAME);
+=======
+				final TestActorRef<JVMCapacityScheduler> schedulerRef = TestActorRef.create(system, schedulerProps,
+						settings.SCHEDULER_NAME);
+>>>>>>> Move all load tests to src/test/load/{java,resources} and add @Ignore tags to
 				final JVMCapacityScheduler scheduler = schedulerRef.underlyingActor();
 
 				// Create agent probes
@@ -113,7 +169,12 @@ public class JVMCapacityStrategyTest extends AbstractActorSystemTest {
 				final JavaTestKit agentProbe3 = createAgentProbe();
 
 				/*
+<<<<<<< HEAD
 				 * Create three capacity-aware agents with pre-determined capacity
+=======
+				 * Create three capacity-aware agents with pre-determined
+				 * capacity
+>>>>>>> Move all load tests to src/test/load/{java,resources} and add @Ignore tags to
 				 */
 				createAgent(agentProbe1, "agent1", 500);
 				createAgent(agentProbe2, "agent2", 70);
@@ -125,8 +186,13 @@ public class JVMCapacityStrategyTest extends AbstractActorSystemTest {
 				agentProbe3.expectMsgClass(WorkResponse.class);
 
 				/*
+<<<<<<< HEAD
 				 * Pause the scheduler, as we want the scheduler to see all enqueued jobs in a
 				 * single batch for testing purposes
+=======
+				 * Pause the scheduler, as we want the scheduler to see all
+				 * enqueued jobs in a single batch for testing purposes
+>>>>>>> Move all load tests to src/test/load/{java,resources} and add @Ignore tags to
 				 */
 				scheduler.pause();
 
@@ -156,24 +222,39 @@ public class JVMCapacityStrategyTest extends AbstractActorSystemTest {
 				Assert.assertEquals(2, agent1WorkResponse.getJobs().size());
 
 				Job agent1Job2 = agent1WorkResponse.getJobs().get(0);
+<<<<<<< HEAD
 				Assert.assertEquals(job2.getParams().get(JVMCapacityScheduler.JOB_SIZE), agent1Job2
 						.getParams().get(JVMCapacityScheduler.JOB_SIZE));
 
 				Job agent1Job4 = agent1WorkResponse.getJobs().get(0);
 				Assert.assertEquals(job4.getParams().get(JVMCapacityScheduler.JOB_SIZE), agent1Job4
 						.getParams().get(JVMCapacityScheduler.JOB_SIZE));
+=======
+				Assert.assertEquals(job2.getParams().get(JVMCapacityScheduler.JOB_SIZE),
+						agent1Job2.getParams().get(JVMCapacityScheduler.JOB_SIZE));
+
+				Job agent1Job4 = agent1WorkResponse.getJobs().get(0);
+				Assert.assertEquals(job4.getParams().get(JVMCapacityScheduler.JOB_SIZE),
+						agent1Job4.getParams().get(JVMCapacityScheduler.JOB_SIZE));
+>>>>>>> Move all load tests to src/test/load/{java,resources} and add @Ignore tags to
 
 				// Expect Job 3 at Agent 2
 				WorkResponse agent2WorkResponse = agentProbe2.expectMsgClass(WorkResponse.class);
 				Assert.assertEquals(1, agent2WorkResponse.getJobs().size());
 				Job agent2Job3 = agent2WorkResponse.getJobs().get(0);
+<<<<<<< HEAD
 				Assert.assertEquals(job3.getParams().get(JVMCapacityScheduler.JOB_SIZE), agent2Job3
 						.getParams().get(JVMCapacityScheduler.JOB_SIZE));
+=======
+				Assert.assertEquals(job3.getParams().get(JVMCapacityScheduler.JOB_SIZE),
+						agent2Job3.getParams().get(JVMCapacityScheduler.JOB_SIZE));
+>>>>>>> Move all load tests to src/test/load/{java,resources} and add @Ignore tags to
 
 				// Expect Job 1 at Agent 3
 				WorkResponse agent3WorkResponse = agentProbe3.expectMsgClass(WorkResponse.class);
 				Assert.assertEquals(1, agent3WorkResponse.getJobs().size());
 				Job agent3Job1 = agent3WorkResponse.getJobs().get(0);
+<<<<<<< HEAD
 				Assert.assertEquals(job1.getParams().get(JVMCapacityScheduler.JOB_SIZE), agent3Job1
 						.getParams().get(JVMCapacityScheduler.JOB_SIZE));
 
@@ -187,13 +268,31 @@ public class JVMCapacityStrategyTest extends AbstractActorSystemTest {
 				Job agent1Job5 = agent1WorkResponse.getJobs().get(0);
 				Assert.assertEquals(job5.getParams().get(JVMCapacityScheduler.JOB_SIZE), agent1Job5
 						.getParams().get(JVMCapacityScheduler.JOB_SIZE));
+=======
+				Assert.assertEquals(job1.getParams().get(JVMCapacityScheduler.JOB_SIZE),
+						agent3Job1.getParams().get(JVMCapacityScheduler.JOB_SIZE));
+
+				/*
+				 * Now, Jobs 1 - 4 will complete and all the agents will ask for
+				 * new work. Since Agent 1 is the only one big enough to fit Job
+				 * 5, it will receive it.
+				 */
+				agent1WorkResponse = agentProbe1.expectMsgClass(duration("5 seconds"), WorkResponse.class);
+				Assert.assertEquals(1, agent1WorkResponse.getJobs().size());
+				Job agent1Job5 = agent1WorkResponse.getJobs().get(0);
+				Assert.assertEquals(job5.getParams().get(JVMCapacityScheduler.JOB_SIZE),
+						agent1Job5.getParams().get(JVMCapacityScheduler.JOB_SIZE));
+>>>>>>> Move all load tests to src/test/load/{java,resources} and add @Ignore tags to
 			}
 		};
 	}
 
 	private JavaTestKit createAgentProbe() {
 		return new JavaTestKit(system) {
+<<<<<<< HEAD
 
+=======
+>>>>>>> Move all load tests to src/test/load/{java,resources} and add @Ignore tags to
 			{
 				new IgnoreMsg() {
 
@@ -209,11 +308,17 @@ public class JVMCapacityStrategyTest extends AbstractActorSystemTest {
 	@SuppressWarnings("serial")
 	private void createAgent(final JavaTestKit agentProbe, String name, final int capacity) {
 		system.actorOf(new Props(new UntypedActorFactory() {
+<<<<<<< HEAD
 
 			@Override
 			public Actor create() throws Exception {
 				JVMCapacityAgent agent = new JVMCapacityAgent(Arrays.asList(TestWorker.class
 						.getName()), capacity);
+=======
+			@Override
+			public Actor create() throws Exception {
+				JVMCapacityAgent agent = new JVMCapacityAgent(Arrays.asList(TestWorker.class.getName()), capacity);
+>>>>>>> Move all load tests to src/test/load/{java,resources} and add @Ignore tags to
 				agent.injectProbe(agentProbe.getRef());
 				return agent;
 			}
@@ -223,7 +328,10 @@ public class JVMCapacityStrategyTest extends AbstractActorSystemTest {
 	@SuppressWarnings("serial")
 	private void enqueueJob(ActorRef queueManager, ActorRef testKit, final int jobSize) {
 		queueManager.tell(new EnqueueJob(TestWorker.class.getName(), new HashMap<String, String>() {
+<<<<<<< HEAD
 
+=======
+>>>>>>> Move all load tests to src/test/load/{java,resources} and add @Ignore tags to
 			{
 				put(JVMCapacityScheduler.JOB_SIZE, new Integer(jobSize).toString());
 			}
