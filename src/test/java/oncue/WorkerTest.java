@@ -1,29 +1,24 @@
 /*******************************************************************************
  * Copyright 2013 Michael Marconi
  * 
-<<<<<<< HEAD
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the License at
+ * <<<<<<< HEAD Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+ * file except in compliance with the License. You may obtain a copy of the License at
  * 
  * http://www.apache.org/licenses/LICENSE-2.0
  * 
  * Unless required by applicable law or agreed to in writing, software distributed under the License
  * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
  * or implied. See the License for the specific language governing permissions and limitations under
- * the License.
-=======
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * the License. ======= Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of the License at
  * 
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
->>>>>>> Move all load tests to src/test/load/{java,resources} and add @Ignore tags to
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License. >>>>>>> Move all load tests to src/test/load/{java,resources} and add @Ignore tags
+ * to
  ******************************************************************************/
 package oncue;
 
@@ -53,14 +48,10 @@ import akka.testkit.JavaTestKit;
 import akka.testkit.TestActorRef;
 
 /**
-<<<<<<< HEAD
  * When an {@linkplain Agent} receives a {@linkplain WorkResponse}, it will attempt to spawn an
- * instance of an {@linkplain IWorker} for each {@linkplain Job} in the list.
-=======
- * When an {@linkplain Agent} receives a {@linkplain WorkResponse}, it will
- * attempt to spawn an instance of an {@linkplain IWorker} for each
- * {@linkplain Job} in the list.
->>>>>>> Move all load tests to src/test/load/{java,resources} and add @Ignore tags to
+ * instance of an {@linkplain IWorker} for each {@linkplain Job} in the list. When an
+ * {@linkplain Agent} receives a {@linkplain WorkResponse}, it will attempt to spawn an instance of
+ * an {@linkplain IWorker} for each {@linkplain Job} in the list.
  */
 public class WorkerTest extends AbstractActorSystemTest {
 
@@ -68,7 +59,6 @@ public class WorkerTest extends AbstractActorSystemTest {
 	@SuppressWarnings("serial")
 	public void spawnWorkerAndStartJob() {
 		new JavaTestKit(system) {
-<<<<<<< HEAD
 
 			{
 				// Create an agent probe
@@ -83,19 +73,6 @@ public class WorkerTest extends AbstractActorSystemTest {
 									return false;
 
 								return true;
-=======
-			{
-				// Create an agent probe
-				final JavaTestKit agentProbe = new JavaTestKit(system) {
-					{
-						new IgnoreMsg() {
-							protected boolean ignore(Object message) {
-								if (message instanceof WorkResponse || message instanceof JobProgress) {
-									return false;
-								} else {
-									return true;
-								}
->>>>>>> Move all load tests to src/test/load/{java,resources} and add @Ignore tags to
 							}
 						};
 					}
@@ -115,14 +92,9 @@ public class WorkerTest extends AbstractActorSystemTest {
 				}), settings.SCHEDULER_NAME);
 
 				// Create and expose an agent
-<<<<<<< HEAD
 				TestActorRef<UnlimitedCapacityAgent> agentRef = TestActorRef.create(system,
 						new Props(new UntypedActorFactory() {
 
-=======
-				TestActorRef<UnlimitedCapacityAgent> agentRef = TestActorRef.create(system, new Props(
-						new UntypedActorFactory() {
->>>>>>> Move all load tests to src/test/load/{java,resources} and add @Ignore tags to
 							@Override
 							public Actor create() throws Exception {
 								UnlimitedCapacityAgent agent = new UnlimitedCapacityAgent(Arrays
@@ -138,12 +110,8 @@ public class WorkerTest extends AbstractActorSystemTest {
 				assertEquals(0, workResponse.getJobs().size());
 
 				// Check that there are no workers
-<<<<<<< HEAD
 				assertFalse("Expected no child workers", agent.getContext().getChildren()
 						.iterator().hasNext());
-=======
-				assertFalse("Expected no child workers", agent.getContext().getChildren().iterator().hasNext());
->>>>>>> Move all load tests to src/test/load/{java,resources} and add @Ignore tags to
 
 				// Enqueue a job
 				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
@@ -159,10 +127,7 @@ public class WorkerTest extends AbstractActorSystemTest {
 
 				// Wait for the job to complete
 				new AwaitCond(duration("5 seconds")) {
-<<<<<<< HEAD
 
-=======
->>>>>>> Move all load tests to src/test/load/{java,resources} and add @Ignore tags to
 					@Override
 					protected boolean cond() {
 						return agentProbe.expectMsgClass(JobProgress.class).getProgress() == 1.0;
@@ -171,10 +136,7 @@ public class WorkerTest extends AbstractActorSystemTest {
 
 				// Ensure the worker is dead
 				new AwaitCond(duration("5 seconds")) {
-<<<<<<< HEAD
 
-=======
->>>>>>> Move all load tests to src/test/load/{java,resources} and add @Ignore tags to
 					@Override
 					protected boolean cond() {
 						return worker.isTerminated() == true;
