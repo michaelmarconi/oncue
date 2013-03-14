@@ -263,7 +263,7 @@ public class TimedJobTest extends AbstractActorSystemTest {
 				// Create timed job
 				String workerType = "oncue.workers.TestWorker";
 				TimedJobFactory.createTimedJob(system, workerType, "test-1",
-						"quartz://test-timer-1", params, agentProbe.getRef());
+						"quartz://test-timer-1", params, null, agentProbe.getRef());
 
 				RetryTimedJobMessage timedJobMessage = agentProbe.expectMsgClass(
 						duration("3 seconds"), RetryTimedJobMessage.class);
@@ -319,7 +319,7 @@ public class TimedJobTest extends AbstractActorSystemTest {
 
 				String workerType = "oncue.workers.TestWorker";
 				String actorPath = "quartz://test-timer-1";
-				TimedJobFactory.createTimedJob(system, workerType, "test-1", actorPath, params,
+				TimedJobFactory.createTimedJob(system, workerType, "test-1", actorPath, params, null,
 						agentProbe.getRef());
 
 				// Observe the timed job trying to schedule the job itself

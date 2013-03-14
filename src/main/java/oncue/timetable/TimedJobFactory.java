@@ -21,12 +21,18 @@ public class TimedJobFactory {
 			String workerType = (String) jobMap.get("type");
 			String endpointUri = (String) jobMap.get("endpointUri");
 
+			Integer failureRetryCount = null;
+			if (jobMap.keySet().contains("failureRetryCount")) {
+				failureRetryCount = Integer.parseInt((String) jobMap.get("failureRetryCount"));
+			}
+
 			Map<String, String> parameters = null;
-			if(jobMap.keySet().contains("parameters")) {
+			if (jobMap.keySet().contains("parameters")) {
 				parameters = (Map<String, String>) jobMap.get("parameters");
 			}
 
-			createTimedJob(system, workerType, name, endpointUri, parameters, testingProbe);
+			createTimedJob(system, workerType, name, endpointUri, parameters, failureRetryCount,
+					testingProbe);
 		}
 	}
 
@@ -36,14 +42,15 @@ public class TimedJobFactory {
 
 	public static void createTimedJob(ActorSystem system, final String workerType,
 			final String jobName, final String endpointUri, final Map<String, String> parameters,
-			final ActorRef testProbe) {
+			final Integer failureRetryCount, final ActorRef testProbe) {
 		system.actorOf(new Props(new UntypedActorFactory() {
 
 			private static final long serialVersionUID = 1L;
 
 			@Override
 			public Actor create() throws Exception {
-				return new TimedJob(workerType, endpointUri, parameters, testProbe);
+				return new TimedJob(workerType, endpointUri, parameters, failureRetryCount,
+						testProbe);
 
 			}
 		}), "job-timer-" + jobName);
@@ -51,6 +58,6 @@ public class TimedJobFactory {
 
 	public static void createTimedJob(ActorSystem system, final String workerType,
 			final String jobName, final String endpointUri, final Map<String, String> parameters) {
-		createTimedJob(system, workerType, jobName, endpointUri, parameters, null);
+		createTimedJob(system, workerType, jobName, endpointUri, parameters, null, null);
 	}
 }

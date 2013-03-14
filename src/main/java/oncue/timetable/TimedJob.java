@@ -1,6 +1,7 @@
 package oncue.timetable;
 
 import static akka.pattern.Patterns.ask;
+import static java.lang.String.format;
 import static scala.concurrent.Await.result;
 
 import java.util.Map;
@@ -35,30 +36,28 @@ public class TimedJob extends UntypedConsumerActor {
 
 	private String schedule;
 
+	private Integer failureRetryCount;
+
 	private Map<String, String> params;
 
 	// An optional probe for testing
 	protected ActorRef testProbe;
 
 	public TimedJob(String workerType, String schedule, Map<String, String> params,
-			ActorRef testProbe) {
+			Integer failureRetryCount, ActorRef testProbe) {
 		this.workerType = workerType;
 		this.schedule = schedule;
 		this.params = params;
 		this.testProbe = testProbe;
-		log.info("ALIIIVE");
-	}
-
-	public TimedJob() {
-		log.info("Default CONSTRUCTOR :((");
+		this.failureRetryCount = failureRetryCount;
 	}
 
 	public TimedJob(String workerType, String schedule, Map<String, String> params) {
-		this(workerType, schedule, params, null);
+		this(workerType, schedule, params, null, null);
 	}
 
 	@Override
-	public void onReceive(final Object message) {
+	public void onReceive(final Object message) throws TimedJobException {
 		if (testProbe != null) {
 			testProbe.tell(message, getSelf());
 		}
@@ -82,21 +81,38 @@ public class TimedJob extends UntypedConsumerActor {
 	 * logged, then the job will be rescheduled to run in the future.
 	 * 
 	 * @param workerType The qualified class name of the worker to instantiate
+	 * 
 	 * @param jobParameters The user-defined parameters map to pass to the job
 	 */
-	private void tryEnqueueJob(String workerType, Map<String, String> jobParameters) {
+	private void tryEnqueueJob(String workerType, Map<String, String> jobParameters)
+			throws TimedJobException {
 		try {
-			log.debug("local workertype is {}", this.workerType);
 			enqueueJob(workerType, jobParameters);
 		} catch (Exception e) {
 			log.info("Failed to enqueue timed job for worker type {}", workerType);
-			RetryTimedJobMessage retryMessage = new RetryTimedJobMessage(workerType, jobParameters);
-			getContext()
-					.system()
-					.scheduler()
-					.scheduleOnce(settings.API_TIMEOUT, getSelf(), retryMessage,
-							getContext().dispatcher());
+
+			if (failureRetryCount == null) {
+				sendRetryMessage(workerType, jobParameters);
+			} else {
+				if (failureRetryCount > 0) {
+					failureRetryCount -= 1;
+					sendRetryMessage(workerType, jobParameters);
+				} else {
+					throw new TimedJobException(
+							format("Failed to enqueue job for worker type '%s' after specified number of retries.",
+									workerType));
+				}
+			}
 		}
+	}
+
+	private void sendRetryMessage(String workerType, Map<String, String> jobParameters) {
+		RetryTimedJobMessage retryMessage = new RetryTimedJobMessage(workerType, jobParameters);
+		getContext()
+				.system()
+				.scheduler()
+				.scheduleOnce(settings.API_TIMEOUT, getSelf(), retryMessage,
+						getContext().dispatcher());
 	}
 
 	/**
@@ -108,9 +124,8 @@ public class TimedJob extends UntypedConsumerActor {
 	 * timeout
 	 */
 	private void enqueueJob(String workerType, Map<String, String> jobParameters) throws Exception {
-		result(
-				ask(getContext().actorFor(settings.QUEUE_MANAGER_PATH), new EnqueueJob(workerType,
-						jobParameters), new Timeout(settings.API_TIMEOUT)), settings.API_TIMEOUT);
+		result(ask(getContext().actorFor(settings.QUEUE_MANAGER_PATH), new EnqueueJob(workerType,
+				jobParameters), new Timeout(settings.API_TIMEOUT)), settings.API_TIMEOUT);
 	}
 
 	@Override
