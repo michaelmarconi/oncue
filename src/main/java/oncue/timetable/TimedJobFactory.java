@@ -26,7 +26,7 @@ public class TimedJobFactory {
 				parameters = (Map<String, String>) jobMap.get("parameters");
 			}
 
-			createTimedJob(system, workerType, name, endpointUri, parameters);
+			createTimedJob(system, workerType, name, endpointUri, parameters, testingProbe);
 		}
 	}
 

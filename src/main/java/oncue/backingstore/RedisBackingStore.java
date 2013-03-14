@@ -130,7 +130,6 @@ public class RedisBackingStore extends AbstractBackingStore {
 	 *            is a connection to Redis
 	 * @return a {@linkplain Job} that represents the job hash in Redis
 	 */
-	@SuppressWarnings("unchecked")
 	public static Job loadJob(long id, Jedis redis) {
 		String jobKey = String.format(JOB_KEY, id);
 		Job job;

@@ -16,7 +16,6 @@ package oncue;
 import java.util.Arrays;
 
 import oncue.agent.UnlimitedCapacityAgent;
-import oncue.messages.internal.RetryTimedJobMessage;
 import oncue.messages.internal.SimpleMessages.SimpleMessage;
 import oncue.scheduler.SimpleQueuePopScheduler;
 import oncue.settings.Settings;
@@ -25,18 +24,14 @@ import oncue.workers.TestWorker;
 
 import org.junit.Test;
 
-import scala.Option;
 import sun.management.Agent;
 import akka.actor.Actor;
-import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.actor.UntypedActorFactory;
-import akka.camel.javaapi.UntypedConsumerActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.testkit.JavaTestKit;
-import akka.testkit.JavaTestKit.IgnoreMsg;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;

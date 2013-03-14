@@ -86,7 +86,7 @@ public abstract class AbstractAgent extends UntypedActor {
 		this.workerTypes = workerTypes;
 		for (String workerType : workerTypes) {
 			try {
-				@SuppressWarnings({ "unchecked", "unused" })
+				@SuppressWarnings({ "unused" })
 				Class<? extends AbstractWorker> workerClass = (Class<? extends AbstractWorker>) Class
 						.forName(workerType);
 			} catch (ClassNotFoundException e) {

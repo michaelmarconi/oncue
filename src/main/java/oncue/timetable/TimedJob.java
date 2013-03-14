@@ -1,7 +1,7 @@
 package oncue.timetable;
 
 import static akka.pattern.Patterns.ask;
-import static java.lang.String.format;
+import static scala.concurrent.Await.result;
 
 import java.util.Map;
 
@@ -9,7 +9,6 @@ import oncue.messages.internal.EnqueueJob;
 import oncue.messages.internal.RetryTimedJobMessage;
 import oncue.settings.Settings;
 import oncue.settings.SettingsProvider;
-import scala.concurrent.Await;
 import akka.actor.ActorRef;
 import akka.camel.CamelMessage;
 import akka.camel.javaapi.UntypedConsumerActor;
@@ -109,7 +108,7 @@ public class TimedJob extends UntypedConsumerActor {
 	 * timeout
 	 */
 	private void enqueueJob(String workerType, Map<String, String> jobParameters) throws Exception {
-		Await.result(
+		result(
 				ask(getContext().actorFor(settings.QUEUE_MANAGER_PATH), new EnqueueJob(workerType,
 						jobParameters), new Timeout(settings.API_TIMEOUT)), settings.API_TIMEOUT);
 	}
