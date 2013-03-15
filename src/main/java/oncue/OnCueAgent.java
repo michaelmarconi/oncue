@@ -15,7 +15,7 @@ import akka.kernel.Bootable;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
-public class BootOnCueAgent implements Bootable {
+public class OnCueAgent implements Bootable {
 
 	private ActorSystem system;
 
@@ -29,7 +29,7 @@ public class BootOnCueAgent implements Bootable {
 		config = ConfigFactory.load();
 		config = config.getConfig("client").withFallback(config);
 
-		final Set<String> workers = new HashSet<String>(config.getStringList("workers"));
+		final Set<String> workers = new HashSet<String>(config.getStringList("oncue.agent.workers"));
 
 		system = ActorSystem.create("oncue-agent", config);
 		settings = SettingsProvider.SettingsProvider.get(system);

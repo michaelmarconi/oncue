@@ -11,7 +11,7 @@ import akka.kernel.Bootable;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
-public class BootOnCueService implements Bootable {
+public class OnCueService implements Bootable {
 
 	private ActorSystem system;
 
