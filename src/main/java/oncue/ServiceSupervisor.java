@@ -35,8 +35,7 @@ public class ServiceSupervisor implements SupervisorStrategyConfigurator {
 			public Directive apply(Throwable t) throws Exception {
 				if (t instanceof ActorInitializationException)
 					return escalate();
-				else
-					return restart();
+				return restart();
 			}
 		});
 	}

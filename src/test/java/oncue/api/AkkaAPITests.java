@@ -23,6 +23,7 @@ import oncue.settings.SettingsProvider;
 import oncue.workers.TestWorker;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import akka.actor.ActorSystem;
@@ -52,6 +53,7 @@ public class AkkaAPITests {
 	}
 
 	@Test
+	@Ignore
 	public void enqueueJobWithQueueManagerRunning() throws APIException {
 		system = ActorSystem.create("oncue-service", config.getConfig("service").withFallback(config));
 		settings = SettingsProvider.SettingsProvider.get(system);

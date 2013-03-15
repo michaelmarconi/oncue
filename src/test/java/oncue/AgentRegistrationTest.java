@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package oncue.functional;
+package oncue;
 
 import static junit.framework.Assert.assertEquals;
 
@@ -22,10 +22,8 @@ import java.util.Arrays;
 import oncue.agent.UnlimitedCapacityAgent;
 import oncue.base.AbstractActorSystemTest;
 import oncue.messages.internal.AbstractWorkRequest;
-import oncue.messages.internal.EnqueueJob;
-import oncue.messages.internal.Job;
+import oncue.messages.internal.SimpleMessages.SimpleMessage;
 import oncue.messages.internal.WorkResponse;
-import oncue.queueManager.InMemoryQueueManager;
 import oncue.scheduler.SimpleQueuePopScheduler;
 import oncue.workers.TestWorker;
 
@@ -33,56 +31,27 @@ import org.junit.Test;
 
 import sun.management.Agent;
 import akka.actor.Actor;
-import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.actor.UntypedActorFactory;
 import akka.testkit.JavaTestKit;
 
 /**
- * When an {@linkplain Agent} has received a broadcast stating that work is
- * available, it will respond by asking for work (by sending a
- * {@linkplain WorkRequest} message.
+ * Agents should register themselves with the central Scheduler when they start
+ * up. After receiving confirmation that they are registered, they should
+ * request work.
  */
-public class WorkRequestTest extends AbstractActorSystemTest {
+public class AgentRegistrationTest extends AbstractActorSystemTest {
 
-	@Test
+	/**
+	 * An {@linkplain Agent} should emit a steady heartbeat while it is alive.
+	 */
 	@SuppressWarnings("serial")
-	public void requestWorkAndReceiveAJob() {
+	@Test
+	public void agentRegistersAndRequestsWorkButReceivesNoWork() {
 		new JavaTestKit(system) {
 			{
-				// Create a scheduler probe
-				final JavaTestKit schedulerProbe = new JavaTestKit(system) {
-					{
-						new IgnoreMsg() {
-							protected boolean ignore(Object message) {
-								if (message instanceof AbstractWorkRequest)
-									return false;
-								else
-									return true;
-							}
-						};
-					}
-				};
-
-				// Create an agent probe
-				final JavaTestKit agentProbe = new JavaTestKit(system) {
-					{
-						new IgnoreMsg() {
-							protected boolean ignore(Object message) {
-								if (message instanceof WorkResponse)
-									return false;
-								else
-									return true;
-							}
-						};
-					}
-				};
-
-				// Create a queue manager
-				ActorRef queueManager = system.actorOf(new Props(InMemoryQueueManager.class),
-						settings.QUEUE_MANAGER_NAME);
-
-				// Create a simple scheduler
+				// Create a simple scheduler with a probe
+				final JavaTestKit schedulerProbe = new JavaTestKit(system);
 				system.actorOf(new Props(new UntypedActorFactory() {
 					@Override
 					public Actor create() throws Exception {
@@ -92,7 +61,8 @@ public class WorkRequestTest extends AbstractActorSystemTest {
 					}
 				}), "scheduler");
 
-				// Create an agent
+				// Create an agent with a probe
+				final JavaTestKit agentProbe = new JavaTestKit(system);
 				system.actorOf(new Props(new UntypedActorFactory() {
 					@Override
 					public Actor create() throws Exception {
@@ -103,22 +73,18 @@ public class WorkRequestTest extends AbstractActorSystemTest {
 					}
 				}), "agent");
 
-				// Wait until the agent receives an empty work response
-				WorkResponse workResponse = agentProbe.expectMsgClass(WorkResponse.class);
-				assertEquals(0, workResponse.getJobs().size());
+				// Expect the initial heartbeat from the agent
+				schedulerProbe.expectMsgEquals(SimpleMessage.AGENT_HEARTBEAT);
 
-				// Enqueue a job
-				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
-				Job job = expectMsgClass(Job.class);
+				// Expect the registration message from the scheduler
+				agentProbe.expectMsgEquals(SimpleMessage.AGENT_REGISTERED);
 
-				// Expect a request for work from the agent
+				// Expect the agent to request work
 				schedulerProbe.expectMsgClass(AbstractWorkRequest.class);
 
-				// Expect a work response from the scheduler
-				workResponse = agentProbe.expectMsgClass(WorkResponse.class);
-
-				assertEquals("Expected a single job", 1, workResponse.getJobs().size());
-				assertEquals("Wrong job ID", job.getId(), workResponse.getJobs().get(0).getId());
+				// Expect no work from the scheduler
+				WorkResponse workResponse = agentProbe.expectMsgClass(WorkResponse.class);
+				assertEquals("Expected no jobs", 0, workResponse.getJobs().size());
 			}
 		};
 	}
