@@ -149,8 +149,9 @@ public class TimedJobTest extends AbstractActorSystemTest {
 				Map<String, String> parameters = new HashMap<String, String>();
 				parameters.put("key", "value");
 
-				TimedJobFactory.createTimedJob(system, "oncue.workers.TestWorker", "test-1",
-						"quartz://test-timer-1", parameters);
+				TimedJobFactory
+						.createTimedJob(system, "oncue.workers.TestWorker", "test-1",
+								"quartz://test-timer-1", parameters);
 
 				// Expect two workers to send work responses
 				response = agentProbe.expectMsgClass(duration("3 seconds"), WorkResponse.class);
@@ -165,7 +166,6 @@ public class TimedJobTest extends AbstractActorSystemTest {
 	@Test
 	public void timedJobRetriesWhenQueueManagerIsNotFound() {
 		new JavaTestKit(system) {
-
 			{
 				// Create a simple scheduler
 				system.actorOf(new Props(new UntypedActorFactory() {
@@ -212,8 +212,9 @@ public class TimedJobTest extends AbstractActorSystemTest {
 				assertEquals(0, jobs.size());
 
 				// Create timed job
-				TimedJobFactory.createTimedJob(system, "oncue.workers.TestWorker", "test-1",
-						"quartz://test-timer-1", null);
+				TimedJobFactory
+						.createTimedJob(system, "oncue.workers.TestWorker", "test-1",
+								"quartz://test-timer-1", null);
 
 				agentProbe.expectNoMsg(duration("5 seconds"));
 

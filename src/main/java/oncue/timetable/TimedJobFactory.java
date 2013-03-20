@@ -23,7 +23,7 @@ public class TimedJobFactory {
 
 			Integer failureRetryCount = null;
 			if (jobMap.keySet().contains("failureRetryCount")) {
-				failureRetryCount = Integer.parseInt((String) jobMap.get("failureRetryCount"));
+				failureRetryCount = (Integer) jobMap.get("failureRetryCount");
 			}
 
 			Map<String, String> parameters = null;
@@ -43,6 +43,7 @@ public class TimedJobFactory {
 	public static void createTimedJob(ActorSystem system, final String workerType,
 			final String jobName, final String endpointUri, final Map<String, String> parameters,
 			final Integer failureRetryCount, final ActorRef testProbe) {
+
 		system.actorOf(new Props(new UntypedActorFactory() {
 
 			private static final long serialVersionUID = 1L;
