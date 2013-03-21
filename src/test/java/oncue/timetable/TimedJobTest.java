@@ -262,9 +262,10 @@ public class TimedJobTest extends AbstractActorSystemTest {
 				params.put("key", "value");
 
 				// Create timed job
+				int retryCount = 3;
 				String workerType = "oncue.workers.TestWorker";
 				TimedJobFactory.createTimedJob(system, workerType, "test-1",
-						"quartz://test-timer-1", params, null, agentProbe.getRef());
+						"quartz://test-timer-1", params, retryCount, agentProbe.getRef());
 
 				RetryTimedJobMessage timedJobMessage = agentProbe.expectMsgClass(
 						duration("3 seconds"), RetryTimedJobMessage.class);
@@ -275,6 +276,8 @@ public class TimedJobTest extends AbstractActorSystemTest {
 				timedJobMessage = agentProbe.expectMsgClass(duration("3 seconds"),
 						RetryTimedJobMessage.class);
 				validateRetryTimedJobMessageParams(params, workerType, timedJobMessage);
+				
+				agentProbe.expectNoMsg();
 			}
 
 		};
