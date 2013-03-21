@@ -28,7 +28,7 @@ import oncue.api.AkkaAPI;
 import oncue.messages.internal.Job;
 import oncue.settings.Settings;
 import oncue.settings.SettingsProvider;
-import oncue.timetable.TimedJobFactory;
+import oncue.timedJobs.TimedJobFactory;
 import akka.actor.Actor;
 import akka.actor.ActorSystem;
 import akka.actor.Props;

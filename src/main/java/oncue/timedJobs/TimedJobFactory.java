@@ -1,4 +1,4 @@
-package oncue.timetable;
+package oncue.timedJobs;
 
 import java.util.List;
 import java.util.Map;

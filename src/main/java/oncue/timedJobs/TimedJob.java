@@ -1,4 +1,4 @@
-package oncue.timetable;
+package oncue.timedJobs;
 
 import static akka.pattern.Patterns.ask;
 import static java.lang.String.format;

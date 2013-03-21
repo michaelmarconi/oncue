@@ -1,4 +1,4 @@
-package oncue.timetable;
+package oncue.timedJobs;
 
 /*
  * #%L Oncue $Id:$ $HeadURL:$ %% Copyright (C) 2012 - 2013 Michael Marconi %% Licensed under the
@@ -15,6 +15,7 @@ package oncue.timetable;
 
 import oncue.settings.Settings;
 import oncue.settings.SettingsProvider;
+import oncue.timedJobs.TimedJobFactory;
 
 import org.junit.After;
 import org.junit.Before;

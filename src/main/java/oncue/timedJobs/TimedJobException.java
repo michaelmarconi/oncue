@@ -1,4 +1,4 @@
-package oncue.timetable;
+package oncue.timedJobs;
 
 public class TimedJobException extends Exception {
 

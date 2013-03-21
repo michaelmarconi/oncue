@@ -21,9 +21,6 @@ import oncue.settings.SettingsProvider;
 import org.junit.After;
 import org.junit.Before;
 
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
 import akka.actor.ActorSystem;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
@@ -41,15 +38,6 @@ public abstract class AbstractActorSystemTest {
 	@Before
 	public void flushRedis() {
 		startActorSystem();
-
-		log.info("Warning: flushing local redis");
-
-		// Get a connection to Redis
-		// TODO use the config
-		JedisPool redisPool = new JedisPool(new JedisPoolConfig(), "localhost");
-		Jedis redis = redisPool.getResource();
-		redis.flushAll();
-		redisPool.destroy();
 	}
 
 	private void startActorSystem() {

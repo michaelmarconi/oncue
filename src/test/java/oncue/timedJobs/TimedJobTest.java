@@ -1,4 +1,4 @@
-package oncue.timetable;
+package oncue.timedJobs;
 
 import static org.junit.Assert.assertEquals;
 
@@ -14,6 +14,7 @@ import oncue.messages.internal.RetryTimedJobMessage;
 import oncue.messages.internal.WorkResponse;
 import oncue.queueManager.InMemoryQueueManager;
 import oncue.scheduler.SimpleQueuePopScheduler;
+import oncue.timedJobs.TimedJobFactory;
 import oncue.workers.TestWorker;
 
 import org.junit.Test;
