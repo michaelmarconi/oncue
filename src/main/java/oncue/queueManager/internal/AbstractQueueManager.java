@@ -74,7 +74,6 @@ public abstract class AbstractQueueManager extends UntypedActor {
 
 	@Override
 	public void onReceive(Object message) throws Exception {
-		
 		if (testProbe != null)
 			testProbe.forward(message, getContext());
 

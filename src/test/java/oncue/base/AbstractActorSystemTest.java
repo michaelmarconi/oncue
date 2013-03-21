@@ -36,7 +36,11 @@ public abstract class AbstractActorSystemTest {
 	protected LoggingAdapter log;
 
 	@Before
-	public void startActorSystem() {
+	public void flushRedis() {
+		startActorSystem();
+	}
+
+	private void startActorSystem() {
 		config = ConfigFactory.load("test");
 		system = ActorSystem.create("oncue-test", config);
 		settings = SettingsProvider.SettingsProvider.get(system);
