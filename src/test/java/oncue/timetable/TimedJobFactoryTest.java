@@ -66,16 +66,14 @@ public class TimedJobFactoryTest {
 				new AwaitCond(duration("5 seconds"), duration("1 second")) {
 					@Override
 					protected boolean cond() {
-						boolean timedJobAFound = system
+						boolean timedJobANotFound = system
 								.actorFor("akka://oncue-test/user/job-timer-test-worker-1") instanceof EmptyLocalActorRef;
-						boolean timedJobBFound = system
+						boolean timedJobBNotFound = system
 								.actorFor("akka://oncue-test/user/job-timer-test-worker-2") instanceof EmptyLocalActorRef;
 
-						return !(timedJobAFound && timedJobBFound);
+						return !timedJobANotFound && !timedJobBNotFound;
 					}
 				};
-
-				// TODO: Check that both jobs were created
 			}
 		};
 	}
