@@ -53,6 +53,7 @@ public class Settings implements Extension {
 	public Integer THROTTLED_AGENT_JOB_LIMIT;
 	public final List<Map<String, Object>> TIMETABLE;
 
+	@SuppressWarnings("unchecked")
 	public Settings(Config config) {
 		SCHEDULER_NAME = config.getString("oncue.scheduler.name");
 		SCHEDULER_PATH = config.getString("oncue.scheduler.path");

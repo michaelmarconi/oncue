@@ -14,6 +14,7 @@ import akka.actor.UntypedActorFactory;
  */
 public class TimedJobFactory {
 
+	@SuppressWarnings("unchecked")
 	public static void createJobsFromJobMap(ActorSystem system, List<Map<String, Object>> jobList,
 			ActorRef testingProbe) {
 		for (Map<String, Object> jobMap : jobList) {
