@@ -15,6 +15,9 @@
  ******************************************************************************/
 package oncue.settings;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import scala.concurrent.duration.Duration;
@@ -48,7 +51,9 @@ public class Settings implements Extension {
 	public final FiniteDuration API_TIMEOUT;
 
 	public Integer THROTTLED_AGENT_JOB_LIMIT;
+	public final List<Map<String, Object>> TIMETABLE;
 
+	@SuppressWarnings("unchecked")
 	public Settings(Config config) {
 		SCHEDULER_NAME = config.getString("oncue.scheduler.name");
 		SCHEDULER_PATH = config.getString("oncue.scheduler.path");
@@ -91,6 +96,12 @@ public class Settings implements Extension {
 		} catch (ConfigException.Missing e) {
 			THROTTLED_AGENT_JOB_LIMIT = null;
 		}
-
+		
+		// Timed job schedules are optional
+		if(config.hasPath("oncue.timetable")) {
+			TIMETABLE = (ArrayList<Map<String, Object>>) config.getAnyRef("oncue.timetable");
+		} else {
+			TIMETABLE = null;
+		}
 	}
 }
