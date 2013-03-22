@@ -29,8 +29,8 @@
 		<module>oncue-service</module>
 		<module>oncue-agent</module>
 		<module>oncue-ui</module>
-		<module>oncue-client</module>
-    <module>oncue-tests</module>
+		<module>oncue-api</module>
+    	<module>oncue-tests</module>
   </modules>
 
 	<repositories>
