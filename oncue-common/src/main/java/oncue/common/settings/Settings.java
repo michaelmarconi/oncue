@@ -107,12 +107,7 @@ public class Settings implements Extension {
 				config.getMilliseconds("agent.heartbeat-frequency"),
 				TimeUnit.MILLISECONDS);
 
-		try {
-			THROTTLED_AGENT_JOB_LIMIT = config
-					.getInt("agent.throttled-agent.max-jobs");
-		} catch (ConfigException.Missing e) {
-			THROTTLED_AGENT_JOB_LIMIT = null;
-		}
+		THROTTLED_AGENT_JOB_LIMIT = config.getInt("agent.throttled-agent.max-jobs");
 
 		// Timed job schedules are optional
 		if (config.hasPath("timetable")) {
