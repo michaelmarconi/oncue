@@ -36,9 +36,10 @@ public class OnCueService implements Bootable {
 	@Override
 	public void startup() {
 		config = ConfigFactory.load();
-		config = config.withFallback(config.getConfig("oncue"));
-		config = config.withFallback(config.getConfig("oncue.service"));
-
+		Config serviceConfig = config.getConfig("oncue.service");
+		Config commonConfig = config.getConfig("oncue");
+		config = serviceConfig.withFallback(commonConfig).withFallback(config);
+		
 		system = ActorSystem.create("oncue-service", config);
 		settings = SettingsProvider.SettingsProvider.get(system);
 

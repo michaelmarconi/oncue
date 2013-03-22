@@ -50,14 +50,16 @@ public class Settings implements Extension {
 	public final String AGENT_CLASS;
 	public final FiniteDuration AGENT_HEARTBEAT_FREQUENCY;
 
-//	public final String API_NAME;
-//	public final FiniteDuration API_TIMEOUT;
+	public final String API_NAME;
+	public final FiniteDuration API_TIMEOUT;
 
 	public Integer THROTTLED_AGENT_JOB_LIMIT;
 	public final List<Map<String, Object>> TIMETABLE;
 
 	@SuppressWarnings("unchecked")
 	public Settings(Config config) {
+		config = config.getConfig("oncue");
+		
 		SCHEDULER_NAME = config.getString("scheduler.name");
 		SCHEDULER_PATH = config.getString("scheduler.path");
 		SCHEDULER_CLASS = config.getString("scheduler.class");
@@ -94,9 +96,9 @@ public class Settings implements Extension {
 		TIMED_JOB_RETRY_DELAY = Duration.create(config.getMilliseconds("timed-jobs.retry-delay"),
 				TimeUnit.MILLISECONDS);		
 
-//		API_NAME = config.getString("api.name");
-//		API_TIMEOUT = Duration.create(config.getMilliseconds("api.timeout"),
-//				TimeUnit.MILLISECONDS);
+		API_NAME = config.getString("api.name");
+		API_TIMEOUT = Duration.create(config.getMilliseconds("api.timeout"),
+				TimeUnit.MILLISECONDS);
 
 		AGENT_NAME = config.getString("agent.name");
 		AGENT_PATH = config.getString("agent.path");

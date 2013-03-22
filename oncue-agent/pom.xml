@@ -25,4 +25,24 @@
 		</dependency>
 	</dependencies>
 
+	<build>
+	    <plugins>
+			<plugin>
+			    <groupId>org.apache.maven.plugins</groupId>
+			    <artifactId>maven-jar-plugin</artifactId>
+			    <configuration>
+			        <archive>
+			            <manifest>
+			                <addClasspath>true</addClasspath>
+			                <classpathPrefix>lib/</classpathPrefix>
+			                <mainClass>oncue.agent.OnCueAgent</mainClass>
+			            </manifest>
+			        </archive>
+			        <includes>
+			            <include>**</include>
+			        </includes>
+			    </configuration>
+			</plugin>
+        </plugins>
+    </build>
 </project>
