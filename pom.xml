@@ -30,6 +30,10 @@
 		<module>oncue-agent</module>
 		<module>oncue-api</module>
     	<module>oncue-tests</module>
+    <module>oncue-queuemanager</module>
+    <module>oncue-scheduler</module>
+    <module>oncue-backingstore</module>
+    <module>oncue-timedjobs</module>
   </modules>
 
 	<repositories>
