@@ -21,8 +21,8 @@ import junit.framework.Assert;
 import oncue.agent.UnlimitedCapacityAgent;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.JobProgress;
-import oncue.service.queuemanager.InMemoryQueueManager;
-import oncue.service.scheduler.SimpleQueuePopScheduler;
+import oncue.queuemanager.InMemoryQueueManager;
+import oncue.scheduler.SimpleQueuePopScheduler;
 import oncue.tests.base.AbstractActorSystemTest;
 import oncue.tests.workers.TestWorker;
 

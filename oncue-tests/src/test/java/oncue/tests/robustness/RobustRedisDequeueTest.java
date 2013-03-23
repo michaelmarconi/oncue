@@ -1,11 +1,11 @@
 package oncue.tests.robustness;
 
 import static junit.framework.Assert.assertEquals;
+import oncue.backingstore.RedisBackingStore;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
-import oncue.service.backingstore.RedisBackingStore;
-import oncue.service.queuemanager.RedisQueueManager;
-import oncue.service.scheduler.SimpleQueuePopScheduler;
+import oncue.queuemanager.RedisQueueManager;
+import oncue.scheduler.SimpleQueuePopScheduler;
 import oncue.tests.base.AbstractActorSystemTest;
 import oncue.tests.workers.TestWorker;
 

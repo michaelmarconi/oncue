@@ -48,7 +48,7 @@ public class Job implements Serializable {
 	 *            is the time at which this job was enqueued
 	 * 
 	 * @param workerType
-	 *            determines which type of {@linkplain IWorker} is capable of
+	 *            determines which type of worker is capable of
 	 *            completing this job
 	 * 
 	 * @param params

@@ -19,7 +19,7 @@ import java.util.Arrays;
 
 import oncue.agent.UnlimitedCapacityAgent;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
-import oncue.service.scheduler.SimpleQueuePopScheduler;
+import oncue.scheduler.SimpleQueuePopScheduler;
 import oncue.tests.base.AbstractActorSystemTest;
 import oncue.tests.workers.TestWorker;
 

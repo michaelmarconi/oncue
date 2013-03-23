@@ -1,0 +1,52 @@
+@main(title = "Home") {
+    
+	<div class="row">
+	  <div class="span8">
+          <h3 class="page-header">Jobs</h3>
+          <div class="tabbable tabs-left">
+              <ul class="nav nav-tabs">
+                  <li class="active"><a href="#current-jobs" data-toggle="tab"><i class="icon-inbox"></i>Current</a></li>
+                  <li><a href="#scheduled-jobs" data-toggle="tab"><i class="icon-time"></i>Scheduled</a></li>
+              </ul>
+              <div class="tab-content">
+                  <div class="tab-pane active" id="current-jobs">
+                      <div class="alert alert-info">
+                          No jobs are currently queued or processing
+                      </div>
+                      <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Worker Type</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1</td>
+                                <td class="monospace">com.m20.universal.MatchingJob</td>
+                            </tr>
+                            <tr>
+                                <td>2</td>
+                                <td class="monospace">com.m20.universal.MatchingJob</td>
+                            </tr>
+                        </tbody>
+                      </table>
+                  </div>
+                  <div class="tab-pane" id="scheduled-jobs">
+                      <div class="alert alert-info">
+                          There are no jobs scheduled for the future
+                      </div>
+                  </div>
+              </div>
+          </div>
+	  </div>
+	  <div class="span4">
+          <h3 class="page-header">Agents</h3>
+          <div class="alert">
+              <button type="button" class="close" data-dismiss="alert">&times;</button>
+              <strong>Warning!</strong> There are no agents connected to the scheduler.
+          </div>
+	  </div>
+	</div>
+    
+}

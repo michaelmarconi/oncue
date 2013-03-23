@@ -19,13 +19,13 @@ import java.util.Arrays;
 
 import junit.framework.Assert;
 import oncue.agent.UnlimitedCapacityAgent;
+import oncue.backingstore.RedisBackingStore;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobProgress;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
-import oncue.service.backingstore.RedisBackingStore;
-import oncue.service.queuemanager.InMemoryQueueManager;
-import oncue.service.scheduler.SimpleQueuePopScheduler;
+import oncue.queuemanager.InMemoryQueueManager;
+import oncue.scheduler.SimpleQueuePopScheduler;
 import oncue.tests.base.AbstractActorSystemTest;
 import oncue.tests.workers.TestWorker;
 

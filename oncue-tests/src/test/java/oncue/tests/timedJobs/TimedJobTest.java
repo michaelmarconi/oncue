@@ -11,11 +11,11 @@ import oncue.agent.UnlimitedCapacityAgent;
 import oncue.common.messages.Job;
 import oncue.common.messages.RetryTimedJobMessage;
 import oncue.common.messages.WorkResponse;
-import oncue.service.queuemanager.InMemoryQueueManager;
-import oncue.service.scheduler.SimpleQueuePopScheduler;
-import oncue.service.timedjobs.TimedJobFactory;
+import oncue.queuemanager.InMemoryQueueManager;
+import oncue.scheduler.SimpleQueuePopScheduler;
 import oncue.tests.base.AbstractActorSystemTest;
 import oncue.tests.workers.TestWorker;
+import oncue.timedjobs.TimedJobFactory;
 
 import org.junit.Test;
 
@@ -68,22 +68,21 @@ public class TimedJobTest extends AbstractActorSystemTest {
 
 					@Override
 					public Actor create() throws Exception {
-						UnlimitedCapacityAgent agent = new UnlimitedCapacityAgent(Arrays
-								.asList(TestWorker.class.getName()));
+						UnlimitedCapacityAgent agent = new UnlimitedCapacityAgent(Arrays.asList(TestWorker.class
+								.getName()));
 						agent.injectProbe(agentProbe.getRef());
 						return agent;
 					}
 				}), settings.AGENT_NAME);
 
-				WorkResponse response = agentProbe.expectMsgClass(duration("3 seconds"),
-						WorkResponse.class);
+				WorkResponse response = agentProbe.expectMsgClass(duration("3 seconds"), WorkResponse.class);
 				List<Job> jobs = response.getJobs();
 				assertEquals(0, jobs.size());
 
-				TimedJobFactory.createTimedJob(system, "oncue.workers.TestWorker", "test-1",
-						"quartz://test-timer-1", null);
-				TimedJobFactory.createTimedJob(system, "oncue.workers.TestWorker", "test-2",
-						"quartz://test-timer-2", null);
+				TimedJobFactory.createTimedJob(system, "oncue.workers.TestWorker", "test-1", "quartz://test-timer-1",
+						null);
+				TimedJobFactory.createTimedJob(system, "oncue.workers.TestWorker", "test-2", "quartz://test-timer-2",
+						null);
 
 				// Expect two workers to send work responses
 				response = agentProbe.expectMsgClass(duration("3 seconds"), WorkResponse.class);
@@ -135,24 +134,22 @@ public class TimedJobTest extends AbstractActorSystemTest {
 
 					@Override
 					public Actor create() throws Exception {
-						UnlimitedCapacityAgent agent = new UnlimitedCapacityAgent(Arrays
-								.asList(TestWorker.class.getName()));
+						UnlimitedCapacityAgent agent = new UnlimitedCapacityAgent(Arrays.asList(TestWorker.class
+								.getName()));
 						agent.injectProbe(agentProbe.getRef());
 						return agent;
 					}
 				}), settings.AGENT_NAME);
 
-				WorkResponse response = agentProbe.expectMsgClass(duration("3 seconds"),
-						WorkResponse.class);
+				WorkResponse response = agentProbe.expectMsgClass(duration("3 seconds"), WorkResponse.class);
 				List<Job> jobs = response.getJobs();
 				assertEquals(0, jobs.size());
 
 				Map<String, String> parameters = new HashMap<String, String>();
 				parameters.put("key", "value");
 
-				TimedJobFactory
-						.createTimedJob(system, "oncue.workers.TestWorker", "test-1",
-								"quartz://test-timer-1", parameters);
+				TimedJobFactory.createTimedJob(system, "oncue.workers.TestWorker", "test-1", "quartz://test-timer-1",
+						parameters);
 
 				// Expect two workers to send work responses
 				response = agentProbe.expectMsgClass(duration("3 seconds"), WorkResponse.class);
@@ -199,23 +196,21 @@ public class TimedJobTest extends AbstractActorSystemTest {
 
 					@Override
 					public Actor create() throws Exception {
-						UnlimitedCapacityAgent agent = new UnlimitedCapacityAgent(Arrays
-								.asList(TestWorker.class.getName()));
+						UnlimitedCapacityAgent agent = new UnlimitedCapacityAgent(Arrays.asList(TestWorker.class
+								.getName()));
 						agent.injectProbe(agentProbe.getRef());
 						return agent;
 					}
 				}), settings.AGENT_NAME);
 
 				// Initial work response when agent starts
-				WorkResponse response = agentProbe.expectMsgClass(duration("3 seconds"),
-						WorkResponse.class);
+				WorkResponse response = agentProbe.expectMsgClass(duration("3 seconds"), WorkResponse.class);
 				List<Job> jobs = response.getJobs();
 				assertEquals(0, jobs.size());
 
 				// Create timed job
-				TimedJobFactory
-						.createTimedJob(system, "oncue.workers.TestWorker", "test-1",
-								"quartz://test-timer-1", null);
+				TimedJobFactory.createTimedJob(system, "oncue.workers.TestWorker", "test-1", "quartz://test-timer-1",
+						null);
 
 				agentProbe.expectNoMsg(duration("5 seconds"));
 
@@ -265,27 +260,25 @@ public class TimedJobTest extends AbstractActorSystemTest {
 				// Create timed job
 				int retryCount = 3;
 				String workerType = "oncue.workers.TestWorker";
-				TimedJobFactory.createTimedJob(system, workerType, "test-1",
-						"quartz://test-timer-1", params, retryCount, agentProbe.getRef());
+				TimedJobFactory.createTimedJob(system, workerType, "test-1", "quartz://test-timer-1", params,
+						retryCount, agentProbe.getRef());
 
-				RetryTimedJobMessage timedJobMessage = agentProbe.expectMsgClass(
-						duration("3 seconds"), RetryTimedJobMessage.class);
-				validateRetryTimedJobMessageParams(params, workerType, timedJobMessage);
-				timedJobMessage = agentProbe.expectMsgClass(duration("3 seconds"),
+				RetryTimedJobMessage timedJobMessage = agentProbe.expectMsgClass(duration("3 seconds"),
 						RetryTimedJobMessage.class);
 				validateRetryTimedJobMessageParams(params, workerType, timedJobMessage);
-				timedJobMessage = agentProbe.expectMsgClass(duration("3 seconds"),
-						RetryTimedJobMessage.class);
+				timedJobMessage = agentProbe.expectMsgClass(duration("3 seconds"), RetryTimedJobMessage.class);
 				validateRetryTimedJobMessageParams(params, workerType, timedJobMessage);
-				
+				timedJobMessage = agentProbe.expectMsgClass(duration("3 seconds"), RetryTimedJobMessage.class);
+				validateRetryTimedJobMessageParams(params, workerType, timedJobMessage);
+
 				agentProbe.expectNoMsg();
 			}
 
 		};
 	}
 
-	private static void validateRetryTimedJobMessageParams(Map<String, String> params,
-			String workerType, RetryTimedJobMessage timedJobMessage) {
+	private static void validateRetryTimedJobMessageParams(Map<String, String> params, String workerType,
+			RetryTimedJobMessage timedJobMessage) {
 		assertEquals(workerType, timedJobMessage.getWorkerType());
 		assertEquals(params, timedJobMessage.getJobParameters());
 	}
@@ -328,21 +321,20 @@ public class TimedJobTest extends AbstractActorSystemTest {
 						agentProbe.getRef());
 
 				// Observe the timed job trying to schedule the job itself
-				RetryTimedJobMessage timedJobMessage = agentProbe.expectMsgClass(
-						duration("3 seconds"), RetryTimedJobMessage.class);
+				RetryTimedJobMessage timedJobMessage = agentProbe.expectMsgClass(duration("3 seconds"),
+						RetryTimedJobMessage.class);
 				validateRetryTimedJobMessageParams(params, workerType, timedJobMessage);
 
 				// Kill the actor
 				ActorRef timedJob = system.actorFor(actorPath);
 				timedJob.tell(Kill.getInstance(), this.getRef());
 
-				// Observe the timed job has restarted and is trying to schedule the job itself
-				timedJobMessage = agentProbe.expectMsgClass(duration("3 seconds"),
-						RetryTimedJobMessage.class);
+				// Observe the timed job has restarted and is trying to schedule
+				// the job itself
+				timedJobMessage = agentProbe.expectMsgClass(duration("3 seconds"), RetryTimedJobMessage.class);
 				validateRetryTimedJobMessageParams(params, workerType, timedJobMessage);
 
-				timedJobMessage = agentProbe.expectMsgClass(duration("3 seconds"),
-						RetryTimedJobMessage.class);
+				timedJobMessage = agentProbe.expectMsgClass(duration("3 seconds"), RetryTimedJobMessage.class);
 				validateRetryTimedJobMessageParams(params, workerType, timedJobMessage);
 
 				expectNoMsg(duration("10 seconds"));

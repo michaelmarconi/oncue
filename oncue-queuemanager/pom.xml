@@ -19,6 +19,11 @@
       <artifactId>oncue-common</artifactId>
       <version>1.0-SNAPSHOT</version>
     </dependency>
+    <dependency>
+      <groupId>oncue</groupId>
+      <artifactId>oncue-backingstore</artifactId>
+      <version>1.0-SNAPSHOT</version>
+    </dependency>    
   </dependencies>
 
 </project>

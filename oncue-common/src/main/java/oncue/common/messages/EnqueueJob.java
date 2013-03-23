@@ -20,8 +20,7 @@ import java.util.Map;
 
 /**
  * This message is sent to the queue manager (a concrete implementation of
- * {@linkplain oncue.queueManager.internal.AbstractQueueManager} in order to
- * create and enqueue a new job.
+ * AbstractQueueManager) in order to create and enqueue a new job.
  */
 public class EnqueueJob implements Serializable {
 

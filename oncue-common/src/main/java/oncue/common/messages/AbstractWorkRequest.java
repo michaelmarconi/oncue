@@ -21,10 +21,9 @@ import java.util.Collection;
 import akka.actor.ActorRef;
 
 /**
- * Each concrete implementation of
- * {@linkplain oncue.agent.internal.AbstractAgent} will send its own kind of
- * work request to the scheduler, to allow it to include extra information, such
- * as node capacity.
+ * Each concrete implementation of AbstractAgent will send its own kind of work
+ * request to the scheduler, to allow it to include extra information, such as
+ * node capacity.
  */
 public abstract class AbstractWorkRequest implements Serializable {
 

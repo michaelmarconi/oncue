@@ -27,8 +27,8 @@ import oncue.common.messages.AbstractWorkRequest;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobFailed;
-import oncue.service.queuemanager.InMemoryQueueManager;
-import oncue.service.scheduler.SimpleQueuePopScheduler;
+import oncue.queuemanager.InMemoryQueueManager;
+import oncue.scheduler.SimpleQueuePopScheduler;
 import oncue.tests.base.AbstractActorSystemTest;
 import oncue.tests.workers.TestWorker;
 

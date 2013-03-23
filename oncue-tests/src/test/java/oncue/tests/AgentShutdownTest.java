@@ -19,7 +19,7 @@ import oncue.agent.UnlimitedCapacityAgent;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
-import oncue.service.scheduler.SimpleQueuePopScheduler;
+import oncue.scheduler.SimpleQueuePopScheduler;
 import oncue.tests.workers.TestWorker;
 
 import org.junit.Test;
