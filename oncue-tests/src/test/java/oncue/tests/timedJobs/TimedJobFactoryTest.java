@@ -1,4 +1,4 @@
-package oncue.tests.timedJobs;
+package oncue.tests.timedjobs;
 
 /*
  * #%L Oncue $Id:$ $HeadURL:$ %% Copyright (C) 2012 - 2013 Michael Marconi %% Licensed under the
@@ -13,56 +13,21 @@ package oncue.tests.timedJobs;
  * the License. #L%
  */
 
-import oncue.common.settings.Settings;
-import oncue.common.settings.SettingsProvider;
+import oncue.tests.base.AbstractActorSystemTest;
 import oncue.timedjobs.TimedJobFactory;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
-import akka.actor.ActorSystem;
 import akka.actor.EmptyLocalActorRef;
-import akka.event.Logging;
-import akka.event.LoggingAdapter;
 import akka.testkit.JavaTestKit;
 
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
-
-public class TimedJobFactoryTest {
-
-	private Config config;
-
-	private ActorSystem system;
-
-	private Settings settings;
-
-	private LoggingAdapter log;
-
-	@Before
-	public void startActorSystem() {
-		config = ConfigFactory.load("timetable-test");
-		system = ActorSystem.create("oncue-test", config);
-		settings = SettingsProvider.SettingsProvider.get(system);
-		log = Logging.getLogger(system, this);
-	}
-
-	@After
-	public void stopActorSystem() throws Exception {
-		system.shutdown();
-		while (!system.isTerminated()) {
-			log.debug("Waiting for system to shut down...");
-			Thread.sleep(500);
-		}
-		log.debug("System shut down");
-	}
+public class TimedJobFactoryTest extends AbstractActorSystemTest {
 
 	@Test
 	public void createTimedJob() {
 		new JavaTestKit(system) {
 			{
-				TimedJobFactory.createJobsFromJobMap(system, settings.TIMETABLE);
+				TimedJobFactory.createTimedJobs(system, settings.TIMED_JOBS_TIMETABLE);
 
 				new AwaitCond(duration("5 seconds"), duration("1 second")) {
 					@Override

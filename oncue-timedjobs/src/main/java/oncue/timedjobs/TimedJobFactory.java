@@ -10,7 +10,7 @@ import akka.actor.Props;
 import akka.actor.UntypedActorFactory;
 
 /**
- * Created TimedJobs for all jobs specified in the job map.
+ * Create timed jobs for all jobs specified in the job map.
  */
 public class TimedJobFactory {
 
@@ -37,7 +37,7 @@ public class TimedJobFactory {
 		}
 	}
 
-	public static void createJobsFromJobMap(ActorSystem system, List<Map<String, Object>> jobList) {
+	public static void createTimedJobs(ActorSystem system, List<Map<String, Object>> jobList) {
 		createJobsFromJobMap(system, jobList, null);
 	}
 

@@ -18,14 +18,11 @@ package oncue.tests.robustness;
 import java.util.Arrays;
 
 import junit.framework.Assert;
-import oncue.agent.UnlimitedCapacityAgent;
 import oncue.backingstore.RedisBackingStore;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobProgress;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
-import oncue.queuemanager.InMemoryQueueManager;
-import oncue.scheduler.SimpleQueuePopScheduler;
 import oncue.tests.base.AbstractActorSystemTest;
 import oncue.tests.workers.TestWorker;
 
@@ -33,11 +30,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import redis.clients.jedis.Jedis;
-import akka.actor.Actor;
 import akka.actor.ActorRef;
 import akka.actor.PoisonPill;
-import akka.actor.Props;
-import akka.actor.UntypedActorFactory;
 import akka.testkit.JavaTestKit;
 
 /**
@@ -55,7 +49,6 @@ public class SchedulerDiesTest extends AbstractActorSystemTest {
 	}
 
 	@Test
-	@SuppressWarnings("serial")
 	public void testAgentDiesAndAnotherReplacesIt() {
 		new JavaTestKit(system) {
 			{
@@ -92,30 +85,13 @@ public class SchedulerDiesTest extends AbstractActorSystemTest {
 				};
 
 				// Create a queue manager
-				ActorRef queueManager = system.actorOf(new Props(InMemoryQueueManager.class),
-						settings.QUEUE_MANAGER_NAME);
+				ActorRef queueManager = createQueueManager(system, null);
 
-				// Create a Redis-backed scheduler
-				final ActorRef scheduler = system.actorOf(new Props(new UntypedActorFactory() {
-					@Override
-					public Actor create() throws Exception {
-						SimpleQueuePopScheduler scheduler = new SimpleQueuePopScheduler(RedisBackingStore.class);
-						scheduler.injectProbe(schedulerProbe.getRef());
-						return scheduler;
-					}
-				}), settings.SCHEDULER_NAME);
+				// Create a Redis-backed scheduler with a probe
+				final ActorRef scheduler = createScheduler(system, schedulerProbe.getRef());
 
 				// Create an agent with a probe
-				system.actorOf(new Props(new UntypedActorFactory() {
-
-					@Override
-					public Actor create() throws Exception {
-						UnlimitedCapacityAgent agent = new UnlimitedCapacityAgent(Arrays.asList(TestWorker.class
-								.getName()));
-						agent.injectProbe(agentProbe.getRef());
-						return agent;
-					}
-				}), settings.AGENT_NAME);
+				createAgent(system, Arrays.asList(TestWorker.class.getName()), agentProbe.getRef());
 
 				// Enqueue a job
 				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
@@ -142,14 +118,7 @@ public class SchedulerDiesTest extends AbstractActorSystemTest {
 				}
 
 				// Resurrect the scheduler
-				system.actorOf(new Props(new UntypedActorFactory() {
-					@Override
-					public Actor create() throws Exception {
-						SimpleQueuePopScheduler scheduler = new SimpleQueuePopScheduler(RedisBackingStore.class);
-						scheduler.injectProbe(schedulerProbe.getRef());
-						return scheduler;
-					}
-				}), settings.SCHEDULER_NAME);
+				createScheduler(system, schedulerProbe.getRef());
 
 				// Wait for some progress
 				JobProgress jobProgress = schedulerProbe.expectMsgClass(duration("10 seconds"), JobProgress.class);

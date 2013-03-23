@@ -4,21 +4,15 @@ import static junit.framework.Assert.assertEquals;
 import oncue.backingstore.RedisBackingStore;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
-import oncue.queuemanager.RedisQueueManager;
-import oncue.scheduler.SimpleQueuePopScheduler;
 import oncue.tests.base.AbstractActorSystemTest;
 import oncue.tests.workers.TestWorker;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import redis.clients.jedis.Jedis;
-import akka.actor.Actor;
 import akka.actor.ActorRef;
-import akka.actor.Props;
-import akka.actor.UntypedActorFactory;
 import akka.testkit.JavaTestKit;
 
 /**
@@ -34,8 +28,6 @@ public class RobustRedisDequeueTest extends AbstractActorSystemTest {
 	private Jedis redis;
 
 	@Test
-	@Ignore
-	@SuppressWarnings("serial")
 	public void atomicPopAndPush() {
 		new JavaTestKit(system) {
 			{
@@ -52,14 +44,7 @@ public class RobustRedisDequeueTest extends AbstractActorSystemTest {
 				};
 
 				// Create a Redis queue manager with a probe
-				ActorRef queueManager = system.actorOf(new Props(new UntypedActorFactory() {
-					@Override
-					public Actor create() throws Exception {
-						RedisQueueManager queueManager = new RedisQueueManager();
-						queueManager.injectProbe(queueManagerProbe.getRef());
-						return queueManager;
-					}
-				}), settings.QUEUE_MANAGER_NAME);
+				ActorRef queueManager = createQueueManager(system, queueManagerProbe.getRef());
 
 				// Enqueue a job
 				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), null);
@@ -79,23 +64,14 @@ public class RobustRedisDequeueTest extends AbstractActorSystemTest {
 	}
 
 	@Test
-	@Ignore
-	@SuppressWarnings("serial")
 	public void bypassAddingUnscheduledJob() {
 		new JavaTestKit(system) {
 			{
 				// Create a Redis queue manager
-				ActorRef queueManager = system.actorOf(new Props(RedisQueueManager.class), settings.QUEUE_MANAGER_NAME);
+				ActorRef queueManager = createQueueManager(system, null);
 
 				// Create a Redis-backed scheduler with a probe
-				system.actorOf(new Props(new UntypedActorFactory() {
-					@Override
-					public Actor create() throws Exception {
-						SimpleQueuePopScheduler scheduler = new SimpleQueuePopScheduler(RedisBackingStore.class);
-						scheduler.injectProbe(getRef());
-						return scheduler;
-					}
-				}), settings.SCHEDULER_NAME);
+				createScheduler(system, getRef());
 
 				// Enqueue a job
 				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), null);

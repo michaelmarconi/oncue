@@ -21,7 +21,6 @@ import oncue.agent.JVMCapacityAgent;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.WorkResponse;
-import oncue.queuemanager.InMemoryQueueManager;
 import oncue.scheduler.JVMCapacityScheduler;
 import oncue.tests.base.AbstractActorSystemTest;
 import oncue.tests.workers.TestWorker;
@@ -36,8 +35,8 @@ import akka.testkit.JavaTestKit;
 import akka.testkit.TestActorRef;
 
 /**
- * Test the JVM memory capacity strategy by farming jobs of known size out to agents with known
- * capacities.
+ * Test the JVM memory capacity strategy by farming jobs of known size out to
+ * agents with known capacities.
  */
 public class JVMCapacityStrategyTest extends AbstractActorSystemTest {
 
@@ -72,9 +71,8 @@ public class JVMCapacityStrategyTest extends AbstractActorSystemTest {
 		new JavaTestKit(system) {
 
 			{
-				// Create an in-memory queue manager
-				ActorRef queueManager = system.actorOf(new Props(InMemoryQueueManager.class),
-						settings.QUEUE_MANAGER_NAME);
+				// Create a queue manager
+				ActorRef queueManager = createQueueManager(system, null);
 
 				// Create a scheduler probe
 				final JavaTestKit schedulerProbe = new JavaTestKit(system) {
@@ -103,8 +101,8 @@ public class JVMCapacityStrategyTest extends AbstractActorSystemTest {
 						return scheduler;
 					}
 				});
-				final TestActorRef<JVMCapacityScheduler> schedulerRef = TestActorRef.create(system,
-						schedulerProps, settings.SCHEDULER_NAME);
+				final TestActorRef<JVMCapacityScheduler> schedulerRef = TestActorRef.create(system, schedulerProps,
+						settings.SCHEDULER_NAME);
 				final JVMCapacityScheduler scheduler = schedulerRef.underlyingActor();
 
 				// Create agent probes
@@ -113,7 +111,8 @@ public class JVMCapacityStrategyTest extends AbstractActorSystemTest {
 				final JavaTestKit agentProbe3 = createAgentProbe();
 
 				/*
-				 * Create three capacity-aware agents with pre-determined capacity
+				 * Create three capacity-aware agents with pre-determined
+				 * capacity
 				 */
 				createAgent(agentProbe1, "agent1", 500);
 				createAgent(agentProbe2, "agent2", 70);
@@ -125,8 +124,8 @@ public class JVMCapacityStrategyTest extends AbstractActorSystemTest {
 				agentProbe3.expectMsgClass(WorkResponse.class);
 
 				/*
-				 * Pause the scheduler, as we want the scheduler to see all enqueued jobs in a
-				 * single batch for testing purposes
+				 * Pause the scheduler, as we want the scheduler to see all
+				 * enqueued jobs in a single batch for testing purposes
 				 */
 				scheduler.pause();
 
@@ -156,37 +155,37 @@ public class JVMCapacityStrategyTest extends AbstractActorSystemTest {
 				Assert.assertEquals(2, agent1WorkResponse.getJobs().size());
 
 				Job agent1Job2 = agent1WorkResponse.getJobs().get(0);
-				Assert.assertEquals(job2.getParams().get(JVMCapacityScheduler.JOB_SIZE), agent1Job2
-						.getParams().get(JVMCapacityScheduler.JOB_SIZE));
+				Assert.assertEquals(job2.getParams().get(JVMCapacityScheduler.JOB_SIZE),
+						agent1Job2.getParams().get(JVMCapacityScheduler.JOB_SIZE));
 
 				Job agent1Job4 = agent1WorkResponse.getJobs().get(0);
-				Assert.assertEquals(job4.getParams().get(JVMCapacityScheduler.JOB_SIZE), agent1Job4
-						.getParams().get(JVMCapacityScheduler.JOB_SIZE));
+				Assert.assertEquals(job4.getParams().get(JVMCapacityScheduler.JOB_SIZE),
+						agent1Job4.getParams().get(JVMCapacityScheduler.JOB_SIZE));
 
 				// Expect Job 3 at Agent 2
 				WorkResponse agent2WorkResponse = agentProbe2.expectMsgClass(WorkResponse.class);
 				Assert.assertEquals(1, agent2WorkResponse.getJobs().size());
 				Job agent2Job3 = agent2WorkResponse.getJobs().get(0);
-				Assert.assertEquals(job3.getParams().get(JVMCapacityScheduler.JOB_SIZE), agent2Job3
-						.getParams().get(JVMCapacityScheduler.JOB_SIZE));
+				Assert.assertEquals(job3.getParams().get(JVMCapacityScheduler.JOB_SIZE),
+						agent2Job3.getParams().get(JVMCapacityScheduler.JOB_SIZE));
 
 				// Expect Job 1 at Agent 3
 				WorkResponse agent3WorkResponse = agentProbe3.expectMsgClass(WorkResponse.class);
 				Assert.assertEquals(1, agent3WorkResponse.getJobs().size());
 				Job agent3Job1 = agent3WorkResponse.getJobs().get(0);
-				Assert.assertEquals(job1.getParams().get(JVMCapacityScheduler.JOB_SIZE), agent3Job1
-						.getParams().get(JVMCapacityScheduler.JOB_SIZE));
+				Assert.assertEquals(job1.getParams().get(JVMCapacityScheduler.JOB_SIZE),
+						agent3Job1.getParams().get(JVMCapacityScheduler.JOB_SIZE));
 
 				/*
-				 * Now, Jobs 1 - 4 will complete and all the agents will ask for new work. Since
-				 * Agent 1 is the only one big enough to fit Job 5, it will receive it.
+				 * Now, Jobs 1 - 4 will complete and all the agents will ask for
+				 * new work. Since Agent 1 is the only one big enough to fit Job
+				 * 5, it will receive it.
 				 */
-				agent1WorkResponse = agentProbe1.expectMsgClass(duration("5 seconds"),
-						WorkResponse.class);
+				agent1WorkResponse = agentProbe1.expectMsgClass(duration("5 seconds"), WorkResponse.class);
 				Assert.assertEquals(1, agent1WorkResponse.getJobs().size());
 				Job agent1Job5 = agent1WorkResponse.getJobs().get(0);
-				Assert.assertEquals(job5.getParams().get(JVMCapacityScheduler.JOB_SIZE), agent1Job5
-						.getParams().get(JVMCapacityScheduler.JOB_SIZE));
+				Assert.assertEquals(job5.getParams().get(JVMCapacityScheduler.JOB_SIZE),
+						agent1Job5.getParams().get(JVMCapacityScheduler.JOB_SIZE));
 			}
 		};
 	}
@@ -212,8 +211,7 @@ public class JVMCapacityStrategyTest extends AbstractActorSystemTest {
 
 			@Override
 			public Actor create() throws Exception {
-				JVMCapacityAgent agent = new JVMCapacityAgent(Arrays.asList(TestWorker.class
-						.getName()), capacity);
+				JVMCapacityAgent agent = new JVMCapacityAgent(Arrays.asList(TestWorker.class.getName()), capacity);
 				agent.injectProbe(agentProbe.getRef());
 				return agent;
 			}

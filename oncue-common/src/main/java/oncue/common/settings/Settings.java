@@ -43,7 +43,7 @@ public class Settings implements Extension {
 	public final String QUEUE_MANAGER_PATH;
 	public final FiniteDuration QUEUE_MANAGER_TIMEOUT;
 
-	public final FiniteDuration TIMED_JOB_RETRY_DELAY;
+	public final FiniteDuration TIMED_JOBS_RETRY_DELAY;
 
 	public final String AGENT_NAME;
 	public final String AGENT_PATH;
@@ -54,7 +54,7 @@ public class Settings implements Extension {
 	public final FiniteDuration API_TIMEOUT;
 
 	public Integer THROTTLED_AGENT_JOB_LIMIT;
-	public final List<Map<String, Object>> TIMETABLE;
+	public final List<Map<String, Object>> TIMED_JOBS_TIMETABLE;
 
 	@SuppressWarnings("unchecked")
 	public Settings(Config config) {
@@ -88,9 +88,6 @@ public class Settings implements Extension {
 		QUEUE_MANAGER_PATH = config.getString("queue-manager.path");
 		QUEUE_MANAGER_TIMEOUT = Duration.create(config.getMilliseconds("queue-manager.timeout"), TimeUnit.MILLISECONDS);
 
-		TIMED_JOB_RETRY_DELAY = Duration
-				.create(config.getMilliseconds("timed-jobs.retry-delay"), TimeUnit.MILLISECONDS);
-
 		API_NAME = config.getString("api.name");
 		API_TIMEOUT = Duration.create(config.getMilliseconds("api.timeout"), TimeUnit.MILLISECONDS);
 
@@ -101,12 +98,15 @@ public class Settings implements Extension {
 				TimeUnit.MILLISECONDS);
 
 		THROTTLED_AGENT_JOB_LIMIT = config.getInt("agent.throttled-agent.max-jobs");
+		
+		TIMED_JOBS_RETRY_DELAY = Duration
+				.create(config.getMilliseconds("timed-jobs.retry-delay"), TimeUnit.MILLISECONDS);
 
-		// Timed job schedules are optional
-		if (config.hasPath("timetable")) {
-			TIMETABLE = (ArrayList<Map<String, Object>>) config.getAnyRef("timetable");
+		// Timed jobs are optional
+		if (config.hasPath("timed-jobs.timetable")) {
+			TIMED_JOBS_TIMETABLE = (ArrayList<Map<String, Object>>) config.getAnyRef("timed-jobs.timetable");
 		} else {
-			TIMETABLE = null;
+			TIMED_JOBS_TIMETABLE = null;
 		}
 	}
 }
