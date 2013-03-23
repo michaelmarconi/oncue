@@ -26,14 +26,13 @@
 
 	<modules>
 		<module>oncue-common</module>
-		<module>oncue-service</module>
 		<module>oncue-agent</module>
-		<module>oncue-api</module>
-    	<module>oncue-tests</module>
+		<module>oncue-service</module>
     <module>oncue-queuemanager</module>
     <module>oncue-scheduler</module>
     <module>oncue-backingstore</module>
     <module>oncue-timedjobs</module>
+    <module>oncue-tests</module>
   </modules>
 
 	<repositories>
