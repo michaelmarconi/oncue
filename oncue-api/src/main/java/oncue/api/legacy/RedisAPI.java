@@ -1,4 +1,4 @@
-package oncue.api;
+package oncue.api.legacy;
 
 import java.util.Map;
 

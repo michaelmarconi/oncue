@@ -28,7 +28,6 @@
 		<module>oncue-common</module>
 		<module>oncue-service</module>
 		<module>oncue-agent</module>
-		<module>oncue-ui</module>
 		<module>oncue-api</module>
     	<module>oncue-tests</module>
   </modules>
@@ -130,6 +129,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-dependency-plugin</artifactId>
+				<version>2.6</version>
 				<executions>
 					<execution>
 						<phase>install</phase>
@@ -146,6 +146,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
+				<version>2.4</version>
 				<configuration>
 					<includes>
 						<include>**</include>

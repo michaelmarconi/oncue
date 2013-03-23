@@ -2,6 +2,7 @@ package oncue.service;
 
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
+import oncue.service.api.RESTfulAPI;
 import akka.actor.Actor;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
@@ -64,5 +65,8 @@ public class OnCueService implements Bootable {
 						.newInstance(backingStoreClass);
 			}
 		}), settings.SCHEDULER_NAME);
+		
+		// Start the RESTful API
+		system.actorOf(new Props(RESTfulAPI.class), "restful-api");
 	}
 }
