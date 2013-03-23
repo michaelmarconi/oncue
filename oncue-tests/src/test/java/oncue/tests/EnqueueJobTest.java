@@ -18,45 +18,28 @@ package oncue.tests;
 import static org.junit.Assert.assertEquals;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
-import oncue.queuemanager.InMemoryQueueManager;
-import oncue.scheduler.SimpleQueuePopScheduler;
 import oncue.tests.base.AbstractActorSystemTest;
 import oncue.tests.workers.TestWorker;
 
 import org.junit.Test;
 
-import akka.actor.Actor;
 import akka.actor.ActorRef;
-import akka.actor.Props;
-import akka.actor.UntypedActorFactory;
 import akka.testkit.JavaTestKit;
 
 public class EnqueueJobTest extends AbstractActorSystemTest {
 
 	@Test
-	@SuppressWarnings("serial")
 	public void testEnqueuingJob() {
 		new JavaTestKit(system) {
 			{
 				// Create a queue manager
-				ActorRef queueManager = system.actorOf(new Props(InMemoryQueueManager.class),
-						settings.QUEUE_MANAGER_NAME);
+				ActorRef queueManager = createQueueManager(system, null);
 
-				// Create a scheduler probe
+				// Create a scheduler with a probe
 				final JavaTestKit schedulerProbe = new JavaTestKit(system);
-
-				// Create a simple scheduler with a probe
-				system.actorOf(new Props(new UntypedActorFactory() {
-					@Override
-					public Actor create() throws Exception {
-						SimpleQueuePopScheduler scheduler = new SimpleQueuePopScheduler(null);
-						scheduler.injectProbe(schedulerProbe.getRef());
-						return scheduler;
-					}
-				}), "scheduler");
+				createScheduler(system, schedulerProbe.getRef());
 
 				for (int i = 0; i < 2; i++) {
-
 					// Enqueue a job
 					queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
 					Job job = expectMsgClass(Job.class);

@@ -19,8 +19,6 @@ import static junit.framework.Assert.assertEquals;
 import oncue.backingstore.RedisBackingStore;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
-import oncue.queuemanager.RedisQueueManager;
-import oncue.scheduler.SimpleQueuePopScheduler;
 import oncue.tests.base.AbstractActorSystemTest;
 import oncue.tests.workers.TestWorker;
 
@@ -28,10 +26,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import redis.clients.jedis.Jedis;
-import akka.actor.Actor;
 import akka.actor.ActorRef;
-import akka.actor.Props;
-import akka.actor.UntypedActorFactory;
 import akka.testkit.JavaTestKit;
 
 /**
@@ -49,12 +44,11 @@ public class RedisQueueManagerTest extends AbstractActorSystemTest {
 	}
 
 	@Test
-	@SuppressWarnings("serial")
 	public void testEnqueueNewJob() {
 		new JavaTestKit(system) {
 			{
-				// Create a Redis-backed queue manager
-				ActorRef queueManager = system.actorOf(new Props(RedisQueueManager.class), settings.QUEUE_MANAGER_NAME);
+				// Create a Redis-backed (see config) queue manager
+				ActorRef queueManager = createQueueManager(system, null);
 
 				// Create a scheduler with a probe
 				final JavaTestKit schedulerProbe = new JavaTestKit(system) {
@@ -68,15 +62,7 @@ public class RedisQueueManagerTest extends AbstractActorSystemTest {
 						};
 					}
 				};
-
-				system.actorOf(new Props(new UntypedActorFactory() {
-					@Override
-					public Actor create() throws Exception {
-						SimpleQueuePopScheduler scheduler = new SimpleQueuePopScheduler(null);
-						scheduler.injectProbe(schedulerProbe.getRef());
-						return scheduler;
-					}
-				}), settings.SCHEDULER_NAME);
+				createScheduler(system, schedulerProbe.getRef());
 
 				// Enqueue a job
 				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());

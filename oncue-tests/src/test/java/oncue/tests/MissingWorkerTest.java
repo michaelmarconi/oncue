@@ -21,24 +21,18 @@ import java.util.Arrays;
 import java.util.List;
 
 import oncue.agent.MissingWorkerException;
-import oncue.agent.UnlimitedCapacityAgent;
 import oncue.agent.workers.AbstractWorker;
 import oncue.common.messages.AbstractWorkRequest;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobFailed;
-import oncue.queuemanager.InMemoryQueueManager;
-import oncue.scheduler.SimpleQueuePopScheduler;
 import oncue.tests.base.AbstractActorSystemTest;
 import oncue.tests.workers.TestWorker;
 
 import org.junit.Test;
 
 import sun.management.Agent;
-import akka.actor.Actor;
 import akka.actor.ActorRef;
-import akka.actor.Props;
-import akka.actor.UntypedActorFactory;
 import akka.testkit.JavaTestKit;
 
 /**
@@ -66,17 +60,11 @@ import akka.testkit.JavaTestKit;
 public class MissingWorkerTest extends AbstractActorSystemTest {
 
 	@Test
-	@SuppressWarnings("serial")
 	public void startAgentWithMissingWorkerType() {
 		new JavaTestKit(system) {
 			{
-				// Create an agent
-				system.actorOf(new Props(new UntypedActorFactory() {
-					@Override
-					public Actor create() throws Exception {
-						return new UnlimitedCapacityAgent(Arrays.asList("oncue.workers.MissingWorker"));
-					}
-				}), settings.AGENT_NAME);
+				// Start an agent
+				createAgent(system, Arrays.asList("oncue.workers.MissingWorker"), null);
 
 				// Wait for the system to shut down
 				new AwaitCond(duration("5 seconds"), duration("1 second")) {
@@ -90,7 +78,6 @@ public class MissingWorkerTest extends AbstractActorSystemTest {
 	}
 
 	@Test
-	@SuppressWarnings("serial")
 	public void scheduleJobToUnqualifiedAgent() {
 		new JavaTestKit(system) {
 			{
@@ -109,28 +96,13 @@ public class MissingWorkerTest extends AbstractActorSystemTest {
 				};
 
 				// Create a queue manager
-				ActorRef queueManager = system.actorOf(new Props(InMemoryQueueManager.class),
-						settings.QUEUE_MANAGER_NAME);
+				ActorRef queueManager = createQueueManager(system, null);
 
-				// Create a simple scheduler with a probe
-				system.actorOf(new Props(new UntypedActorFactory() {
-					@Override
-					public Actor create() throws Exception {
-						SimpleQueuePopScheduler scheduler = new SimpleQueuePopScheduler(null);
-						scheduler.injectProbe(schedulerProbe.getRef());
-						return scheduler;
-					}
-				}), "scheduler");
+				// Create a scheduler with a probe
+				createScheduler(system, schedulerProbe.getRef());
 
 				// Create an agent
-				system.actorOf(new Props(new UntypedActorFactory() {
-					@Override
-					public Actor create() throws Exception {
-						UnlimitedCapacityAgent agent = new UnlimitedCapacityAgent(Arrays.asList(TestWorker.class
-								.getName()));
-						return agent;
-					}
-				}), "agent");
+				createAgent(system, Arrays.asList(TestWorker.class.getName()), null);
 
 				// Expect agent to report available worker types
 				AbstractWorkRequest workRequest = schedulerProbe.expectMsgClass(AbstractWorkRequest.class);

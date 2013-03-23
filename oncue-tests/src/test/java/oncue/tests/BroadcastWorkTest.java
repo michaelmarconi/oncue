@@ -19,53 +19,36 @@ import static junit.framework.Assert.assertEquals;
 
 import java.util.Arrays;
 
-import oncue.agent.UnlimitedCapacityAgent;
 import oncue.common.messages.AbstractWorkRequest;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
-import oncue.common.messages.WorkResponse;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
-import oncue.queuemanager.InMemoryQueueManager;
-import oncue.scheduler.SimpleQueuePopScheduler;
+import oncue.common.messages.WorkResponse;
 import oncue.tests.base.AbstractActorSystemTest;
 import oncue.tests.workers.TestWorker;
 
 import org.junit.Test;
 
-import sun.management.Agent;
-import akka.actor.Actor;
 import akka.actor.ActorRef;
-import akka.actor.Props;
-import akka.actor.Scheduler;
-import akka.actor.UntypedActorFactory;
 import akka.testkit.JavaTestKit;
 
 /**
- * When the {@linkplain Scheduler} has unscheduled jobs, it broadcasts a
- * "Work available" message repeatedly, until all the unscheduled jobs have been
- * taken by an {@linkplain Agent}.
+ * When the Scheduler has unscheduled jobs, it broadcasts a "Work available"
+ * message repeatedly, until all the unscheduled jobs have been taken by an
+ * Agent.
  */
 public class BroadcastWorkTest extends AbstractActorSystemTest {
 
 	@Test
-	@SuppressWarnings("serial")
 	public void oneJobToScheduleButNoAgents() {
 		new JavaTestKit(system) {
 			{
 				// Create a queue manager
-				ActorRef queueManager = system.actorOf(new Props(InMemoryQueueManager.class),
-						settings.QUEUE_MANAGER_NAME);
+				ActorRef queueManager = createQueueManager(system, null);
 
-				// Create a scheduler
+				// Create a scheduler with a probe
 				final JavaTestKit schedulerProbe = new JavaTestKit(system);
-				system.actorOf(new Props(new UntypedActorFactory() {
-					@Override
-					public Actor create() throws Exception {
-						SimpleQueuePopScheduler scheduler = new SimpleQueuePopScheduler(null);
-						scheduler.injectProbe(schedulerProbe.getRef());
-						return scheduler;
-					}
-				}), "scheduler");
+				createScheduler(system, schedulerProbe.getRef());
 
 				// Enqueue a job
 				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
@@ -80,7 +63,6 @@ public class BroadcastWorkTest extends AbstractActorSystemTest {
 	}
 
 	@Test
-	@SuppressWarnings("serial")
 	public void oneJobToScheduleAndOneAgent() {
 		new JavaTestKit(system) {
 			{
@@ -113,30 +95,14 @@ public class BroadcastWorkTest extends AbstractActorSystemTest {
 				};
 
 				// Create a queue manager
-				ActorRef queueManager = system.actorOf(new Props(InMemoryQueueManager.class),
-						settings.QUEUE_MANAGER_NAME);
+				ActorRef queueManager = createQueueManager(system, null);
 
-				// Create a simple scheduler
-				system.actorOf(new Props(new UntypedActorFactory() {
-					@Override
-					public Actor create() throws Exception {
-						SimpleQueuePopScheduler scheduler = new SimpleQueuePopScheduler(null);
-						scheduler.injectProbe(schedulerProbe.getRef());
-						return scheduler;
-					}
-				}), "scheduler");
+				// Create a scheduler with a probe
+				createScheduler(system, schedulerProbe.getRef());
 
 				// Create an agent
-				system.actorOf(new Props(new UntypedActorFactory() {
-					@Override
-					public Actor create() throws Exception {
-						UnlimitedCapacityAgent agent = new UnlimitedCapacityAgent(Arrays.asList(TestWorker.class
-								.getName()));
-						agent.injectProbe(agentProbe.getRef());
-						return agent;
-					}
-				}), "agent");
-
+				createAgent(system, Arrays.asList(TestWorker.class.getName()), agentProbe.getRef());
+				
 				// Wait until the agent receives an empty work response
 				WorkResponse workResponse = agentProbe.expectMsgClass(WorkResponse.class);
 				assertEquals(0, workResponse.getJobs().size());

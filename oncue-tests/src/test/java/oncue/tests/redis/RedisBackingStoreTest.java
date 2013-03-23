@@ -24,14 +24,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import oncue.agent.UnlimitedCapacityAgent;
+import oncue.backingstore.RedisBackingStore;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobFailed;
 import oncue.common.messages.JobProgress;
-import oncue.backingstore.RedisBackingStore;
-import oncue.queuemanager.InMemoryQueueManager;
-import oncue.scheduler.SimpleQueuePopScheduler;
 import oncue.tests.base.AbstractActorSystemTest;
 import oncue.tests.workers.IncompetentTestWorker;
 import oncue.tests.workers.TestWorker;
@@ -42,16 +39,12 @@ import org.junit.Before;
 import org.junit.Test;
 
 import redis.clients.jedis.Jedis;
-import akka.actor.Actor;
 import akka.actor.ActorRef;
-import akka.actor.Props;
-import akka.actor.UntypedActorFactory;
 import akka.testkit.JavaTestKit;
 
 public class RedisBackingStoreTest extends AbstractActorSystemTest {
 
 	@Test
-	@SuppressWarnings("serial")
 	public void addScheduledJob() {
 		new JavaTestKit(system) {
 			{
@@ -68,18 +61,10 @@ public class RedisBackingStoreTest extends AbstractActorSystemTest {
 				};
 
 				// Create a queue manager
-				ActorRef queueManager = system.actorOf(new Props(InMemoryQueueManager.class),
-						settings.QUEUE_MANAGER_NAME);
+				ActorRef queueManager = createQueueManager(system, null);
 
-				// Create a Redis-backed scheduler with a probe
-				system.actorOf(new Props(new UntypedActorFactory() {
-					@Override
-					public Actor create() throws Exception {
-						SimpleQueuePopScheduler scheduler = new SimpleQueuePopScheduler(RedisBackingStore.class);
-						scheduler.injectProbe(schedulerProbe.getRef());
-						return scheduler;
-					}
-				}), settings.SCHEDULER_NAME);
+				// Create a Redis-backed scheduler (see config) with a probe
+				createScheduler(system, schedulerProbe.getRef());
 
 				// Construct job params
 				Map<String, String> params = new HashMap<>();
@@ -91,12 +76,7 @@ public class RedisBackingStoreTest extends AbstractActorSystemTest {
 				Job job = expectMsgClass(Job.class);
 
 				// Start an Agent
-				system.actorOf(new Props(new UntypedActorFactory() {
-					@Override
-					public Actor create() throws Exception {
-						return new UnlimitedCapacityAgent(Arrays.asList(TestWorker.class.getName()));
-					}
-				}), settings.AGENT_NAME);
+				createAgent(system, Arrays.asList(TestWorker.class.getName()), null);
 
 				// Wait for some progress
 				schedulerProbe.expectMsgClass(JobProgress.class);
@@ -118,22 +98,14 @@ public class RedisBackingStoreTest extends AbstractActorSystemTest {
 	}
 
 	@Test
-	@SuppressWarnings("serial")
 	public void addUnscheduledJob() {
 		new JavaTestKit(system) {
 			{
 				// Create a queue manager
-				ActorRef queueManager = system.actorOf(new Props(InMemoryQueueManager.class),
-						settings.QUEUE_MANAGER_NAME);
+				ActorRef queueManager = createQueueManager(system, null);
 
-				// Create a Redis-backed scheduler
-				system.actorOf(new Props(new UntypedActorFactory() {
-					@Override
-					public Actor create() throws Exception {
-						SimpleQueuePopScheduler scheduler = new SimpleQueuePopScheduler(RedisBackingStore.class);
-						return scheduler;
-					}
-				}), settings.SCHEDULER_NAME);
+				// Create a Redis-backed scheduler (see config)
+				createScheduler(system, null);
 
 				// Construct job params
 				Map<String, String> params = new HashMap<>();
@@ -162,14 +134,14 @@ public class RedisBackingStoreTest extends AbstractActorSystemTest {
 		};
 	}
 
-	@Before @After
+	@Before
+	@After
 	public void cleanRedis() {
 		Jedis redis = RedisBackingStore.getConnection();
 		redis.flushDB();
 		RedisBackingStore.releaseConnection(redis);
 	}
 
-	@SuppressWarnings("serial")
 	@Test
 	public void persistJobFailure() {
 		new JavaTestKit(system) {
@@ -187,30 +159,17 @@ public class RedisBackingStoreTest extends AbstractActorSystemTest {
 				};
 
 				// Create a queue manager
-				ActorRef queueManager = system.actorOf(new Props(InMemoryQueueManager.class),
-						settings.QUEUE_MANAGER_NAME);
+				ActorRef queueManager = createQueueManager(system, null);
 
-				// Create a Redis-backed scheduler with a probe
-				system.actorOf(new Props(new UntypedActorFactory() {
-					@Override
-					public Actor create() throws Exception {
-						SimpleQueuePopScheduler scheduler = new SimpleQueuePopScheduler(RedisBackingStore.class);
-						scheduler.injectProbe(schedulerProbe.getRef());
-						return scheduler;
-					}
-				}), settings.SCHEDULER_NAME);
+				// Create a Redis-backed scheduler (see config) with a probe
+				createScheduler(system, schedulerProbe.getRef());
 
 				// Enqueue a job for an incompetent worker
 				queueManager.tell(new EnqueueJob(IncompetentTestWorker.class.getName()), getRef());
 				Job job = expectMsgClass(Job.class);
 
 				// Start an Agent
-				system.actorOf(new Props(new UntypedActorFactory() {
-					@Override
-					public Actor create() throws Exception {
-						return new UnlimitedCapacityAgent(Arrays.asList(TestWorker.class.getName()));
-					}
-				}), settings.AGENT_NAME);
+				createAgent(system, Arrays.asList(TestWorker.class.getName()), null);
 
 				// Expect a job failure message at the scheduler
 				JobFailed jobFailed = schedulerProbe.expectMsgClass(JobFailed.class);
@@ -234,7 +193,6 @@ public class RedisBackingStoreTest extends AbstractActorSystemTest {
 		};
 	}
 
-	@SuppressWarnings("serial")
 	@Test
 	public void persistJobProgress() {
 		new JavaTestKit(system) {
@@ -252,30 +210,17 @@ public class RedisBackingStoreTest extends AbstractActorSystemTest {
 				};
 
 				// Create a queue manager
-				ActorRef queueManager = system.actorOf(new Props(InMemoryQueueManager.class),
-						settings.QUEUE_MANAGER_NAME);
+				ActorRef queueManager = createQueueManager(system, null);
 
-				// Create a Redis-backed scheduler with a probe
-				system.actorOf(new Props(new UntypedActorFactory() {
-					@Override
-					public Actor create() throws Exception {
-						SimpleQueuePopScheduler scheduler = new SimpleQueuePopScheduler(RedisBackingStore.class);
-						scheduler.injectProbe(schedulerProbe.getRef());
-						return scheduler;
-					}
-				}), settings.SCHEDULER_NAME);
+				// Create a Redis-backed scheduler (see config) with a probe
+				createScheduler(system, schedulerProbe.getRef());
 
 				// Enqueue a job
 				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
 				Job job = expectMsgClass(Job.class);
 
 				// Start an Agent
-				system.actorOf(new Props(new UntypedActorFactory() {
-					@Override
-					public Actor create() throws Exception {
-						return new UnlimitedCapacityAgent(Arrays.asList(TestWorker.class.getName()));
-					}
-				}), settings.AGENT_NAME);
+				createAgent(system, Arrays.asList(TestWorker.class.getName()), null);
 
 				// Expect a series of progress reports
 				double expectedProgress = 0;

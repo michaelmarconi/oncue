@@ -23,8 +23,6 @@ import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobProgress;
 import oncue.common.messages.WorkResponse;
-import oncue.queuemanager.InMemoryQueueManager;
-import oncue.scheduler.SimpleQueuePopScheduler;
 import oncue.tests.base.AbstractActorSystemTest;
 import oncue.tests.workers.TestWorker;
 
@@ -39,28 +37,25 @@ import akka.testkit.JavaTestKit;
 import akka.testkit.TestActorRef;
 
 /**
- * When an {@linkplain Agent} receives a {@linkplain WorkResponse}, it will attempt to spawn an
- * instance of an {@linkplain IWorker} for each {@linkplain Job} in the list. When an
- * {@linkplain Agent} receives a {@linkplain WorkResponse}, it will attempt to spawn an instance of
- * an {@linkplain IWorker} for each {@linkplain Job} in the list.
+ * When an {@linkplain Agent} receives a {@linkplain WorkResponse}, it will
+ * attempt to spawn an instance of an {@linkplain IWorker} for each
+ * {@linkplain Job} in the list. When an {@linkplain Agent} receives a
+ * {@linkplain WorkResponse}, it will attempt to spawn an instance of an
+ * {@linkplain IWorker} for each {@linkplain Job} in the list.
  */
 public class WorkerTest extends AbstractActorSystemTest {
 
 	@Test
-	@SuppressWarnings("serial")
 	public void spawnWorkerAndStartJob() {
 		new JavaTestKit(system) {
-
 			{
 				// Create an agent probe
 				final JavaTestKit agentProbe = new JavaTestKit(system) {
-
 					{
 						new IgnoreMsg() {
 
 							protected boolean ignore(Object message) {
-								if (message instanceof WorkResponse
-										|| message instanceof JobProgress)
+								if (message instanceof WorkResponse || message instanceof JobProgress)
 									return false;
 
 								return true;
@@ -70,21 +65,15 @@ public class WorkerTest extends AbstractActorSystemTest {
 				};
 
 				// Create a queue manager
-				ActorRef queueManager = system.actorOf(new Props(InMemoryQueueManager.class),
-						settings.QUEUE_MANAGER_NAME);
+				ActorRef queueManager = createQueueManager(system, null);
 
-				// Create a simple scheduler
-				system.actorOf(new Props(new UntypedActorFactory() {
-
-					@Override
-					public Actor create() throws Exception {
-						return new SimpleQueuePopScheduler(null);
-					}
-				}), settings.SCHEDULER_NAME);
+				// Create a scheduler
+				createScheduler(system, null);
 
 				// Create and expose an agent
-				TestActorRef<UnlimitedCapacityAgent> agentRef = TestActorRef.create(system,
-						new Props(new UntypedActorFactory() {
+				@SuppressWarnings("serial")
+				TestActorRef<UnlimitedCapacityAgent> agentRef = TestActorRef.create(system, new Props(
+						new UntypedActorFactory() {
 
 							@Override
 							public Actor create() throws Exception {
@@ -101,8 +90,7 @@ public class WorkerTest extends AbstractActorSystemTest {
 				assertEquals(0, workResponse.getJobs().size());
 
 				// Check that there are no workers
-				assertFalse("Expected no child workers", agent.getContext().getChildren()
-						.iterator().hasNext());
+				assertFalse("Expected no child workers", agent.getContext().getChildren().iterator().hasNext());
 
 				// Enqueue a job
 				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());

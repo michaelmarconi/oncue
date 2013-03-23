@@ -112,11 +112,11 @@ public abstract class AbstractActorSystemTest {
 
 	@Before
 	public void startActorSystem() {
-
-		// Load standard library config
+		/*
+		 * Load configuration specific to this test and fall back to the
+		 * reference configuration
+		 */
 		config = ConfigFactory.load();
-
-		// Try loading test-specific config
 		config = ConfigFactory.load(getClass().getSimpleName()).withFallback(config);
 
 		system = ActorSystem.create("oncue-test", config);

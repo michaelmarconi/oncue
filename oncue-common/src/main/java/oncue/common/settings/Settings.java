@@ -42,7 +42,7 @@ public class Settings implements Extension {
 	public final String QUEUE_MANAGER_CLASS;
 	public final String QUEUE_MANAGER_PATH;
 	public final FiniteDuration QUEUE_MANAGER_TIMEOUT;
-	
+
 	public final FiniteDuration TIMED_JOB_RETRY_DELAY;
 
 	public final String AGENT_NAME;
@@ -58,61 +58,53 @@ public class Settings implements Extension {
 
 	@SuppressWarnings("unchecked")
 	public Settings(Config config) {
+
 		config = config.getConfig("oncue");
-		
+
 		SCHEDULER_NAME = config.getString("scheduler.name");
 		SCHEDULER_PATH = config.getString("scheduler.path");
 		SCHEDULER_CLASS = config.getString("scheduler.class");
 
 		try {
-			SCHEDULER_BACKING_STORE_CLASS = config
-					.getString("scheduler.backing-store-class");
+			SCHEDULER_BACKING_STORE_CLASS = config.getString("scheduler.backing-store-class");
 		} catch (ConfigException.Missing e) {
 			SCHEDULER_BACKING_STORE_CLASS = null;
 		}
 
 		SCHEDULER_BROADCAST_JOBS_FREQUENCY = Duration.create(
-				config.getMilliseconds("scheduler.broadcast-jobs-frequency"),
-				TimeUnit.MILLISECONDS);
+				config.getMilliseconds("scheduler.broadcast-jobs-frequency"), TimeUnit.MILLISECONDS);
 
-		SCHEDULER_BROADCAST_JOBS_QUIESCENCE_PERIOD = Duration.create(config
-				.getMilliseconds("scheduler.broadcast-jobs-quiescence-period"),
-				TimeUnit.MILLISECONDS);
+		SCHEDULER_BROADCAST_JOBS_QUIESCENCE_PERIOD = Duration.create(
+				config.getMilliseconds("scheduler.broadcast-jobs-quiescence-period"), TimeUnit.MILLISECONDS);
 
 		SCHEDULER_MONITOR_AGENTS_FREQUENCY = Duration.create(
-				config.getMilliseconds("scheduler.monitor-agents-frequency"),
-				TimeUnit.MILLISECONDS);
+				config.getMilliseconds("scheduler.monitor-agents-frequency"), TimeUnit.MILLISECONDS);
 
 		SCHEDULER_AGENT_HEARTBEAT_TIMEOUT = Duration.create(
-				config.getMilliseconds("scheduler.agent-heartbeat-timeout"),
-				TimeUnit.MILLISECONDS);
+				config.getMilliseconds("scheduler.agent-heartbeat-timeout"), TimeUnit.MILLISECONDS);
 
 		QUEUE_MANAGER_NAME = config.getString("queue-manager.name");
 		QUEUE_MANAGER_CLASS = config.getString("queue-manager.class");
 		QUEUE_MANAGER_PATH = config.getString("queue-manager.path");
-		QUEUE_MANAGER_TIMEOUT = Duration.create(config.getMilliseconds("queue-manager.timeout"),
-				TimeUnit.MILLISECONDS);
-		
-		TIMED_JOB_RETRY_DELAY = Duration.create(config.getMilliseconds("timed-jobs.retry-delay"),
-				TimeUnit.MILLISECONDS);		
+		QUEUE_MANAGER_TIMEOUT = Duration.create(config.getMilliseconds("queue-manager.timeout"), TimeUnit.MILLISECONDS);
+
+		TIMED_JOB_RETRY_DELAY = Duration
+				.create(config.getMilliseconds("timed-jobs.retry-delay"), TimeUnit.MILLISECONDS);
 
 		API_NAME = config.getString("api.name");
-		API_TIMEOUT = Duration.create(config.getMilliseconds("api.timeout"),
-				TimeUnit.MILLISECONDS);
+		API_TIMEOUT = Duration.create(config.getMilliseconds("api.timeout"), TimeUnit.MILLISECONDS);
 
 		AGENT_NAME = config.getString("agent.name");
 		AGENT_PATH = config.getString("agent.path");
 		AGENT_CLASS = config.getString("agent.class");
-		AGENT_HEARTBEAT_FREQUENCY = Duration.create(
-				config.getMilliseconds("agent.heartbeat-frequency"),
+		AGENT_HEARTBEAT_FREQUENCY = Duration.create(config.getMilliseconds("agent.heartbeat-frequency"),
 				TimeUnit.MILLISECONDS);
 
 		THROTTLED_AGENT_JOB_LIMIT = config.getInt("agent.throttled-agent.max-jobs");
 
 		// Timed job schedules are optional
 		if (config.hasPath("timetable")) {
-			TIMETABLE = (ArrayList<Map<String, Object>>) config
-					.getAnyRef("timetable");
+			TIMETABLE = (ArrayList<Map<String, Object>>) config.getAnyRef("timetable");
 		} else {
 			TIMETABLE = null;
 		}

@@ -19,20 +19,15 @@ import static junit.framework.Assert.assertEquals;
 
 import java.util.Arrays;
 
-import oncue.agent.UnlimitedCapacityAgent;
 import oncue.common.messages.AbstractWorkRequest;
-import oncue.common.messages.WorkResponse;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
-import oncue.scheduler.SimpleQueuePopScheduler;
+import oncue.common.messages.WorkResponse;
 import oncue.tests.base.AbstractActorSystemTest;
 import oncue.tests.workers.TestWorker;
 
 import org.junit.Test;
 
 import sun.management.Agent;
-import akka.actor.Actor;
-import akka.actor.Props;
-import akka.actor.UntypedActorFactory;
 import akka.testkit.JavaTestKit;
 
 /**
@@ -45,33 +40,17 @@ public class AgentRegistrationTest extends AbstractActorSystemTest {
 	/**
 	 * An {@linkplain Agent} should emit a steady heartbeat while it is alive.
 	 */
-	@SuppressWarnings("serial")
 	@Test
 	public void agentRegistersAndRequestsWorkButReceivesNoWork() {
 		new JavaTestKit(system) {
 			{
-				// Create a simple scheduler with a probe
+				// Create a scheduler with a probe
 				final JavaTestKit schedulerProbe = new JavaTestKit(system);
-				system.actorOf(new Props(new UntypedActorFactory() {
-					@Override
-					public Actor create() throws Exception {
-						SimpleQueuePopScheduler scheduler = new SimpleQueuePopScheduler(null);
-						scheduler.injectProbe(schedulerProbe.getRef());
-						return scheduler;
-					}
-				}), "scheduler");
+				createScheduler(system, schedulerProbe.getRef());
 
 				// Create an agent with a probe
 				final JavaTestKit agentProbe = new JavaTestKit(system);
-				system.actorOf(new Props(new UntypedActorFactory() {
-					@Override
-					public Actor create() throws Exception {
-						UnlimitedCapacityAgent agent = new UnlimitedCapacityAgent(Arrays.asList(TestWorker.class
-								.getName()));
-						agent.injectProbe(agentProbe.getRef());
-						return agent;
-					}
-				}), "agent");
+				createAgent(system, Arrays.asList(TestWorker.class.getName()), agentProbe.getRef());
 
 				// Expect the initial heartbeat from the agent
 				schedulerProbe.expectMsgEquals(SimpleMessage.AGENT_HEARTBEAT);

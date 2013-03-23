@@ -17,20 +17,15 @@ package oncue.tests;
 
 import java.util.Arrays;
 
-import oncue.agent.UnlimitedCapacityAgent;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
-import oncue.scheduler.SimpleQueuePopScheduler;
 import oncue.tests.base.AbstractActorSystemTest;
 import oncue.tests.workers.TestWorker;
 
 import org.junit.Test;
 
 import sun.management.Agent;
-import akka.actor.Actor;
 import akka.actor.ActorRef;
-import akka.actor.Props;
 import akka.actor.Scheduler;
-import akka.actor.UntypedActorFactory;
 import akka.testkit.JavaTestKit;
 
 /**
@@ -42,21 +37,10 @@ public class AgentPresenceTest extends AbstractActorSystemTest {
 	/**
 	 * An {@linkplain Agent} should emit a steady heartbeat while it is alive.
 	 */
-	@SuppressWarnings("serial")
 	@Test
 	public void agentEmitsHeartbeat() {
 		new JavaTestKit(system) {
 			{
-				// Create a simple scheduler with a probe
-				system.actorOf(new Props(new UntypedActorFactory() {
-					@Override
-					public Actor create() throws Exception {
-						SimpleQueuePopScheduler scheduler = new SimpleQueuePopScheduler(null);
-						scheduler.injectProbe(getRef());
-						return scheduler;
-					}
-				}), settings.SCHEDULER_NAME);
-
 				// Ignore everything except heartbeats
 				new IgnoreMsg() {
 					protected boolean ignore(Object message) {
@@ -64,13 +48,11 @@ public class AgentPresenceTest extends AbstractActorSystemTest {
 					}
 				};
 
+				// Create a scheduler with a probe
+				createScheduler(system, getRef());
+
 				// Create an agent
-				ActorRef agent = system.actorOf(new Props(new UntypedActorFactory() {
-					@Override
-					public Actor create() throws Exception {
-						return new UnlimitedCapacityAgent(Arrays.asList(TestWorker.class.getName()));
-					}
-				}), settings.AGENT_NAME);
+				ActorRef agent = createAgent(system, Arrays.asList(TestWorker.class.getName()), null);
 
 				// Expect the initial heartbeat
 				expectMsgEquals(SimpleMessage.AGENT_HEARTBEAT);
@@ -90,21 +72,10 @@ public class AgentPresenceTest extends AbstractActorSystemTest {
 	 * When an {@linkplain Agent} dies, it should eventually be de-registered
 	 * from the {@linkplain Scheduler}
 	 */
-	@SuppressWarnings("serial")
 	@Test
 	public void agentDies() {
 		new JavaTestKit(system) {
 			{
-				// Create a simple scheduler with a probe
-				system.actorOf(new Props(new UntypedActorFactory() {
-					@Override
-					public Actor create() throws Exception {
-						SimpleQueuePopScheduler scheduler = new SimpleQueuePopScheduler(null);
-						scheduler.injectProbe(getRef());
-						return scheduler;
-					}
-				}), settings.SCHEDULER_NAME);
-
 				// Ignore everything except heartbeats and dead agents
 				new IgnoreMsg() {
 					protected boolean ignore(Object message) {
@@ -115,13 +86,11 @@ public class AgentPresenceTest extends AbstractActorSystemTest {
 					}
 				};
 
+				// Create a scheduler with a probe
+				createScheduler(system, getRef());
+
 				// Create an agent
-				ActorRef agent = system.actorOf(new Props(new UntypedActorFactory() {
-					@Override
-					public Actor create() throws Exception {
-						return new UnlimitedCapacityAgent(Arrays.asList(TestWorker.class.getName()));
-					}
-				}), settings.AGENT_NAME);
+				ActorRef agent = createAgent(system, Arrays.asList(TestWorker.class.getName()), null);
 
 				// Expect the initial heartbeat
 				expectMsgEquals(SimpleMessage.AGENT_HEARTBEAT);
