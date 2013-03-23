@@ -21,10 +21,6 @@ public class OnCueAgent implements Bootable {
 		new OnCueAgent().startup();
 	}
 
-	private Config config;
-
-	private Settings settings;
-
 	private ActorSystem system;
 
 	@Override
@@ -35,13 +31,11 @@ public class OnCueAgent implements Bootable {
 	@SuppressWarnings("serial")
 	@Override
 	public void startup() {
-		config = ConfigFactory.load();
-		config = config.getConfig("oncue-agent").withFallback(config);
-
-		final Set<String> workers = new HashSet<String>(config.getStringList("oncue.agent.workers"));
-
+		Config config = ConfigFactory.load();
 		system = ActorSystem.create("oncue-agent", config);
-		settings = SettingsProvider.SettingsProvider.get(system);
+
+		final Settings settings = SettingsProvider.SettingsProvider.get(system);
+		final Set<String> workers = new HashSet<String>(config.getStringList("oncue.agent.workers"));
 
 		// Fail fast if worker classes can't be instantiated
 		system.actorOf(new Props(new UntypedActorFactory() {
