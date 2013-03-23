@@ -15,69 +15,49 @@ package oncue.tests;
 
 import java.util.Arrays;
 
-import oncue.agent.UnlimitedCapacityAgent;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
-import oncue.common.settings.Settings;
-import oncue.common.settings.SettingsProvider;
-import oncue.scheduler.SimpleQueuePopScheduler;
+import oncue.tests.base.AbstractActorSystemTest;
 import oncue.tests.workers.TestWorker;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import sun.management.Agent;
-import akka.actor.Actor;
 import akka.actor.ActorSystem;
-import akka.actor.Props;
-import akka.actor.UntypedActorFactory;
-import akka.event.Logging;
-import akka.event.LoggingAdapter;
 import akka.testkit.JavaTestKit;
 
 import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
 
 /**
- * When a remote agent shuts down gracefully (i.e. a final remote client shutdown event is
- * broadcast), the scheduler should note this and deregister the agent, before it becomes a dead
- * agent.
+ * When a remote agent shuts down gracefully (i.e. a final remote client
+ * shutdown event is broadcast), the scheduler should note this and de-register
+ * the agent, before it becomes a dead agent.
  */
-public class AgentShutdownTest {
+public class AgentShutdownTest extends AbstractActorSystemTest {
 
-	static Config config;
+	private ActorSystem agentSystem;
 
-	final ActorSystem system;
-
-	final ActorSystem agentSystem;
-
-	final Settings settings;
-
-	LoggingAdapter log;
-
-	public AgentShutdownTest() {
-		config = ConfigFactory.load("agent-shutdown-test");
-		system = ActorSystem.create("oncue-service",
-				config.getConfig("service").withFallback(config));
-		agentSystem = ActorSystem.create("oncue-agent",
-				config.getConfig("client").withFallback(config));
-		settings = SettingsProvider.SettingsProvider.get(system);
-		log = Logging.getLogger(system, this);
+	/**
+	 * We need to create a separate actor system for the agent to inhabit for
+	 * this test
+	 */
+	@Before
+	public void createAgentActorSystem() {
+		Config agentConfig = config.getConfig("agent").withFallback(config);
+		agentSystem = ActorSystem.create("oncue-agent", agentConfig);
 	}
 
 	/**
 	 * An {@linkplain Agent} should emit a steady heartbeat while it is alive.
 	 */
-	@SuppressWarnings("serial")
 	@Test
 	public void agentShutsDownGracefully() {
 		new JavaTestKit(system) {
 
 			{
-				// Create a simple scheduler with a probe
 				final JavaTestKit schedulerProbe = new JavaTestKit(system) {
-
 					{
 						new IgnoreMsg() {
-
 							@Override
 							protected boolean ignore(Object message) {
 								return !(message.equals(SimpleMessage.AGENT_SHUTDOWN));
@@ -86,28 +66,10 @@ public class AgentShutdownTest {
 					}
 				};
 
-				system.actorOf(new Props(new UntypedActorFactory() {
-
-					@Override
-					public Actor create() throws Exception {
-						SimpleQueuePopScheduler scheduler = new SimpleQueuePopScheduler(null);
-						scheduler.injectProbe(schedulerProbe.getRef());
-						return scheduler;
-					}
-				}), "scheduler");
-
-				// Create an agent with a probe
 				final JavaTestKit agentProbe = new JavaTestKit(system);
-				agentSystem.actorOf(new Props(new UntypedActorFactory() {
 
-					@Override
-					public Actor create() throws Exception {
-						UnlimitedCapacityAgent agent = new UnlimitedCapacityAgent(Arrays
-								.asList(TestWorker.class.getName()));
-						agent.injectProbe(agentProbe.getRef());
-						return agent;
-					}
-				}), "agent");
+				createScheduler(system, schedulerProbe.getRef());
+				createAgent(agentSystem, Arrays.asList(TestWorker.class.getName()), agentProbe.getRef());
 
 				// Wait until the agent is registered
 				agentProbe.expectMsgEquals(SimpleMessage.AGENT_REGISTERED);

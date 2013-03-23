@@ -15,13 +15,22 @@
  ******************************************************************************/
 package oncue.tests.base;
 
+import java.util.Collection;
+
+import oncue.agent.AbstractAgent;
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
+import oncue.queuemanager.AbstractQueueManager;
+import oncue.scheduler.AbstractScheduler;
 
 import org.junit.After;
 import org.junit.Before;
 
+import akka.actor.Actor;
+import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
+import akka.actor.Props;
+import akka.actor.UntypedActorFactory;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
@@ -35,13 +44,81 @@ public abstract class AbstractActorSystemTest {
 	protected Settings settings;
 	protected LoggingAdapter log;
 
-	@Before
-	public void flushRedis() {
-		startActorSystem();
+	/**
+	 * Create an agent component, with a set of workers and an optional probe
+	 * 
+	 * @param probe
+	 *            can be null
+	 */
+	@SuppressWarnings("serial")
+	public ActorRef createAgent(ActorSystem system, final Collection<String> workers, final ActorRef probe) {
+		return system.actorOf(new Props(new UntypedActorFactory() {
+			@Override
+			public Actor create() throws Exception {
+				AbstractAgent agent = (AbstractAgent) Class.forName(settings.AGENT_CLASS)
+						.getConstructor(Collection.class).newInstance(workers);
+				if (probe != null)
+					agent.injectProbe(probe);
+				return agent;
+			}
+		}), settings.AGENT_NAME);
 	}
 
-	private void startActorSystem() {
-		config = ConfigFactory.load("test");
+	/**
+	 * Create a queue manager component, with an optional probe
+	 * 
+	 * @param probe
+	 *            can be null
+	 */
+	@SuppressWarnings("serial")
+	public ActorRef createQueueManager(ActorSystem system, final ActorRef probe) {
+		return system.actorOf(new Props(new UntypedActorFactory() {
+			@Override
+			public Actor create() throws Exception {
+				AbstractQueueManager queueManager = (AbstractQueueManager) Class.forName(settings.QUEUE_MANAGER_CLASS)
+						.newInstance();
+				if (probe != null)
+					queueManager.injectProbe(probe);
+				return queueManager;
+			}
+		}), settings.QUEUE_MANAGER_NAME);
+	}
+
+	/**
+	 * Create a scheduler component, with an optional probe
+	 * 
+	 * @param probe
+	 *            can be null
+	 */
+	@SuppressWarnings("serial")
+	public ActorRef createScheduler(ActorSystem system, final ActorRef probe) {
+		return system.actorOf(new Props(new UntypedActorFactory() {
+			@Override
+			public Actor create() throws Exception {
+				Class<?> schedulerClass = Class.forName(settings.SCHEDULER_CLASS);
+				Class<?> backingStoreClass = null;
+				if (settings.SCHEDULER_BACKING_STORE_CLASS != null)
+					backingStoreClass = Class.forName(settings.SCHEDULER_BACKING_STORE_CLASS);
+
+				@SuppressWarnings("rawtypes")
+				AbstractScheduler scheduler = (AbstractScheduler) schedulerClass.getConstructor(Class.class)
+						.newInstance(backingStoreClass);
+				if (probe != null)
+					scheduler.injectProbe(probe);
+				return scheduler;
+			}
+		}), settings.SCHEDULER_NAME);
+	}
+
+	@Before
+	public void startActorSystem() {
+
+		// Load standard library config
+		config = ConfigFactory.load();
+
+		// Try loading test-specific config
+		config = ConfigFactory.load(getClass().getSimpleName()).withFallback(config);
+
 		system = ActorSystem.create("oncue-test", config);
 		settings = SettingsProvider.SettingsProvider.get(system);
 		log = Logging.getLogger(system, this);
