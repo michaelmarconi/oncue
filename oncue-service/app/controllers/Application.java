@@ -6,7 +6,7 @@ import play.mvc.Controller;
 import play.mvc.Result;
 import play.mvc.WebSocket;
 import views.html.index;
-import actors.EventStreamListener;
+import actors.EventMachine;
 
 public class Application extends Controller {
 
@@ -18,7 +18,7 @@ public class Application extends Controller {
 		return new WebSocket<JsonNode>() {
 
 			public void onReady(WebSocket.In<JsonNode> in, WebSocket.Out<JsonNode> out) {
-				EventStreamListener.addClient(in, out);
+				EventMachine.addSocket(in, out);
 			}
 		};
 	}

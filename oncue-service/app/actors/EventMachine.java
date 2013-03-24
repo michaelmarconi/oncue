@@ -15,7 +15,7 @@ import akka.actor.UntypedActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
-public class EventStreamListener extends UntypedActor {
+public class EventMachine extends UntypedActor {
 
 	private final LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 	private static List<WebSocket.Out<JsonNode>> clients = new ArrayList<>();
@@ -27,7 +27,7 @@ public class EventStreamListener extends UntypedActor {
 		getContext().system().eventStream().subscribe(getSelf(), AgentAvailable.class);
 	}
 
-	public static void addClient(WebSocket.In<JsonNode> in, final WebSocket.Out<JsonNode> out) {
+	public static void addSocket(WebSocket.In<JsonNode> in, final WebSocket.Out<JsonNode> out) {
 		clients.add(out);
 		System.out.println("Added websocket client!");
 		in.onClose(new Callback0() {
