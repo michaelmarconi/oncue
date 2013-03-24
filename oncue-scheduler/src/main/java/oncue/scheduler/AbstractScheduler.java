@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import oncue.common.events.AgentAvailable;
 import oncue.common.messages.AbstractWorkRequest;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobFailed;
@@ -400,6 +401,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 		if (!agents.containsKey(agent)) {
 			getContext().actorFor(agent).tell(SimpleMessage.AGENT_REGISTERED, getSelf());
 			getContext().system().eventStream().subscribe(getSelf(), RemoteClientShutdown.class);
+			getContext().system().eventStream().publish(new AgentAvailable(agent));
 			log.info("Registered agent: {}", agent);
 		}
 

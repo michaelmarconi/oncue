@@ -4,6 +4,7 @@ import play.Application;
 import play.GlobalSettings;
 import play.Logger;
 import play.libs.Akka;
+import actors.EventStreamListener;
 import akka.actor.Actor;
 import akka.actor.Props;
 import akka.actor.UntypedActorFactory;
@@ -35,6 +36,9 @@ public class Global extends GlobalSettings {
 				return (Actor) schedulerClass.getConstructor(Class.class).newInstance(backingStoreClass);
 			}
 		}), settings.SCHEDULER_NAME);
+
+		// Start the event stream listener
+		Akka.system().actorOf(new Props(EventStreamListener.class), "event-stream-listener");
 	}
 
 	@Override

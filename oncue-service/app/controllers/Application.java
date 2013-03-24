@@ -1,13 +1,26 @@
 package controllers;
 
-import play.*;
-import play.mvc.*;
+import org.codehaus.jackson.JsonNode;
 
-import views.html.*;
+import play.mvc.Controller;
+import play.mvc.Result;
+import play.mvc.WebSocket;
+import views.html.index;
+import actors.EventStreamListener;
 
 public class Application extends Controller {
-  
-    public static Result index() {
-        return ok(index.render());
-    } 
+
+	public static Result index() {
+		return ok(index.render());
+	}
+
+	public static WebSocket<JsonNode> socketHandler() {
+		return new WebSocket<JsonNode>() {
+
+			public void onReady(WebSocket.In<JsonNode> in, WebSocket.Out<JsonNode> out) {
+				EventStreamListener.addClient(in, out);
+			}
+		};
+	}
+
 }
