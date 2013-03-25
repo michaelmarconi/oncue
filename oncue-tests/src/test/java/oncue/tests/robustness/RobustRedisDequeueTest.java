@@ -27,6 +27,13 @@ public class RobustRedisDequeueTest extends AbstractActorSystemTest {
 
 	private Jedis redis;
 
+	@Before
+	public void cleanRedis() {
+		Jedis redis = RedisBackingStore.getConnection();
+		redis.flushDB();
+		RedisBackingStore.releaseConnection(redis);
+	}
+
 	@Test
 	public void atomicPopAndPush() {
 		new JavaTestKit(system) {
