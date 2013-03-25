@@ -12,5 +12,6 @@ GET     /assets/*file               controllers.Assets.at(path="/public", file)
 
 # API Routes
 # ~~~~
-GET     /api                        controllers.API.index()
+GET		/api/jobs					controllers.api.Jobs.listJobs()
+POST	/api/jobs					controllers.api.Jobs.createJob()
 

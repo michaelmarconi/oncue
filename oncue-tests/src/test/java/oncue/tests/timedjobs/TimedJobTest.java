@@ -67,6 +67,7 @@ public class TimedJobTest extends AbstractActorSystemTest {
 				assertEquals(TestWorker.class.getName(), response.getJobs().get(0).getWorkerType());
 
 				response = agentProbe.expectMsgClass(duration("4 seconds"), WorkResponse.class);
+
 				assertEquals(TestWorker.class.getName(), response.getJobs().get(0).getWorkerType());
 			}
 		};
@@ -164,7 +165,11 @@ public class TimedJobTest extends AbstractActorSystemTest {
 				createQueueManager(system, null);
 
 				// Expect work response
+<<<<<<< HEAD:oncue-tests/src/test/java/oncue/tests/timedjobs/TimedJobTest.java
 				response = agentProbe.expectMsgClass(duration("5 seconds"), WorkResponse.class);
+=======
+				response = agentProbe.expectMsgClass(duration("2 seconds"), WorkResponse.class);
+>>>>>>> fe2f753... Rebased to master:oncue-tests/src/test/java/oncue/tests/timedjobs/TimedJobTest.java
 				Job job = response.getJobs().get(0);
 				assertEquals(TestWorker.class.getName(), job.getWorkerType());
 				assertEquals(null, job.getParams());

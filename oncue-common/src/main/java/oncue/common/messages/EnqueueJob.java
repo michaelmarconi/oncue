@@ -16,6 +16,7 @@
 package oncue.common.messages;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -27,19 +28,22 @@ public class EnqueueJob implements Serializable {
 	private static final long serialVersionUID = -1624154938276876491L;
 
 	private String workerType;
-	private Map<String, String> jobParams;
+	private Map<String, String> params = Collections.emptyMap();
 
-	public EnqueueJob(String workerType, Map<String, String> jobParams) {
-		this.workerType = workerType;
-		this.jobParams = jobParams;
+	public EnqueueJob() {
 	}
 
 	public EnqueueJob(String workerType) {
-		this(workerType, null);
+		this(workerType, Collections.<String,String>emptyMap());
 	}
 
-	public Map<String, String> getJobParams() {
-		return jobParams;
+	public EnqueueJob(String workerType, Map<String, String> jobParams) {
+		this.workerType = workerType;
+		this.params = jobParams;
+	}
+
+	public Map<String, String> getParams() {
+		return params;
 	}
 
 	public String getWorkerType() {
