@@ -1,8 +1,8 @@
 /*******************************************************************************
  * Copyright 2013 Michael Marconi
  * 
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
- * file except in compliance with the License. You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  * 
  * http://www.apache.org/licenses/LICENSE-2.0
  * 
@@ -17,13 +17,18 @@ import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertFalse;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import oncue.agent.UnlimitedCapacityAgent;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
+import oncue.common.messages.JobFailed;
 import oncue.common.messages.JobProgress;
 import oncue.common.messages.WorkResponse;
+import oncue.scheduler.SimpleQueuePopScheduler;
 import oncue.tests.base.AbstractActorSystemTest;
+import oncue.tests.workers.JobEnqueueingTestWorker;
 import oncue.tests.workers.TestWorker;
 
 import org.junit.Test;
@@ -31,31 +36,34 @@ import org.junit.Test;
 import sun.management.Agent;
 import akka.actor.Actor;
 import akka.actor.ActorRef;
+import akka.actor.PoisonPill;
 import akka.actor.Props;
 import akka.actor.UntypedActorFactory;
 import akka.testkit.JavaTestKit;
 import akka.testkit.TestActorRef;
 
 /**
- * When an {@linkplain Agent} receives a {@linkplain WorkResponse}, it will
- * attempt to spawn an instance of an {@linkplain IWorker} for each
- * {@linkplain Job} in the list. When an {@linkplain Agent} receives a
- * {@linkplain WorkResponse}, it will attempt to spawn an instance of an
- * {@linkplain IWorker} for each {@linkplain Job} in the list.
+ * When an {@linkplain Agent} receives a {@linkplain WorkResponse}, it will attempt to spawn an
+ * instance of an {@linkplain IWorker} for each {@linkplain Job} in the list. When an
+ * {@linkplain Agent} receives a {@linkplain WorkResponse}, it will attempt to spawn an instance of
+ * an {@linkplain IWorker} for each {@linkplain Job} in the list.
  */
 public class WorkerTest extends AbstractActorSystemTest {
 
 	@Test
 	public void spawnWorkerAndStartJob() {
 		new JavaTestKit(system) {
+
 			{
 				// Create an agent probe
 				final JavaTestKit agentProbe = new JavaTestKit(system) {
+
 					{
 						new IgnoreMsg() {
 
 							protected boolean ignore(Object message) {
-								if (message instanceof WorkResponse || message instanceof JobProgress)
+								if (message instanceof WorkResponse
+										|| message instanceof JobProgress)
 									return false;
 
 								return true;
@@ -72,8 +80,8 @@ public class WorkerTest extends AbstractActorSystemTest {
 
 				// Create and expose an agent
 				@SuppressWarnings("serial")
-				TestActorRef<UnlimitedCapacityAgent> agentRef = TestActorRef.create(system, new Props(
-						new UntypedActorFactory() {
+				TestActorRef<UnlimitedCapacityAgent> agentRef = TestActorRef.create(system,
+						new Props(new UntypedActorFactory() {
 
 							@Override
 							public Actor create() throws Exception {
@@ -90,7 +98,8 @@ public class WorkerTest extends AbstractActorSystemTest {
 				assertEquals(0, workResponse.getJobs().size());
 
 				// Check that there are no workers
-				assertFalse("Expected no child workers", agent.getContext().getChildren().iterator().hasNext());
+				assertFalse("Expected no child workers", agent.getContext().getChildren()
+						.iterator().hasNext());
 
 				// Enqueue a job
 				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
@@ -121,6 +130,128 @@ public class WorkerTest extends AbstractActorSystemTest {
 						return worker.isTerminated() == true;
 					}
 				};
+			}
+		};
+	}
+
+	@Test
+	public void workerCanEnqueueJobs() {
+		new JavaTestKit(system) {
+
+			{
+				// Create a probe
+				final JavaTestKit queueManagerProbe = new JavaTestKit(system) {
+
+					{
+						new IgnoreMsg() {
+
+							protected boolean ignore(Object message) {
+								if (message instanceof EnqueueJob)
+									return false;
+
+								return true;
+							}
+						};
+					}
+				};
+
+				// Create a queue manager
+				ActorRef queueManager = createQueueManager(system, queueManagerProbe.getRef());
+
+				// Create a scheduler
+				createScheduler(system, null);
+
+				// Create an agent
+				createAgent(
+						system,
+						Arrays.asList(JobEnqueueingTestWorker.class.getName(),
+								TestWorker.class.getName()), null);
+
+				// Enqueue a job
+				Map<String, String> params = new HashMap<String, String>();
+				params.put("key", "value");
+
+				queueManager.tell(new EnqueueJob(JobEnqueueingTestWorker.class.getName(), params),
+						null);
+
+				EnqueueJob job = queueManagerProbe.expectMsgClass(EnqueueJob.class);
+				assertEquals(JobEnqueueingTestWorker.class.getName(), job.getWorkerType());
+				assertEquals(params, job.getJobParams());
+
+				// Test that the job enqueing test worker forwards the job to the test worker
+				job = queueManagerProbe.expectMsgClass(EnqueueJob.class);
+				assertEquals(TestWorker.class.getName(), job.getWorkerType());
+				assertEquals(params, job.getJobParams());
+			}
+		};
+	}
+
+	@Test
+	public void workerFailsWhenNoQueueManagerCanBeReached() {
+		new JavaTestKit(system) {
+
+			{
+				// Create a probe
+				final JavaTestKit schedulerProbe = new JavaTestKit(system) {
+
+					{
+						new IgnoreMsg() {
+
+							protected boolean ignore(Object message) {
+								if (message instanceof EnqueueJob || message instanceof JobFailed)
+									return false;
+
+								return true;
+							}
+						};
+					}
+				};
+
+				// Create a naked simple scheduler with our probe
+				@SuppressWarnings("serial")
+				final Props schedulerProps = new Props(new UntypedActorFactory() {
+
+					@Override
+					public Actor create() throws Exception {
+						SimpleQueuePopScheduler simpleQueuePopScheduler = new SimpleQueuePopScheduler(
+								null);
+						simpleQueuePopScheduler.injectProbe(schedulerProbe.getRef());
+						return simpleQueuePopScheduler;
+					}
+				});
+
+				final TestActorRef<SimpleQueuePopScheduler> schedulerRef = TestActorRef.create(
+						system, schedulerProps, settings.SCHEDULER_NAME);
+				final SimpleQueuePopScheduler scheduler = schedulerRef.underlyingActor();
+				scheduler.pause();
+
+				// Create a queue manager
+				ActorRef queueManager = createQueueManager(system, null);
+
+				// Create an agent
+				createAgent(
+						system,
+						Arrays.asList(JobEnqueueingTestWorker.class.getName(),
+								TestWorker.class.getName()), null);
+
+				// Enqueue a job
+				Map<String, String> params = new HashMap<String, String>();
+				params.put("key", "value");
+				queueManager.tell(new EnqueueJob(JobEnqueueingTestWorker.class.getName(), params),
+						null);
+
+				// Kill the queue manager, this should cause an exception as soon as the scheduler
+				// is unpaused and gives the agent the enqueued job
+				queueManager.tell(PoisonPill.getInstance(), null);
+				expectNoMsg(duration("1 second"));
+
+				scheduler.unpause();
+
+				// Expect a job failure message at the scheduler
+				JobFailed jobFailed = schedulerProbe.expectMsgClass(JobFailed.class);
+				assertEquals(JobEnqueueingTestWorker.class.getName(), jobFailed.getJob()
+						.getWorkerType());
+				assertEquals(params, jobFailed.getJob().getParams());
 			}
 		};
 	}
