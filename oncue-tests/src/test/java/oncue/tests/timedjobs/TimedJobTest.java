@@ -63,10 +63,10 @@ public class TimedJobTest extends AbstractActorSystemTest {
 						null);
 
 				// Expect two workers to send work responses
-				response = agentProbe.expectMsgClass(duration("2 seconds"), WorkResponse.class);
+				response = agentProbe.expectMsgClass(duration("4 seconds"), WorkResponse.class);
 				assertEquals(TestWorker.class.getName(), response.getJobs().get(0).getWorkerType());
 
-				response = agentProbe.expectMsgClass(duration("2 seconds"), WorkResponse.class);
+				response = agentProbe.expectMsgClass(duration("4 seconds"), WorkResponse.class);
 				assertEquals(TestWorker.class.getName(), response.getJobs().get(0).getWorkerType());
 			}
 		};
@@ -164,7 +164,7 @@ public class TimedJobTest extends AbstractActorSystemTest {
 				createQueueManager(system, null);
 
 				// Expect work response
-				response = agentProbe.expectMsgClass(duration("2 seconds"), WorkResponse.class);
+				response = agentProbe.expectMsgClass(duration("5 seconds"), WorkResponse.class);
 				Job job = response.getJobs().get(0);
 				assertEquals(TestWorker.class.getName(), job.getWorkerType());
 				assertEquals(null, job.getParams());
