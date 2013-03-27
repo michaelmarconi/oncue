@@ -99,7 +99,7 @@ public class RedisBackingStore extends AbstractBackingStore {
 		Long jobId = redis.incr(RedisBackingStore.JOB_COUNT_KEY);
 
 		// Create a new job
-		Job job = new Job(jobId, DateTime.now(), workerType, jobParams);
+		Job job = new Job(jobId, workerType, jobParams);
 
 		// Now, persist the job and release the connection
 		persistJob(job, RedisBackingStore.NEW_JOBS, redis);

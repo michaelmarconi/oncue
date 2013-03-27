@@ -22,6 +22,7 @@ import static play.test.Helpers.stop;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TimeZone;
 
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
@@ -30,7 +31,11 @@ import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
+import org.joda.time.DateTimeZone;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -44,16 +49,25 @@ public class APITest {
 	private final static FakeApplication fakeApplication = fakeApplication();
 	private final static ObjectMapper mapper = new ObjectMapper();
 
+	private DateTime expectedEnqueuedAt;
+
 	@BeforeClass
 	public static void startFakeApplication() {
 		start(fakeApplication);
+		DateTimeUtils.setCurrentMillisFixed(new DateTime(2013, 03, 27, 12, 34, 56).getMillis());
 	}
 
 	@AfterClass
 	public static void shutdownFakeApplication() {
 		stop(fakeApplication);
+		DateTimeUtils.setCurrentMillisSystem();
 	}
-
+	
+	@Before
+	public void setUp() {
+		expectedEnqueuedAt = new DateTime(2013, 03, 27, 12, 34, 56, DateTimeZone.forTimeZone(TimeZone.getDefault()));
+	}
+	
 	@Ignore
 	//TODO: fix this up
 	@Test
@@ -98,6 +112,7 @@ public class APITest {
 				Job.class);
 
 		assertEquals("oncue.test.TestWorker", job.getWorkerType());
+		assertTrue(expectedEnqueuedAt.isEqual(job.getEnqueuedAt()));
 		assertNotNull(job.getId());
 		assertEquals(0.0, job.getProgress());
 		assertTrue(job.getParams().isEmpty());
@@ -135,6 +150,7 @@ public class APITest {
 				Job.class);
 
 		assertEquals("oncue.test.TestWorker", job.getWorkerType());
+		assertTrue(expectedEnqueuedAt.isEqual(job.getEnqueuedAt()));
 		assertNotNull(job.getId());
 		assertEquals(0.0, job.getProgress());
 		assertEquals("Value 1", job.getParams().get("key1"));
