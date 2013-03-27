@@ -22,16 +22,20 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import oncue.backingstore.BackingStore;
 import oncue.common.events.AgentAvailable;
 import oncue.common.messages.AbstractWorkRequest;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobFailed;
 import oncue.common.messages.JobProgress;
-import oncue.common.messages.WorkResponse;
+import oncue.common.messages.JobSummaryResponse;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
+import oncue.common.messages.WorkResponse;
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
-import oncue.backingstore.BackingStore;
+
+import org.joda.time.DateTime;
+
 import scala.concurrent.duration.Deadline;
 import sun.management.Agent;
 import akka.actor.ActorInitializationException;
@@ -302,10 +306,27 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 			recordJobFailure((JobFailed) message);
 		}
 
+		else if (message == SimpleMessage.JOB_SUMMARY) {
+			log.debug("Received a request for a job summary from {}", getSender());
+			replyWithJobSummary();
+		}
+
 		else {
 			log.error("Unrecognised message: {}", message);
 			unhandled(message);
 		}
+	}
+
+	/**
+	 * Construct and reply with a job summary message
+	 * 
+	 * TODO fixme
+	 */
+	private void replyWithJobSummary() {
+		List<Job> jobs = new ArrayList<Job>();
+		jobs.add(new Job(0, DateTime.now(), "oncue.test.Worker"));
+		JobSummaryResponse response = new JobSummaryResponse(jobs);
+		getSender().tell(response, getSelf());
 	}
 
 	/**
