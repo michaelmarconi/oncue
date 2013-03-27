@@ -16,6 +16,7 @@
 package oncue.common.messages;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.joda.time.DateTime;
@@ -23,19 +24,22 @@ import org.joda.time.DateTime;
 public class Job implements Serializable {
 
 	public enum State {
-		FAILED
+		QUEUED, SCHEDULED, RUNNING, FAILED
 	}
 
 	private static final long serialVersionUID = -2375588116753600617L;
 
-	private final DateTime enqueuedAt;
-	private final String workerType;
+	private DateTime enqueuedAt;
+	private String workerType;
 	private long id;
-	private Map<String, String> params;
+	private Map<String, String> params = new HashMap<>();
 	private Double progress;
+	
+	public Job() {
+	}
 
 	public Job(long id, DateTime enqueuedAt, String workerType) {
-		this(id, enqueuedAt, workerType, null);
+		this(id, enqueuedAt, workerType, new HashMap<String, String>());
 	}
 
 	/**

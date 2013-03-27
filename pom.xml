@@ -32,6 +32,7 @@
     <module>oncue-backingstore</module>
     <module>oncue-timedjobs</module>
     <module>oncue-tests</module>
+    <module>oncue-client</module>
   </modules>
 
 	<repositories>

@@ -79,7 +79,7 @@ public abstract class AbstractQueueManager extends UntypedActor {
 
 		if (message instanceof EnqueueJob) {
 			EnqueueJob enqueueJob = (EnqueueJob) message;
-			Job job = createJob(enqueueJob.getWorkerType(), enqueueJob.getJobParams());
+			Job job = createJob(enqueueJob.getWorkerType(), enqueueJob.getParams());
 			getSender().tell(job, getSelf());
 		} else
 			unhandled(message);
