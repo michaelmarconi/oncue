@@ -19,8 +19,6 @@ import java.util.Map;
 
 import oncue.common.messages.Job;
 
-import org.joda.time.DateTime;
-
 /**
  * A simple, in-memory implementation of a queue manager. Since this queue
  * manager has no backing store, it immediately tells the scheduler about the
@@ -34,7 +32,7 @@ public class InMemoryQueueManager extends AbstractQueueManager {
 	protected Job createJob(String workerType, Map<String, String> jobParams) {
 
 		// Create a new job
-		Job job = new Job(getNextJobID(), DateTime.now(), workerType, jobParams);
+		Job job = new Job(getNextJobID(), workerType, jobParams);
 		
 		getLog().debug("Enqueueing {} for worker {}", job,  workerType);
 

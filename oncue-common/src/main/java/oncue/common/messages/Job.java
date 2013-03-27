@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
 
 public class Job implements Serializable {
 
@@ -37,7 +38,11 @@ public class Job implements Serializable {
 	
 	public Job() {
 	}
-
+	
+	public Job(long id, String workerType, Map<String, String> params) {
+		this(id, new DateTime(DateTimeUtils.currentTimeMillis()), workerType, params);
+	}
+	
 	public Job(long id, DateTime enqueuedAt, String workerType) {
 		this(id, enqueuedAt, workerType, new HashMap<String, String>());
 	}

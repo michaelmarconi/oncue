@@ -1,6 +1,9 @@
 package controllers.api;
 
 import static akka.pattern.Patterns.ask;
+
+import java.text.SimpleDateFormat;
+
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
 import oncue.common.settings.Settings;
@@ -23,7 +26,11 @@ public class Jobs extends Controller {
 
 	private final static Settings settings = SettingsProvider.SettingsProvider.get(Akka.system());
 	private final static ObjectMapper mapper = new ObjectMapper();
-
+	
+	static {
+		mapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssz"));
+	}
+		
 	public static Result listJobs() {
 		ActorRef scheduler = Akka.system().actorFor(settings.SCHEDULER_PATH);
 		return async(Akka.asPromise(
@@ -81,7 +88,7 @@ public class Jobs extends Controller {
 					// Result objects are returned by the recover handler above
 					return (Result) response;
 				} else {
-					return ok(Json.toJson(response));
+					return ok(mapper.valueToTree(response));
 				}
 			}
 		}));
