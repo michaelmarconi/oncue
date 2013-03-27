@@ -176,12 +176,12 @@ public class WorkerTest extends AbstractActorSystemTest {
 
 				EnqueueJob job = queueManagerProbe.expectMsgClass(EnqueueJob.class);
 				assertEquals(JobEnqueueingTestWorker.class.getName(), job.getWorkerType());
-				assertEquals(params, job.getJobParams());
+				assertEquals(params, job.getParams());
 
 				// Test that the job enqueing test worker forwards the job to the test worker
 				job = queueManagerProbe.expectMsgClass(EnqueueJob.class);
 				assertEquals(TestWorker.class.getName(), job.getWorkerType());
-				assertEquals(params, job.getJobParams());
+				assertEquals(params, job.getParams());
 			}
 		};
 	}
