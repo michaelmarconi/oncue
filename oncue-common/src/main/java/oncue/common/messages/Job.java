@@ -35,14 +35,18 @@ public class Job implements Serializable {
 	private long id;
 	private Map<String, String> params = new HashMap<>();
 	private Double progress;
-	
+
+	/**
+	 * This is required for Jackson JSON serialization
+	 */
 	public Job() {
 	}
-	
+
 	public Job(long id, String workerType, Map<String, String> params) {
-		this(id, new DateTime(DateTimeUtils.currentTimeMillis()), workerType, params);
+		this(id, new DateTime(DateTimeUtils.currentTimeMillis()), workerType,
+				params);
 	}
-	
+
 	public Job(long id, DateTime enqueuedAt, String workerType) {
 		this(id, enqueuedAt, workerType, new HashMap<String, String>());
 	}
@@ -57,13 +61,14 @@ public class Job implements Serializable {
 	 *            is the time at which this job was enqueued
 	 * 
 	 * @param workerType
-	 *            determines which type of worker is capable of
-	 *            completing this job
+	 *            determines which type of worker is capable of completing this
+	 *            job
 	 * 
 	 * @param params
 	 *            is an unbounded list of String-based parameters
 	 */
-	public Job(long id, DateTime enqueuedAt, String workerType, Map<String, String> params) {
+	public Job(long id, DateTime enqueuedAt, String workerType,
+			Map<String, String> params) {
 		this.id = id;
 		this.enqueuedAt = enqueuedAt;
 		this.workerType = workerType;
@@ -96,6 +101,7 @@ public class Job implements Serializable {
 
 	@Override
 	public String toString() {
-		return String.format("Job %s (enqueuedAt=%s, workerType=%s)", id, enqueuedAt, workerType);
+		return String.format("Job %s (enqueuedAt=%s, workerType=%s)", id,
+				enqueuedAt, workerType);
 	}
 }

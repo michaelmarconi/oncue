@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>oncue</groupId>
+    <artifactId>oncue</artifactId>
+    <version>1.0-SNAPSHOT</version>
+  </parent>
+
+  <groupId>oncue</groupId>
+  <artifactId>oncue-worker</artifactId>
+  <version>1.0-SNAPSHOT</version>
+
+  <name>onCue Worker</name>
+
+
+  <dependencies>
+		<dependency>
+			<groupId>oncue</groupId>
+			<artifactId>oncue-common</artifactId>
+			<version>1.0-SNAPSHOT</version>
+		</dependency>
+  </dependencies>
+</project>
