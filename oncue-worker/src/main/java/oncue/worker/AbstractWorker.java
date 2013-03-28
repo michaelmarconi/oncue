@@ -11,7 +11,7 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  ******************************************************************************/
-package oncue.agent.workers;
+package oncue.worker;
 
 import static akka.pattern.Patterns.ask;
 
@@ -33,20 +33,23 @@ import akka.util.Timeout;
 
 public abstract class AbstractWorker extends UntypedActor {
 
-	protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
+	protected LoggingAdapter log = Logging.getLogger(getContext().system(),
+			this);
 
 	protected ActorRef agent;
 
 	protected Job job;
 
-	protected Settings settings = SettingsProvider.SettingsProvider.get(getContext().system());
+	protected Settings settings = SettingsProvider.SettingsProvider
+			.get(getContext().system());
 
 	/**
 	 * Begin working on a job immediately.
 	 * 
-	 * @param job is the specification for the work to be done
+	 * @param job
+	 *            is the specification for the work to be done
 	 */
-	protected abstract void doWork(Job job);
+	protected abstract void doWork(Job job) throws Exception;
 
 	@Override
 	public void onReceive(Object message) throws Exception {
@@ -63,11 +66,13 @@ public abstract class AbstractWorker extends UntypedActor {
 	/**
 	 * Report on the percentage progress made on this job.
 	 * 
-	 * @param progress is a double, between 0 and 1
+	 * @param progress
+	 *            is a double, between 0 and 1
 	 */
 	protected void reportProgress(double progress) {
 		if (progress < 0 || progress > 1)
-			throw new RuntimeException("Job progress must be reported as a double between 0 and 1");
+			throw new RuntimeException(
+					"Job progress must be reported as a double between 0 and 1");
 
 		agent.tell(new JobProgress(job, progress), getSelf());
 	}
@@ -83,18 +88,22 @@ public abstract class AbstractWorker extends UntypedActor {
 	/**
 	 * Submit the job to the specified queue manager.
 	 * 
-	 * @param workerType The qualified class name of the worker to instantiate
-	 * @param jobParameters The user-defined parameters map to pass to the job
-	 * @throws EnqueueJobException If the queue manager does not exist or the job is not accepted
-	 * within the timeout
+	 * @param workerType
+	 *            The qualified class name of the worker to instantiate
+	 * @param jobParameters
+	 *            The user-defined parameters map to pass to the job
+	 * @throws EnqueueJobException
+	 *             If the queue manager does not exist or the job is not
+	 *             accepted within the timeout
 	 */
-	protected void enqueueJob(String workerType, Map<String, String> jobParameters)
-			throws EnqueueJobException {
+	protected void enqueueJob(String workerType,
+			Map<String, String> jobParameters) throws EnqueueJobException {
 
 		try {
 			Await.result(
-					ask(getContext().actorFor(settings.QUEUE_MANAGER_PATH), new EnqueueJob(
-							workerType, jobParameters), new Timeout(settings.QUEUE_MANAGER_TIMEOUT)),
+					ask(getContext().actorFor(settings.QUEUE_MANAGER_PATH),
+							new EnqueueJob(workerType, jobParameters),
+							new Timeout(settings.QUEUE_MANAGER_TIMEOUT)),
 					settings.QUEUE_MANAGER_TIMEOUT);
 		} catch (Exception e) {
 			if (e instanceof AskTimeoutException) {

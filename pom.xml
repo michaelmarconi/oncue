@@ -27,12 +27,13 @@
 	<modules>
 		<module>oncue-common</module>
 		<module>oncue-agent</module>
-    <module>oncue-queuemanager</module>
-    <module>oncue-scheduler</module>
-    <module>oncue-backingstore</module>
-    <module>oncue-timedjobs</module>
-    <module>oncue-tests</module>
-    <module>oncue-client</module>
+    		<module>oncue-queuemanager</module>
+    		<module>oncue-scheduler</module>
+    		<module>oncue-backingstore</module>
+    		<module>oncue-timedjobs</module>
+    		<module>oncue-tests</module>
+    		<module>oncue-client</module>
+    <module>oncue-worker</module>
   </modules>
 
 	<repositories>

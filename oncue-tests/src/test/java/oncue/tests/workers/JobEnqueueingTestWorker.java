@@ -13,8 +13,8 @@
  ******************************************************************************/
 package oncue.tests.workers;
 
-import oncue.agent.workers.AbstractWorker;
 import oncue.common.messages.Job;
+import oncue.worker.AbstractWorker;
 
 public class JobEnqueueingTestWorker extends AbstractWorker {
 
