@@ -21,13 +21,13 @@ import java.util.Arrays;
 import java.util.List;
 
 import oncue.agent.MissingWorkerException;
-import oncue.agent.workers.AbstractWorker;
 import oncue.common.messages.AbstractWorkRequest;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobFailed;
 import oncue.tests.base.AbstractActorSystemTest;
 import oncue.tests.workers.TestWorker;
+import oncue.worker.AbstractWorker;
 
 import org.junit.Test;
 

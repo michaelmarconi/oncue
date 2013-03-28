@@ -27,11 +27,11 @@ import oncue.common.comparators.JobComparator;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobFailed;
 import oncue.common.messages.JobProgress;
-import oncue.common.messages.WorkResponse;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
+import oncue.common.messages.WorkResponse;
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
-import oncue.agent.workers.AbstractWorker;
+import oncue.worker.AbstractWorker;
 
 import org.jboss.netty.channel.socket.Worker;
 
