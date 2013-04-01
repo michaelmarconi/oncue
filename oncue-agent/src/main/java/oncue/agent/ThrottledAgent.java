@@ -19,6 +19,9 @@ import java.util.Collection;
 
 import oncue.common.messages.ThrottledWorkRequest;
 
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
+
 /**
  * This agent will work on the configured maximum number of jobs at any one
  * time, before asking for more work.
@@ -30,11 +33,12 @@ public class ThrottledAgent extends AbstractAgent {
 
 	public ThrottledAgent(Collection<String> workerTypes) throws MissingWorkerException {
 		super(workerTypes);
-		if (settings.THROTTLED_AGENT_JOB_LIMIT == null)
+		Config config = ConfigFactory.load();
+		if (!config.hasPath("agent.throttled-agent.max-jobs")){
 			throw new RuntimeException(
 					"Configuration is missing the maximum concurrent jobs configuration for the throttled agent.");
-
-		MAX_JOBS = settings.THROTTLED_AGENT_JOB_LIMIT;
+		}
+		MAX_JOBS = config.getInt("agent.throttled-agent.max-jobs");
 		log.info("The throttled agent will process a maximum of {} jobs in parallel", MAX_JOBS);
 	}
 

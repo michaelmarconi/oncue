@@ -53,7 +53,6 @@ public class Settings implements Extension {
 	public final String API_NAME;
 	public final FiniteDuration API_TIMEOUT;
 
-	public Integer THROTTLED_AGENT_JOB_LIMIT;
 	public final List<Map<String, Object>> TIMED_JOBS_TIMETABLE;
 
 	@SuppressWarnings("unchecked")
@@ -97,8 +96,6 @@ public class Settings implements Extension {
 		AGENT_HEARTBEAT_FREQUENCY = Duration.create(config.getMilliseconds("agent.heartbeat-frequency"),
 				TimeUnit.MILLISECONDS);
 
-		THROTTLED_AGENT_JOB_LIMIT = config.getInt("agent.throttled-agent.max-jobs");
-		
 		TIMED_JOBS_RETRY_DELAY = Duration
 				.create(config.getMilliseconds("timed-jobs.retry-delay"), TimeUnit.MILLISECONDS);
 

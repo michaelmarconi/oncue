@@ -15,14 +15,16 @@
  ******************************************************************************/
 package oncue.tests.load;
 
+import java.util.Collections;
+
 import junit.framework.Assert;
 import oncue.agent.ThrottledAgent;
-import oncue.common.messages.internal.EnqueueJob;
-import oncue.common.messages.internal.Job;
-import oncue.common.messages.internal.JobProgress;
-import oncue.service.backingstore.RedisBackingStore;
-import oncue.service.queueManager.InMemoryQueueManager;
-import oncue.service.scheduler.ThrottledScheduler;
+import oncue.backingstore.RedisBackingStore;
+import oncue.common.messages.EnqueueJob;
+import oncue.common.messages.Job;
+import oncue.common.messages.JobProgress;
+import oncue.queuemanager.InMemoryQueueManager;
+import oncue.scheduler.ThrottledScheduler;
 import oncue.tests.base.AbstractActorSystemTest;
 import oncue.tests.load.workers.SimpleLoadTestWorker;
 
@@ -60,8 +62,7 @@ public class ThrottledLoadTest extends AbstractActorSystemTest {
 		new JavaTestKit(system) {
 			{
 				// Create an in-memory queue manager
-				ActorRef queueManager = system.actorOf(new Props(InMemoryQueueManager.class),
-						settings.QUEUE_MANAGER_NAME);
+				ActorRef queueManager = createQueueManager(system, null);
 
 				// Create a scheduler probe
 				final JavaTestKit schedulerProbe = new JavaTestKit(system) {
@@ -76,16 +77,9 @@ public class ThrottledLoadTest extends AbstractActorSystemTest {
 					}
 				};
 
-				// Create a throttled, Redis-backed scheduler
-				system.actorOf(new Props(new UntypedActorFactory() {
-					@Override
-					public Actor create() throws Exception {
-						ThrottledScheduler scheduler = new ThrottledScheduler(RedisBackingStore.class);
-						scheduler.injectProbe(schedulerProbe.getRef());
-						return scheduler;
-					}
-				}), settings.SCHEDULER_NAME);
-
+				// Create a throttled, Redis-backed scheduler with a probe
+				createScheduler(system, schedulerProbe.getRef());
+				
 				// Enqueue a stack of jobs
 				for (int i = 0; i < JOB_COUNT; i++) {
 					queueManager.tell(new EnqueueJob(SimpleLoadTestWorker.class.getName()), null);
@@ -97,7 +91,7 @@ public class ThrottledLoadTest extends AbstractActorSystemTest {
 				}
 
 				// Create a throttled agent
-				system.actorOf(new Props(ThrottledAgent.class), settings.AGENT_NAME);
+				createAgent(system, Collections.singletonList(SimpleLoadTestWorker.class.getName()), null);
 
 				// Wait until all the jobs have completed
 				final Jedis redis = RedisBackingStore.getConnection();

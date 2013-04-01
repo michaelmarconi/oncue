@@ -15,8 +15,8 @@
  ******************************************************************************/
 package oncue.tests.load.workers;
 
-import oncue.agent.workers.internal.AbstractWorker;
-import oncue.common.messages.internal.Job;
+import oncue.common.messages.Job;
+import oncue.worker.AbstractWorker;
 
 public class SimpleLoadTestWorker extends AbstractWorker {
 

@@ -17,14 +17,14 @@ package oncue.tests.load;
 
 import junit.framework.Assert;
 import oncue.agent.ThrottledAgent;
-import oncue.common.messages.internal.EnqueueJob;
-import oncue.common.messages.internal.Job;
-import oncue.common.messages.internal.JobProgress;
+import oncue.backingstore.RedisBackingStore;
+import oncue.common.messages.EnqueueJob;
+import oncue.common.messages.Job;
+import oncue.common.messages.JobProgress;
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
-import oncue.service.backingstore.RedisBackingStore;
-import oncue.service.queueManager.InMemoryQueueManager;
-import oncue.service.scheduler.ThrottledScheduler;
+import oncue.queuemanager.InMemoryQueueManager;
+import oncue.scheduler.ThrottledScheduler;
 import oncue.tests.load.workers.SimpleLoadTestWorker;
 
 import org.junit.After;
