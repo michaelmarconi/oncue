@@ -31,7 +31,6 @@ import oncue.worker.AbstractWorker;
 
 import org.junit.Test;
 
-import sun.management.Agent;
 import akka.actor.ActorRef;
 import akka.testkit.JavaTestKit;
 
@@ -43,18 +42,17 @@ import akka.testkit.JavaTestKit;
  * <h3>Agent is missing a worker class at boot time</h3>
  * 
  * <p>
- * When an {@linkplain Agent} is instantiated, it must be passed a list of
- * worker classes that must extend the {@linkplain AbstractWorker} class. This
- * test ensures that the agent system will shut down if this is not the case.
+ * When an agent is instantiated, it must be passed a list of worker classes
+ * that must extend the {@linkplain AbstractWorker} class. This test ensures
+ * that the agent system will shut down if this is not the case.
  * </p>
  * 
  * <h3>Scheduler dispatched job to wrong agent</h3>
  * 
  * <p>
- * When an {@linkplain Agent} makes a request for work, it tells the scheduler
- * what worker types it is capable of spawning. If the scheduler ignores this
- * and requests that the agent complete a job it has no worker for, the job
- * should fail.
+ * When an agent makes a request for work, it tells the scheduler what worker
+ * types it is capable of spawning. If the scheduler ignores this and requests
+ * that the agent complete a job it has no worker for, the job should fail.
  * </p>
  */
 public class MissingWorkerTest extends AbstractActorSystemTest {

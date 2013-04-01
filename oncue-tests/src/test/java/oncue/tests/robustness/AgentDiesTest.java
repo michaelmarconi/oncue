@@ -28,7 +28,6 @@ import oncue.tests.workers.TestWorker;
 
 import org.junit.Test;
 
-import sun.management.Agent;
 import akka.actor.Actor;
 import akka.actor.ActorRef;
 import akka.actor.PoisonPill;
@@ -37,10 +36,10 @@ import akka.actor.UntypedActorFactory;
 import akka.testkit.JavaTestKit;
 
 /**
- * An {@linkplain Agent} may die unexpectedly while it is processing jobs. Since
- * we cannot rely on the agent sending a message in its death-throes (the entire
- * JVM may have exploded), we need to detect that its heart beat has stopped and
- * take action back at the scheduler.
+ * An agent may die unexpectedly while it is processing jobs. Since we cannot
+ * rely on the agent sending a message in its death-throes (the entire JVM may
+ * have exploded), we need to detect that its heart beat has stopped and take
+ * action back at the scheduler.
  */
 public class AgentDiesTest extends AbstractActorSystemTest {
 

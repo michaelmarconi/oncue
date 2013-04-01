@@ -23,9 +23,7 @@ import oncue.tests.workers.TestWorker;
 
 import org.junit.Test;
 
-import sun.management.Agent;
 import akka.actor.ActorRef;
-import akka.actor.Scheduler;
 import akka.testkit.JavaTestKit;
 
 /**
@@ -35,7 +33,7 @@ import akka.testkit.JavaTestKit;
 public class AgentPresenceTest extends AbstractActorSystemTest {
 
 	/**
-	 * An {@linkplain Agent} should emit a steady heartbeat while it is alive.
+	 * An agent should emit a steady heartbeat while it is alive.
 	 */
 	@Test
 	public void agentEmitsHeartbeat() {
@@ -69,8 +67,8 @@ public class AgentPresenceTest extends AbstractActorSystemTest {
 	}
 
 	/**
-	 * When an {@linkplain Agent} dies, it should eventually be de-registered
-	 * from the {@linkplain Scheduler}
+	 * When an agent dies, it should eventually be de-registered from the
+	 * scheduler.
 	 */
 	@Test
 	public void agentDies() {

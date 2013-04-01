@@ -28,14 +28,13 @@ import oncue.tests.workers.TestWorker;
 
 import org.junit.Test;
 
-import sun.management.Agent;
 import akka.actor.ActorRef;
 import akka.testkit.JavaTestKit;
 
 /**
- * When an {@linkplain Agent} has received a broadcast stating that work is
- * available, it will respond by asking for work (by sending a
- * {@linkplain WorkRequest} message.
+ * When an agent has received a broadcast stating that work is available, it
+ * will respond by asking for work (by sending a {@linkplain WorkRequest}
+ * message.
  */
 public class WorkRequestTest extends AbstractActorSystemTest {
 

@@ -27,7 +27,6 @@ import oncue.tests.workers.TestWorker;
 
 import org.junit.Test;
 
-import sun.management.Agent;
 import akka.testkit.JavaTestKit;
 
 /**
@@ -38,7 +37,7 @@ import akka.testkit.JavaTestKit;
 public class AgentRegistrationTest extends AbstractActorSystemTest {
 
 	/**
-	 * An {@linkplain Agent} should emit a steady heartbeat while it is alive.
+	 * An agent should emit a steady heartbeat while it is alive.
 	 */
 	@Test
 	public void agentRegistersAndRequestsWorkButReceivesNoWork() {

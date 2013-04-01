@@ -23,7 +23,6 @@ import oncue.backingstore.RedisBackingStore;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobProgress;
-import oncue.queuemanager.InMemoryQueueManager;
 import oncue.scheduler.ThrottledScheduler;
 import oncue.tests.base.AbstractActorSystemTest;
 import oncue.tests.load.workers.SimpleLoadTestWorker;
@@ -33,10 +32,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import redis.clients.jedis.Jedis;
-import akka.actor.Actor;
 import akka.actor.ActorRef;
-import akka.actor.Props;
-import akka.actor.UntypedActorFactory;
 import akka.testkit.JavaTestKit;
 
 /**
@@ -57,7 +53,6 @@ public class ThrottledLoadTest extends AbstractActorSystemTest {
 	}
 
 	@Test
-	@SuppressWarnings("serial")
 	public void throttledLoadTest() {
 		new JavaTestKit(system) {
 			{
@@ -79,7 +74,7 @@ public class ThrottledLoadTest extends AbstractActorSystemTest {
 
 				// Create a throttled, Redis-backed scheduler with a probe
 				createScheduler(system, schedulerProbe.getRef());
-				
+
 				// Enqueue a stack of jobs
 				for (int i = 0; i < JOB_COUNT; i++) {
 					queueManager.tell(new EnqueueJob(SimpleLoadTestWorker.class.getName()), null);

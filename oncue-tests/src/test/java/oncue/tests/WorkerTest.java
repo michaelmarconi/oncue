@@ -33,7 +33,6 @@ import oncue.tests.workers.TestWorker;
 
 import org.junit.Test;
 
-import sun.management.Agent;
 import akka.actor.Actor;
 import akka.actor.ActorRef;
 import akka.actor.PoisonPill;
@@ -43,10 +42,8 @@ import akka.testkit.JavaTestKit;
 import akka.testkit.TestActorRef;
 
 /**
- * When an {@linkplain Agent} receives a {@linkplain WorkResponse}, it will attempt to spawn an
- * instance of an {@linkplain IWorker} for each {@linkplain Job} in the list. When an
- * {@linkplain Agent} receives a {@linkplain WorkResponse}, it will attempt to spawn an instance of
- * an {@linkplain IWorker} for each {@linkplain Job} in the list.
+ * When an agent receives a {@linkplain WorkResponse}, it will attempt to spawn
+ * an instance of an {@linkplain IWorker} for each {@linkplain Job} in the list.
  */
 public class WorkerTest extends AbstractActorSystemTest {
 
@@ -62,8 +59,7 @@ public class WorkerTest extends AbstractActorSystemTest {
 						new IgnoreMsg() {
 
 							protected boolean ignore(Object message) {
-								if (message instanceof WorkResponse
-										|| message instanceof JobProgress)
+								if (message instanceof WorkResponse || message instanceof JobProgress)
 									return false;
 
 								return true;
@@ -80,8 +76,8 @@ public class WorkerTest extends AbstractActorSystemTest {
 
 				// Create and expose an agent
 				@SuppressWarnings("serial")
-				TestActorRef<UnlimitedCapacityAgent> agentRef = TestActorRef.create(system,
-						new Props(new UntypedActorFactory() {
+				TestActorRef<UnlimitedCapacityAgent> agentRef = TestActorRef.create(system, new Props(
+						new UntypedActorFactory() {
 
 							@Override
 							public Actor create() throws Exception {
@@ -98,8 +94,7 @@ public class WorkerTest extends AbstractActorSystemTest {
 				assertEquals(0, workResponse.getJobs().size());
 
 				// Check that there are no workers
-				assertFalse("Expected no child workers", agent.getContext().getChildren()
-						.iterator().hasNext());
+				assertFalse("Expected no child workers", agent.getContext().getChildren().iterator().hasNext());
 
 				// Enqueue a job
 				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
@@ -162,23 +157,21 @@ public class WorkerTest extends AbstractActorSystemTest {
 				createScheduler(system, null);
 
 				// Create an agent
-				createAgent(
-						system,
-						Arrays.asList(JobEnqueueingTestWorker.class.getName(),
-								TestWorker.class.getName()), null);
+				createAgent(system, Arrays.asList(JobEnqueueingTestWorker.class.getName(), TestWorker.class.getName()),
+						null);
 
 				// Enqueue a job
 				Map<String, String> params = new HashMap<String, String>();
 				params.put("key", "value");
 
-				queueManager.tell(new EnqueueJob(JobEnqueueingTestWorker.class.getName(), params),
-						null);
+				queueManager.tell(new EnqueueJob(JobEnqueueingTestWorker.class.getName(), params), null);
 
 				EnqueueJob job = queueManagerProbe.expectMsgClass(EnqueueJob.class);
 				assertEquals(JobEnqueueingTestWorker.class.getName(), job.getWorkerType());
 				assertEquals(params, job.getParams());
 
-				// Test that the job enqueing test worker forwards the job to the test worker
+				// Test that the job enqueing test worker forwards the job to
+				// the test worker
 				job = queueManagerProbe.expectMsgClass(EnqueueJob.class);
 				assertEquals(TestWorker.class.getName(), job.getWorkerType());
 				assertEquals(params, job.getParams());
@@ -213,15 +206,14 @@ public class WorkerTest extends AbstractActorSystemTest {
 
 					@Override
 					public Actor create() throws Exception {
-						SimpleQueuePopScheduler simpleQueuePopScheduler = new SimpleQueuePopScheduler(
-								null);
+						SimpleQueuePopScheduler simpleQueuePopScheduler = new SimpleQueuePopScheduler(null);
 						simpleQueuePopScheduler.injectProbe(schedulerProbe.getRef());
 						return simpleQueuePopScheduler;
 					}
 				});
 
-				final TestActorRef<SimpleQueuePopScheduler> schedulerRef = TestActorRef.create(
-						system, schedulerProps, settings.SCHEDULER_NAME);
+				final TestActorRef<SimpleQueuePopScheduler> schedulerRef = TestActorRef.create(system, schedulerProps,
+						settings.SCHEDULER_NAME);
 				final SimpleQueuePopScheduler scheduler = schedulerRef.underlyingActor();
 				scheduler.pause();
 
@@ -229,18 +221,16 @@ public class WorkerTest extends AbstractActorSystemTest {
 				ActorRef queueManager = createQueueManager(system, null);
 
 				// Create an agent
-				createAgent(
-						system,
-						Arrays.asList(JobEnqueueingTestWorker.class.getName(),
-								TestWorker.class.getName()), null);
+				createAgent(system, Arrays.asList(JobEnqueueingTestWorker.class.getName(), TestWorker.class.getName()),
+						null);
 
 				// Enqueue a job
 				Map<String, String> params = new HashMap<String, String>();
 				params.put("key", "value");
-				queueManager.tell(new EnqueueJob(JobEnqueueingTestWorker.class.getName(), params),
-						null);
+				queueManager.tell(new EnqueueJob(JobEnqueueingTestWorker.class.getName(), params), null);
 
-				// Kill the queue manager, this should cause an exception as soon as the scheduler
+				// Kill the queue manager, this should cause an exception as
+				// soon as the scheduler
 				// is unpaused and gives the agent the enqueued job
 				queueManager.tell(PoisonPill.getInstance(), null);
 				expectNoMsg(duration("1 second"));
@@ -249,8 +239,7 @@ public class WorkerTest extends AbstractActorSystemTest {
 
 				// Expect a job failure message at the scheduler
 				JobFailed jobFailed = schedulerProbe.expectMsgClass(JobFailed.class);
-				assertEquals(JobEnqueueingTestWorker.class.getName(), jobFailed.getJob()
-						.getWorkerType());
+				assertEquals(JobEnqueueingTestWorker.class.getName(), jobFailed.getJob().getWorkerType());
 				assertEquals(params, jobFailed.getJob().getParams());
 			}
 		};
