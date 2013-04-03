@@ -20,7 +20,6 @@ import java.util.Collection;
 import oncue.common.messages.ThrottledWorkRequest;
 
 import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
 
 /**
  * This agent will work on the configured maximum number of jobs at any one
@@ -29,17 +28,17 @@ import com.typesafe.config.ConfigFactory;
 public class ThrottledAgent extends AbstractAgent {
 
 	// The maximum number of concurrent workers
-	private final Integer MAX_JOBS;
+	private final Integer MAX_WORKERS;
 
 	public ThrottledAgent(Collection<String> workerTypes) throws MissingWorkerException {
 		super(workerTypes);
-		Config config = ConfigFactory.load();
-		if (!config.hasPath("agent.throttled-agent.max-jobs")){
+		Config config = getContext().system().settings().config();
+		if (!config.hasPath("oncue.agent.throttled-agent.max-jobs")) {
 			throw new RuntimeException(
 					"Configuration is missing the maximum concurrent jobs configuration for the throttled agent.");
 		}
-		MAX_JOBS = config.getInt("agent.throttled-agent.max-jobs");
-		log.info("The throttled agent will process a maximum of {} jobs in parallel", MAX_JOBS);
+		MAX_WORKERS = config.getInt("oncue.agent.throttled-agent.max-jobs");
+		log.info("The throttled agent will process a maximum of {} jobs in parallel", MAX_WORKERS);
 	}
 
 	@Override
@@ -49,8 +48,8 @@ public class ThrottledAgent extends AbstractAgent {
 		 * Don't request work if this agent is already dealing with all the jobs
 		 * it can manage
 		 */
-		if (jobsInProgress.size() < MAX_JOBS) {
-			int jobsToRequest = MAX_JOBS - jobsInProgress.size();
+		if (jobsInProgress.size() < MAX_WORKERS) {
+			int jobsToRequest = MAX_WORKERS - jobsInProgress.size();
 			log.debug("Requesting {} new jobs", jobsToRequest);
 			getScheduler().tell(new ThrottledWorkRequest(getSelf(), getWorkerTypes(), jobsToRequest), getSelf());
 		}

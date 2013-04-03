@@ -75,6 +75,8 @@ public class ThrottledLoadTest extends AbstractActorSystemTest {
 				// Create a throttled, Redis-backed scheduler with a probe
 				createScheduler(system, schedulerProbe.getRef());
 
+				log.info("Enqueing {} jobs...", JOB_COUNT);
+
 				// Enqueue a stack of jobs
 				for (int i = 0; i < JOB_COUNT; i++) {
 					queueManager.tell(new EnqueueJob(SimpleLoadTestWorker.class.getName()), null);
@@ -84,6 +86,8 @@ public class ThrottledLoadTest extends AbstractActorSystemTest {
 				for (int i = 0; i < JOB_COUNT; i++) {
 					schedulerProbe.expectMsgClass(Job.class);
 				}
+
+				log.info("Jobs enqueued.");
 
 				// Create a throttled agent
 				createAgent(system, Collections.singletonList(SimpleLoadTestWorker.class.getName()), null);
@@ -110,6 +114,8 @@ public class ThrottledLoadTest extends AbstractActorSystemTest {
 					Job job = RedisBackingStore.loadJob(i + 1, redis);
 					Assert.assertEquals(1.0, job.getProgress());
 				}
+
+				log.info("All jobs were processed!");
 
 				RedisBackingStore.releaseConnection(redis);
 			}
