@@ -23,7 +23,7 @@ import oncue.common.messages.AbstractWorkRequest;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.WorkResponse;
-import oncue.tests.base.AbstractActorSystemTest;
+import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.TestWorker;
 
 import org.junit.Test;
@@ -36,7 +36,7 @@ import akka.testkit.JavaTestKit;
  * will respond by asking for work (by sending a {@linkplain WorkRequest}
  * message.
  */
-public class WorkRequestTest extends AbstractActorSystemTest {
+public class WorkRequestTest extends ActorSystemTest {
 
 	@Test
 	public void requestWorkAndReceiveAJob() {

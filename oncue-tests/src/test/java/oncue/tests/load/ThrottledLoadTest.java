@@ -24,7 +24,7 @@ import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobProgress;
 import oncue.scheduler.ThrottledScheduler;
-import oncue.tests.base.AbstractActorSystemTest;
+import oncue.tests.base.ActorSystemTest;
 import oncue.tests.load.workers.SimpleLoadTestWorker;
 
 import org.junit.After;
@@ -40,7 +40,7 @@ import akka.testkit.JavaTestKit;
  * {@linkplain ThrottledScheduler} and {@linkplain ThrottledAgent} to ensure
  * that a limited number of jobs can be processed by the agent at any one time.
  */
-public class ThrottledLoadTest extends AbstractActorSystemTest {
+public class ThrottledLoadTest extends ActorSystemTest {
 
 	private static final int JOB_COUNT = 100000;
 

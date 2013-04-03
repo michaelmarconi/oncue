@@ -13,7 +13,7 @@ package oncue.tests.timedjobs;
  * the License. #L%
  */
 
-import oncue.tests.base.AbstractActorSystemTest;
+import oncue.tests.base.ActorSystemTest;
 import oncue.timedjobs.TimedJobFactory;
 
 import org.junit.Test;
@@ -21,7 +21,7 @@ import org.junit.Test;
 import akka.actor.EmptyLocalActorRef;
 import akka.testkit.JavaTestKit;
 
-public class TimedJobFactoryTest extends AbstractActorSystemTest {
+public class TimedJobFactoryTest extends ActorSystemTest {
 
 	@Test
 	public void createTimedJob() {

@@ -19,7 +19,7 @@ import static junit.framework.Assert.assertEquals;
 import oncue.backingstore.RedisBackingStore;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
-import oncue.tests.base.AbstractActorSystemTest;
+import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.TestWorker;
 
 import org.junit.Before;
@@ -34,7 +34,7 @@ import akka.testkit.JavaTestKit;
  * implementation also has a Redis queue monitor, which blocks until new jobs
  * are found.
  */
-public class RedisQueueManagerTest extends AbstractActorSystemTest {
+public class RedisQueueManagerTest extends ActorSystemTest {
 
 	@Before
 	public void cleanRedis() {
