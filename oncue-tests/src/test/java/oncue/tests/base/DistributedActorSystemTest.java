@@ -37,12 +37,17 @@ import akka.event.LoggingAdapter;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
-public abstract class AbstractActorSystemTest {
+public abstract class DistributedActorSystemTest {
 
-	protected Config config;
-	protected ActorSystem system;
-	protected Settings settings;
-	protected LoggingAdapter log;
+	protected Config serviceConfig;
+	protected ActorSystem serviceSystem;
+	protected Settings serviceSettings;
+	protected LoggingAdapter serviceLog;
+
+	protected Config agentConfig;
+	protected ActorSystem agentSystem;
+	protected Settings agentSettings;
+	protected LoggingAdapter agentLog;
 
 	/**
 	 * Create an agent component, with a set of workers and an optional probe
@@ -51,17 +56,17 @@ public abstract class AbstractActorSystemTest {
 	 *            can be null
 	 */
 	@SuppressWarnings("serial")
-	public ActorRef createAgent(ActorSystem system, final Collection<String> workers, final ActorRef probe) {
-		return system.actorOf(new Props(new UntypedActorFactory() {
+	public ActorRef createAgent(final Collection<String> workers, final ActorRef probe) {
+		return agentSystem.actorOf(new Props(new UntypedActorFactory() {
 			@Override
 			public Actor create() throws Exception {
-				AbstractAgent agent = (AbstractAgent) Class.forName(settings.AGENT_CLASS)
+				AbstractAgent agent = (AbstractAgent) Class.forName(agentSettings.AGENT_CLASS)
 						.getConstructor(Collection.class).newInstance(workers);
 				if (probe != null)
 					agent.injectProbe(probe);
 				return agent;
 			}
-		}), settings.AGENT_NAME);
+		}), agentSettings.AGENT_NAME);
 	}
 
 	/**
@@ -71,17 +76,17 @@ public abstract class AbstractActorSystemTest {
 	 *            can be null
 	 */
 	@SuppressWarnings("serial")
-	public ActorRef createQueueManager(ActorSystem system, final ActorRef probe) {
-		return system.actorOf(new Props(new UntypedActorFactory() {
+	public ActorRef createQueueManager(final ActorRef probe) {
+		return serviceSystem.actorOf(new Props(new UntypedActorFactory() {
 			@Override
 			public Actor create() throws Exception {
-				AbstractQueueManager queueManager = (AbstractQueueManager) Class.forName(settings.QUEUE_MANAGER_CLASS)
-						.newInstance();
+				AbstractQueueManager queueManager = (AbstractQueueManager) Class.forName(
+						serviceSettings.QUEUE_MANAGER_CLASS).newInstance();
 				if (probe != null)
 					queueManager.injectProbe(probe);
 				return queueManager;
 			}
-		}), settings.QUEUE_MANAGER_NAME);
+		}), serviceSettings.QUEUE_MANAGER_NAME);
 	}
 
 	/**
@@ -91,14 +96,14 @@ public abstract class AbstractActorSystemTest {
 	 *            can be null
 	 */
 	@SuppressWarnings("serial")
-	public ActorRef createScheduler(ActorSystem system, final ActorRef probe) {
-		return system.actorOf(new Props(new UntypedActorFactory() {
+	public ActorRef createScheduler(final ActorRef probe) {
+		return serviceSystem.actorOf(new Props(new UntypedActorFactory() {
 			@Override
 			public Actor create() throws Exception {
-				Class<?> schedulerClass = Class.forName(settings.SCHEDULER_CLASS);
+				Class<?> schedulerClass = Class.forName(serviceSettings.SCHEDULER_CLASS);
 				Class<?> backingStoreClass = null;
-				if (settings.SCHEDULER_BACKING_STORE_CLASS != null)
-					backingStoreClass = Class.forName(settings.SCHEDULER_BACKING_STORE_CLASS);
+				if (serviceSettings.SCHEDULER_BACKING_STORE_CLASS != null)
+					backingStoreClass = Class.forName(serviceSettings.SCHEDULER_BACKING_STORE_CLASS);
 
 				@SuppressWarnings("rawtypes")
 				AbstractScheduler scheduler = (AbstractScheduler) schedulerClass.getConstructor(Class.class)
@@ -107,31 +112,39 @@ public abstract class AbstractActorSystemTest {
 					scheduler.injectProbe(probe);
 				return scheduler;
 			}
-		}), settings.SCHEDULER_NAME);
+		}), serviceSettings.SCHEDULER_NAME);
 	}
 
 	@Before
-	public void startActorSystem() {
+	public void startActorSystems() {
 		/*
 		 * Load configuration specific to this test and fall back to the
 		 * reference configuration
 		 */
-		config = ConfigFactory.load();
-		config = ConfigFactory.load(getClass().getSimpleName()).withFallback(config);
+		serviceConfig = ConfigFactory.load();
+		serviceConfig = ConfigFactory.load(getClass().getSimpleName() + "-Service").withFallback(serviceConfig);
 
-		system = ActorSystem.create("oncue-test", config);
-		settings = SettingsProvider.SettingsProvider.get(system);
-		log = Logging.getLogger(system, this);
+		agentConfig = ConfigFactory.load();
+		agentConfig = ConfigFactory.load(getClass().getSimpleName() + "-Agent").withFallback(agentConfig);
+
+		serviceSystem = ActorSystem.create("oncue-service", serviceConfig);
+		serviceSettings = SettingsProvider.SettingsProvider.get(serviceSystem);
+		serviceLog = Logging.getLogger(serviceSystem, this);
+
+		agentSystem = ActorSystem.create("oncue-agent", agentConfig);
+		agentSettings = SettingsProvider.SettingsProvider.get(agentSystem);
+		agentLog = Logging.getLogger(agentSystem, this);
 	}
 
 	@After
-	public void stopActorSystem() throws Exception {
-		system.shutdown();
-		while (!system.isTerminated()) {
-			log.debug("Waiting for system to shut down...");
+	public void stopActorSystems() throws Exception {
+		serviceSystem.shutdown();
+		agentSystem.shutdown();
+		while (!serviceSystem.isTerminated() && !agentSystem.isTerminated()) {
+			serviceLog.debug("Waiting for systems to shut down...");
 			Thread.sleep(500);
 		}
-		log.debug("System shut down");
+		serviceLog.debug("Systems shut down");
 	}
 
 }

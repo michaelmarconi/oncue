@@ -22,7 +22,7 @@ import java.util.Arrays;
 import oncue.common.messages.AbstractWorkRequest;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
 import oncue.common.messages.WorkResponse;
-import oncue.tests.base.AbstractActorSystemTest;
+import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.TestWorker;
 
 import org.junit.Test;
@@ -34,7 +34,7 @@ import akka.testkit.JavaTestKit;
  * up. After receiving confirmation that they are registered, they should
  * request work.
  */
-public class AgentRegistrationTest extends AbstractActorSystemTest {
+public class AgentRegistrationTest extends ActorSystemTest {
 
 	/**
 	 * An agent should emit a steady heartbeat while it is alive.

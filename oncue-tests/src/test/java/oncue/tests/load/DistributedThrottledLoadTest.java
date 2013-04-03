@@ -15,16 +15,17 @@
  ******************************************************************************/
 package oncue.tests.load;
 
+import java.util.Collections;
+import java.util.concurrent.TimeUnit;
+
 import junit.framework.Assert;
 import oncue.agent.ThrottledAgent;
 import oncue.backingstore.RedisBackingStore;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobProgress;
-import oncue.common.settings.Settings;
-import oncue.common.settings.SettingsProvider;
-import oncue.queuemanager.InMemoryQueueManager;
 import oncue.scheduler.ThrottledScheduler;
+import oncue.tests.base.DistributedActorSystemTest;
 import oncue.tests.load.workers.SimpleLoadTestWorker;
 
 import org.junit.After;
@@ -32,91 +33,71 @@ import org.junit.Before;
 import org.junit.Test;
 
 import redis.clients.jedis.Jedis;
-import akka.actor.Actor;
+import scala.concurrent.duration.FiniteDuration;
 import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
-import akka.actor.Props;
-import akka.actor.UntypedActorFactory;
-import akka.event.Logging;
-import akka.event.LoggingAdapter;
 import akka.testkit.JavaTestKit;
-
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
 
 /**
  * Test the "job throttling" strategy, which combines the
  * {@linkplain ThrottledScheduler} and {@linkplain ThrottledAgent} to ensure
  * that a limited number of jobs can be processed by the agent at any one time.
  * 
- * This test will wait until one or more remote agents contacts the scheduler
- * for work.
+ * This test sets up two separate actor systems and uses Netty to remote between
+ * them.
  */
-public class DistributedThrottledLoadTest {
+public class DistributedThrottledLoadTest extends DistributedActorSystemTest {
 
-	protected static Config config;
-	protected final ActorSystem system;
-	protected final Settings settings;
-	protected LoggingAdapter log;
-	private static final int JOB_COUNT = 10000;
-
-	public DistributedThrottledLoadTest() {
-		config = ConfigFactory.load("distributed-throttled-load-test.conf");
-		system = ActorSystem.create("oncue-service", config.getConfig("service").withFallback(config));
-		settings = SettingsProvider.SettingsProvider.get(system);
-		log = Logging.getLogger(system, this);
-	}
-
-	@Before
-	public void cleanRedis() {
-		Jedis redis = RedisBackingStore.getConnection();
-		redis.flushDB();
-		RedisBackingStore.releaseConnection(redis);
-	}
+	private static final int JOB_COUNT = 20000;
 
 	@Test
-	@SuppressWarnings("serial")
-	public void simpleLoadTest() {
-		new JavaTestKit(system) {
+	public void throttledLoadTest() {
+
+		// Create a queue manager probe
+		final JavaTestKit queueManagerProbe = new JavaTestKit(serviceSystem);
+
+		// Create a scheduler probe
+		final JavaTestKit schedulerProbe = new JavaTestKit(serviceSystem) {
 			{
-				// Create an in-memory queue manager
-				ActorRef queueManager = system.actorOf(new Props(InMemoryQueueManager.class),
-						settings.QUEUE_MANAGER_NAME);
+				new IgnoreMsg() {
 
-				// Create a scheduler probe
-				final JavaTestKit schedulerProbe = new JavaTestKit(system) {
-					{
-						new IgnoreMsg() {
-
-							@Override
-							protected boolean ignore(Object message) {
-								return !(message instanceof JobProgress);
-							}
-						};
+					@Override
+					protected boolean ignore(Object message) {
+						return !(message instanceof JobProgress || message instanceof Job);
 					}
 				};
+			}
+		};
 
-				// Create a throttled, Redis-backed scheduler
-				system.actorOf(new Props(new UntypedActorFactory() {
-					@Override
-					public Actor create() throws Exception {
-						ThrottledScheduler scheduler = new ThrottledScheduler(RedisBackingStore.class);
-						scheduler.injectProbe(schedulerProbe.getRef());
-						return scheduler;
-					}
-				}), settings.SCHEDULER_NAME);
+		// Create a queue manager
+		ActorRef queueManager = createQueueManager(null);
 
-				// Enqueue a stack of jobs
-				for (int i = 0; i < JOB_COUNT; i++) {
-					queueManager.tell(new EnqueueJob(SimpleLoadTestWorker.class.getName()), getRef());
-					expectMsgClass(Job.class);
-				}
+		// Create a throttled, Redis-backed scheduler with a probe
+		createScheduler(schedulerProbe.getRef());
 
-				log.info("All jobs enqueued. Go ahead and start some agents...");
+		serviceLog.info("Enqueing {} jobs...", JOB_COUNT);
 
-				// Wait until all the jobs have completed
-				final Jedis redis = RedisBackingStore.getConnection();
-				new AwaitCond(duration("5 minutes"), duration("10 seconds")) {
+		// Enqueue a stack of jobs
+		for (int i = 0; i < JOB_COUNT; i++) {
+			queueManager.tell(new EnqueueJob(SimpleLoadTestWorker.class.getName()), queueManagerProbe.getRef());
+			queueManagerProbe.expectMsgClass(Job.class);
+		}
+
+		// Wait for all jobs to be enqueued
+		for (int i = 0; i < JOB_COUNT; i++) {
+			schedulerProbe.expectMsgClass(Job.class);
+		}
+
+		serviceLog.info("Jobs enqueued.");
+
+		// Create a throttled agent
+		createAgent(Collections.singletonList(SimpleLoadTestWorker.class.getName()), null);
+
+		// Wait until all the jobs have completed
+		final Jedis redis = RedisBackingStore.getConnection();
+
+		new JavaTestKit(serviceSystem) {
+			{
+				new AwaitCond(new FiniteDuration(5, TimeUnit.MINUTES), new FiniteDuration(10, TimeUnit.SECONDS)) {
 
 					@Override
 					protected boolean cond() {
@@ -130,23 +111,26 @@ public class DistributedThrottledLoadTest {
 						}
 					}
 				};
-
-				// Now, check all the jobs completed in Redis
-				for (int i = 0; i < JOB_COUNT; i++) {
-					Job job = RedisBackingStore.loadJob(i + 1, redis);
-					Assert.assertEquals(1.0, job.getProgress());
-				}
-
-				RedisBackingStore.releaseConnection(redis);
 			}
 		};
+
+		// Now, check all the jobs completed in Redis
+		for (int i = 0; i < JOB_COUNT; i++) {
+			Job job = RedisBackingStore.loadJob(i + 1, redis);
+			Assert.assertEquals(1.0, job.getProgress());
+		}
+
+		serviceLog.info("All jobs were processed!");
+
+		RedisBackingStore.releaseConnection(redis);
 	}
 
+	@Before
 	@After
-	public void tearDown() {
-		system.shutdown();
+	public void cleanRedis() {
 		Jedis redis = RedisBackingStore.getConnection();
 		redis.flushDB();
 		RedisBackingStore.releaseConnection(redis);
 	}
+
 }

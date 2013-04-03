@@ -22,7 +22,7 @@ import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.WorkResponse;
 import oncue.scheduler.JVMCapacityScheduler;
-import oncue.tests.base.AbstractActorSystemTest;
+import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.TestWorker;
 
 import org.junit.Test;
@@ -38,7 +38,7 @@ import akka.testkit.TestActorRef;
  * Test the JVM memory capacity strategy by farming jobs of known size out to
  * agents with known capacities.
  */
-public class JVMCapacityStrategyTest extends AbstractActorSystemTest {
+public class JVMCapacityStrategyTest extends ActorSystemTest {
 
 	/*-
 	 *            Jobs: J1(100), J2(200), J3(50), J4(200), J5(500) 

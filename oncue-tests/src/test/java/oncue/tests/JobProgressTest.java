@@ -20,7 +20,7 @@ import java.util.Arrays;
 import junit.framework.Assert;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.JobProgress;
-import oncue.tests.base.AbstractActorSystemTest;
+import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.TestWorker;
 
 import org.junit.Test;
@@ -32,7 +32,7 @@ import akka.testkit.JavaTestKit;
  * When a job has been scheduled, the worker may elect to send back regular
  * reports about job completion progress.
  */
-public class JobProgressTest extends AbstractActorSystemTest {
+public class JobProgressTest extends ActorSystemTest {
 
 	@Test
 	public void monitorProgress() {
