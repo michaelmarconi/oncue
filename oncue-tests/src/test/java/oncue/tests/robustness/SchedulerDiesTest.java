@@ -23,7 +23,7 @@ import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobProgress;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
-import oncue.tests.base.AbstractActorSystemTest;
+import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.TestWorker;
 
 import org.junit.Before;
@@ -39,7 +39,7 @@ import akka.testkit.JavaTestKit;
  * backing store. This test ensures that we can bring a scheduler back from the
  * dead so that no jobs are lost.
  */
-public class SchedulerDiesTest extends AbstractActorSystemTest {
+public class SchedulerDiesTest extends ActorSystemTest {
 
 	@Before
 	public void cleanRedis() {

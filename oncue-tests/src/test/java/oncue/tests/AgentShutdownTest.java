@@ -16,7 +16,7 @@ package oncue.tests;
 import java.util.Arrays;
 
 import oncue.common.messages.SimpleMessages.SimpleMessage;
-import oncue.tests.base.AbstractActorSystemTest;
+import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.TestWorker;
 
 import org.junit.Before;
@@ -32,7 +32,7 @@ import com.typesafe.config.Config;
  * shutdown event is broadcast), the scheduler should note this and de-register
  * the agent, before it becomes a dead agent.
  */
-public class AgentShutdownTest extends AbstractActorSystemTest {
+public class AgentShutdownTest extends ActorSystemTest {
 
 	private ActorSystem agentSystem;
 

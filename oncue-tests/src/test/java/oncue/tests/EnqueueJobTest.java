@@ -18,7 +18,7 @@ package oncue.tests;
 import static org.junit.Assert.assertEquals;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
-import oncue.tests.base.AbstractActorSystemTest;
+import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.TestWorker;
 
 import org.junit.Test;
@@ -26,7 +26,7 @@ import org.junit.Test;
 import akka.actor.ActorRef;
 import akka.testkit.JavaTestKit;
 
-public class EnqueueJobTest extends AbstractActorSystemTest {
+public class EnqueueJobTest extends ActorSystemTest {
 
 	@Test
 	public void testEnqueuingJob() {

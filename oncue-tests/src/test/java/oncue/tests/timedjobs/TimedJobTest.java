@@ -10,7 +10,7 @@ import java.util.Map;
 import oncue.common.messages.Job;
 import oncue.common.messages.RetryTimedJobMessage;
 import oncue.common.messages.WorkResponse;
-import oncue.tests.base.AbstractActorSystemTest;
+import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.TestWorker;
 import oncue.timedjobs.TimedJobFactory;
 
@@ -20,7 +20,7 @@ import akka.actor.ActorRef;
 import akka.actor.Kill;
 import akka.testkit.JavaTestKit;
 
-public class TimedJobTest extends AbstractActorSystemTest {
+public class TimedJobTest extends ActorSystemTest {
 
 	@Test
 	public void timedJobSendsJobMessage() {

@@ -24,7 +24,7 @@ import oncue.agent.UnlimitedCapacityAgent;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobFailed;
-import oncue.tests.base.AbstractActorSystemTest;
+import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.IncompetentTestWorker;
 import oncue.tests.workers.TestWorker;
 
@@ -42,7 +42,7 @@ import akka.testkit.TestActorRef;
  * case, it should be shut down gracefully and the problem noted by the
  * scheduler.
  */
-public class WorkerDiesTest extends AbstractActorSystemTest {
+public class WorkerDiesTest extends ActorSystemTest {
 
 	@Test
 	public void testWorkerDies() {

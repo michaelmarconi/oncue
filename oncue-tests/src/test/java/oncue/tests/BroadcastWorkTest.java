@@ -24,7 +24,7 @@ import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
 import oncue.common.messages.WorkResponse;
-import oncue.tests.base.AbstractActorSystemTest;
+import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.TestWorker;
 
 import org.junit.Test;
@@ -37,7 +37,7 @@ import akka.testkit.JavaTestKit;
  * message repeatedly, until all the unscheduled jobs have been taken by an
  * Agent.
  */
-public class BroadcastWorkTest extends AbstractActorSystemTest {
+public class BroadcastWorkTest extends ActorSystemTest {
 
 	@Test
 	public void oneJobToScheduleButNoAgents() {

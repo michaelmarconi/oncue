@@ -23,7 +23,7 @@ import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobProgress;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
-import oncue.tests.base.AbstractActorSystemTest;
+import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.TestWorker;
 
 import org.junit.Test;
@@ -41,7 +41,7 @@ import akka.testkit.JavaTestKit;
  * have exploded), we need to detect that its heart beat has stopped and take
  * action back at the scheduler.
  */
-public class AgentDiesTest extends AbstractActorSystemTest {
+public class AgentDiesTest extends ActorSystemTest {
 
 	@Test
 	@SuppressWarnings("serial")

@@ -35,59 +35,53 @@ public class HttpClientTest {
 
 	private static String sampleResponse = "{\"enqueuedAt\" : \"2013-03-23T12:13:14+00:00\",\"workerType\" : \"com.example.ExampleWorker\",\"id\" : 2,\"params\" : {\"key1\" : \"Value 1\",\"key2\" : \"Value 2\"},\"progress\" : 0.5  }";
 
-	private static JsonFactory jackson = new JsonFactory();
-
 	@Rule
 	public ExpectedException expectedException = ExpectedException.none();
-	
+
 	@Test
 	public void clientPostsToConfiguredUrl() throws ClientException {
-		ClientMockTransport transport = new ClientMockTransport(200,
-				sampleResponse);
+		ClientMockTransport transport = new ClientMockTransport(200, sampleResponse);
 		Client client = new HttpClient(transport);
 		client.enqueueJob("com.example.SubmittedJob");
-		
-		Assert.assertEquals("http://localhost:9000/api/jobs", transport.getUrl()); 
+
+		Assert.assertEquals("http://localhost:9000/api/jobs", transport.getUrl());
 	}
 
 	@Test
 	public void clientPostsWorkerNameInRequestBody() throws ClientException, IOException {
-		ClientMockTransport transport = new ClientMockTransport(200,
-				sampleResponse);
+		ClientMockTransport transport = new ClientMockTransport(200, sampleResponse);
 		Client client = new HttpClient(transport);
 		client.enqueueJob("com.example.SubmittedJob");
 		Map<String, Object> requestMap = transport.getRequestContentAsMap();
-		
-		Assert.assertEquals("com.example.SubmittedJob", (String)requestMap.get("workerType")); 
+
+		Assert.assertEquals("com.example.SubmittedJob", (String) requestMap.get("workerType"));
 	}
-	
+
+	@SuppressWarnings("rawtypes")
 	@Test
 	public void clientPostsEmptyParamsInBody() throws ClientException, IOException {
-		ClientMockTransport transport = new ClientMockTransport(200,
-				sampleResponse);
+		ClientMockTransport transport = new ClientMockTransport(200, sampleResponse);
 		Client client = new HttpClient(transport);
 		client.enqueueJob("com.example.SubmittedJob");
 		Map<String, Object> requestMap = transport.getRequestContentAsMap();
-		
+
 		assertNotNull(requestMap.get("params"));
 		assertTrue(requestMap.get("params") instanceof Map);
-		assertTrue(((Map)requestMap.get("params")).isEmpty());
+		assertTrue(((Map) requestMap.get("params")).isEmpty());
 	}
-	
+
 	@Test
 	public void clientPostsNonEmptyParamsInBody() throws ClientException, IOException {
-		ClientMockTransport transport = new ClientMockTransport(200,
-				sampleResponse);
+		ClientMockTransport transport = new ClientMockTransport(200, sampleResponse);
 		Client client = new HttpClient(transport);
 
 		Map<String, String> params = new HashMap<>();
 		params.put("key1", "value1");
 		params.put("key2", "value2");
-		
+
 		client.enqueueJob("com.example.SubmittedJob", params);
 		Map<String, Object> requestMap = transport.getRequestContentAsMap();
 
-		
 		assertNotNull(requestMap.get("params"));
 		assertTrue(requestMap.get("params") instanceof Map);
 		@SuppressWarnings("unchecked")
@@ -97,45 +91,40 @@ public class HttpClientTest {
 
 	@Test
 	public void clientParsesValidResponseIntoJob() throws ClientException, IOException {
-		ClientMockTransport transport = new ClientMockTransport(200,
-				sampleResponse);
+		ClientMockTransport transport = new ClientMockTransport(200, sampleResponse);
 		Client client = new HttpClient(transport);
-		
-		Job job = client.enqueueJob("com.example.SubmittedJob");
 
+		Job job = client.enqueueJob("com.example.SubmittedJob");
 
 		assertNotNull(job);
 		assertEquals(2, job.getId());
-		assertTrue(new DateTime(2013, 3, 23, 12, 13, 14, DateTimeZone.forID("+00:00")).compareTo(job.getEnqueuedAt()) ==0);
-		assertEquals(0.5, (double)job.getProgress(), 0);
+		assertTrue(new DateTime(2013, 3, 23, 12, 13, 14, DateTimeZone.forID("+00:00")).compareTo(job.getEnqueuedAt()) == 0);
+		assertEquals(0.5, (double) job.getProgress(), 0);
 		assertEquals("com.example.ExampleWorker", job.getWorkerType());
 		assertNotNull(job.getParams());
 		assertEquals(2, job.getParams().size());
 		assertEquals("Value 1", job.getParams().get("key1"));
 		assertEquals("Value 2", job.getParams().get("key2"));
 	}
-	
+
 	@Test
 	public void clientThrowsExceptionWhenInvalidResponseBodyReturned() throws ClientException, IOException {
-		ClientMockTransport transport = new ClientMockTransport(200,
-				"nonsense");
+		ClientMockTransport transport = new ClientMockTransport(200, "nonsense");
 		Client client = new HttpClient(transport);
 
 		expectedException.expect(ClientException.class);
 		client.enqueueJob("com.example.SubmittedJob");
 	}
-	
+
 	@Test
 	public void clientThrowsExceptionWhenNon200ResponseCodeReturned() throws ClientException, IOException {
-		ClientMockTransport transport = new ClientMockTransport(404,
-				sampleResponse);
+		ClientMockTransport transport = new ClientMockTransport(404, sampleResponse);
 		Client client = new HttpClient(transport);
-		
+
 		expectedException.expect(ClientException.class);
 		client.enqueueJob("com.example.SubmittedJob");
 	}
-	
-	
+
 	public class ClientMockTransport extends MockHttpTransport {
 
 		private int responseCode;
@@ -150,8 +139,7 @@ public class HttpClientTest {
 		}
 
 		@Override
-		public LowLevelHttpRequest buildRequest(String method, String url)
-				throws IOException {
+		public LowLevelHttpRequest buildRequest(String method, String url) throws IOException {
 			this.method = method;
 			this.url = url;
 			request = new MockLowLevelHttpRequest() {
@@ -181,16 +169,15 @@ public class HttpClientTest {
 			streamingContent.writeTo(stream);
 			return new String(stream.toByteArray());
 		}
-		
-		public Map<String, Object> getRequestContentAsMap() throws JsonParseException, JsonMappingException, IOException {
-		    JsonFactory factory = new JsonFactory(); 
-		    ObjectMapper mapper = new ObjectMapper(factory); 
-		    TypeReference<HashMap<String,Object>> typeRef 
-		          = new TypeReference< 
-		                 HashMap<String,Object> 
-		               >() {}; 
-		    return mapper.readValue(getRequestContent(), typeRef); 
-			
+
+		public Map<String, Object> getRequestContentAsMap() throws JsonParseException, JsonMappingException,
+				IOException {
+			JsonFactory factory = new JsonFactory();
+			ObjectMapper mapper = new ObjectMapper(factory);
+			TypeReference<HashMap<String, Object>> typeRef = new TypeReference<HashMap<String, Object>>() {
+			};
+			return mapper.readValue(getRequestContent(), typeRef);
+
 		}
 	}
 

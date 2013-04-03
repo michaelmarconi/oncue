@@ -27,7 +27,7 @@ import oncue.common.messages.JobFailed;
 import oncue.common.messages.JobProgress;
 import oncue.common.messages.WorkResponse;
 import oncue.scheduler.SimpleQueuePopScheduler;
-import oncue.tests.base.AbstractActorSystemTest;
+import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.JobEnqueueingTestWorker;
 import oncue.tests.workers.TestWorker;
 
@@ -45,7 +45,7 @@ import akka.testkit.TestActorRef;
  * When an agent receives a {@linkplain WorkResponse}, it will attempt to spawn
  * an instance of an {@linkplain IWorker} for each {@linkplain Job} in the list.
  */
-public class WorkerTest extends AbstractActorSystemTest {
+public class WorkerTest extends ActorSystemTest {
 
 	@Test
 	public void spawnWorkerAndStartJob() {

@@ -25,7 +25,7 @@ import oncue.common.messages.AbstractWorkRequest;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobFailed;
-import oncue.tests.base.AbstractActorSystemTest;
+import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.TestWorker;
 import oncue.worker.AbstractWorker;
 
@@ -55,7 +55,7 @@ import akka.testkit.JavaTestKit;
  * that the agent complete a job it has no worker for, the job should fail.
  * </p>
  */
-public class MissingWorkerTest extends AbstractActorSystemTest {
+public class MissingWorkerTest extends ActorSystemTest {
 
 	@Test
 	public void startAgentWithMissingWorkerType() {

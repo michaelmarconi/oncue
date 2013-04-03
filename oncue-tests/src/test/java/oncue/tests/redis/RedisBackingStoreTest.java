@@ -29,7 +29,7 @@ import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobFailed;
 import oncue.common.messages.JobProgress;
-import oncue.tests.base.AbstractActorSystemTest;
+import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.IncompetentTestWorker;
 import oncue.tests.workers.TestWorker;
 
@@ -42,7 +42,7 @@ import redis.clients.jedis.Jedis;
 import akka.actor.ActorRef;
 import akka.testkit.JavaTestKit;
 
-public class RedisBackingStoreTest extends AbstractActorSystemTest {
+public class RedisBackingStoreTest extends ActorSystemTest {
 
 	@Test
 	public void addScheduledJob() {

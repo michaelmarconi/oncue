@@ -18,7 +18,7 @@ package oncue.tests;
 import java.util.Arrays;
 
 import oncue.common.messages.SimpleMessages.SimpleMessage;
-import oncue.tests.base.AbstractActorSystemTest;
+import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.TestWorker;
 
 import org.junit.Test;
@@ -30,7 +30,7 @@ import akka.testkit.JavaTestKit;
  * Agents should emit a steady heartbeat while they are alive. When Agents die,
  * they are automatically deregistered at the Scheduler.
  */
-public class AgentPresenceTest extends AbstractActorSystemTest {
+public class AgentPresenceTest extends ActorSystemTest {
 
 	/**
 	 * An agent should emit a steady heartbeat while it is alive.

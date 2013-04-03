@@ -4,7 +4,7 @@ import static junit.framework.Assert.assertEquals;
 import oncue.backingstore.RedisBackingStore;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
-import oncue.tests.base.AbstractActorSystemTest;
+import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.TestWorker;
 
 import org.junit.After;
@@ -23,7 +23,7 @@ import akka.testkit.JavaTestKit;
  * a newly discovered job onto the Unscheduled jobs queue, since it is there
  * already!
  */
-public class RobustRedisDequeueTest extends AbstractActorSystemTest {
+public class RobustRedisDequeueTest extends ActorSystemTest {
 
 	private Jedis redis;
 
