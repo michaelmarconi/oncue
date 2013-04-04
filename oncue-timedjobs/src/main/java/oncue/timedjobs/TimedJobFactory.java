@@ -15,7 +15,7 @@ import akka.actor.UntypedActorFactory;
 public class TimedJobFactory {
 
 	@SuppressWarnings("unchecked")
-	public static void createJobsFromJobMap(ActorSystem system, List<Map<String, Object>> jobList,
+	public static void createTimedJobs(ActorSystem system, List<Map<String, Object>> jobList,
 			ActorRef testingProbe) {
 		for (Map<String, Object> jobMap : jobList) {
 			String name = (String) jobMap.get("name");
@@ -38,7 +38,7 @@ public class TimedJobFactory {
 	}
 
 	public static void createTimedJobs(ActorSystem system, List<Map<String, Object>> jobList) {
-		createJobsFromJobMap(system, jobList, null);
+		createTimedJobs(system, jobList, null);
 	}
 
 	@SuppressWarnings("serial")
@@ -56,6 +56,11 @@ public class TimedJobFactory {
 		}), "job-timer-" + jobName);
 	}
 
+	public static void createTimedJob(ActorSystem system, final String workerType,
+			final String jobName, final String endpointUri, final Map<String, String> parameters, ActorRef testProbe) {
+		createTimedJob(system, workerType, jobName, endpointUri, parameters, null, testProbe);
+	}
+	
 	public static void createTimedJob(ActorSystem system, final String workerType,
 			final String jobName, final String endpointUri, final Map<String, String> parameters) {
 		createTimedJob(system, workerType, jobName, endpointUri, parameters, null, null);

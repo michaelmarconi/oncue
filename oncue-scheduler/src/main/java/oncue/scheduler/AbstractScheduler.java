@@ -37,7 +37,6 @@ import oncue.common.settings.SettingsProvider;
 import org.joda.time.DateTime;
 
 import scala.concurrent.duration.Deadline;
-import sun.management.Agent;
 import akka.actor.ActorInitializationException;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
