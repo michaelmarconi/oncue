@@ -1,5 +1,6 @@
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
+import oncue.timedjobs.TimedJobFactory;
 import play.Application;
 import play.GlobalSettings;
 import play.Logger;
@@ -38,6 +39,9 @@ public class Global extends GlobalSettings {
 				return (Actor) schedulerClass.getConstructor(Class.class).newInstance(backingStoreClass);
 			}
 		}), settings.SCHEDULER_NAME);
+
+		// Start up any timed jobs
+		TimedJobFactory.createTimedJobs(Akka.system(), settings.TIMED_JOBS_TIMETABLE);
 
 		// Start the event stream listener
 		Akka.system().actorOf(new Props(EventMachine.class), "event-stream-listener");
