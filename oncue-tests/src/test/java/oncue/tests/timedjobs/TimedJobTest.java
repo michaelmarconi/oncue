@@ -18,9 +18,12 @@ import org.junit.Test;
 
 import akka.actor.ActorRef;
 import akka.actor.Kill;
+import akka.camel.CamelMessage;
 import akka.testkit.JavaTestKit;
 
 public class TimedJobTest extends ActorSystemTest {
+
+	public static final String CAMEL_WAIT_TIME = "30 seconds";
 
 	@Test
 	public void timedJobSendsJobMessage() {
@@ -43,6 +46,19 @@ public class TimedJobTest extends ActorSystemTest {
 					}
 				};
 
+				// Create a timed job probe
+				final JavaTestKit timedJobProbe = new JavaTestKit(system) {
+
+					{
+						new IgnoreMsg() {
+
+							protected boolean ignore(Object message) {
+								return !(message instanceof CamelMessage);
+							}
+						};
+					}
+				};
+
 				// Create a queue manager
 				createQueueManager(system, null);
 
@@ -58,9 +74,12 @@ public class TimedJobTest extends ActorSystemTest {
 				assertEquals(0, jobs.size());
 
 				TimedJobFactory.createTimedJob(system, TestWorker.class.getName(), "test-1", "quartz://test-timer-1",
-						null);
+						null, timedJobProbe.getRef());
 				TimedJobFactory.createTimedJob(system, TestWorker.class.getName(), "test-2", "quartz://test-timer-2",
-						null);
+						null, timedJobProbe.getRef());
+
+				// Wait for Camel to start up
+				timedJobProbe.expectMsgClass(duration(CAMEL_WAIT_TIME), CamelMessage.class);
 
 				// Expect two workers to send work responses
 				response = agentProbe.expectMsgClass(duration("4 seconds"), WorkResponse.class);
@@ -94,6 +113,19 @@ public class TimedJobTest extends ActorSystemTest {
 					}
 				};
 
+				// Create a timed job probe
+				final JavaTestKit timedJobProbe = new JavaTestKit(system) {
+
+					{
+						new IgnoreMsg() {
+
+							protected boolean ignore(Object message) {
+								return !(message instanceof CamelMessage);
+							}
+						};
+					}
+				};
+
 				// Create a queue manager
 				createQueueManager(system, null);
 
@@ -112,7 +144,10 @@ public class TimedJobTest extends ActorSystemTest {
 				parameters.put("key", "value");
 
 				TimedJobFactory.createTimedJob(system, TestWorker.class.getName(), "test-1", "quartz://test-timer-1",
-						parameters);
+						parameters, timedJobProbe.getRef());
+
+				// Wait for Camel to start up
+				timedJobProbe.expectMsgClass(duration(CAMEL_WAIT_TIME), CamelMessage.class);
 
 				// Expect two workers to send work responses
 				response = agentProbe.expectMsgClass(duration("2 seconds"), WorkResponse.class);
@@ -143,6 +178,19 @@ public class TimedJobTest extends ActorSystemTest {
 						};
 					}
 				};
+				
+				// Create a timed job probe
+				final JavaTestKit timedJobProbe = new JavaTestKit(system) {
+
+					{
+						new IgnoreMsg() {
+
+							protected boolean ignore(Object message) {
+								return !(message instanceof RetryTimedJobMessage || message instanceof CamelMessage);
+							}
+						};
+					}
+				};
 
 				// Create a scheduler
 				createScheduler(system, null);
@@ -157,7 +205,10 @@ public class TimedJobTest extends ActorSystemTest {
 
 				// Create timed job
 				TimedJobFactory.createTimedJob(system, TestWorker.class.getName(), "test-1", "quartz://test-timer-1",
-						null);
+						null, timedJobProbe.getRef());
+
+				// Wait for Camel to start up
+				timedJobProbe.expectMsgClass(duration(CAMEL_WAIT_TIME), CamelMessage.class);
 
 				agentProbe.expectNoMsg(duration("5 seconds"));
 
@@ -184,7 +235,7 @@ public class TimedJobTest extends ActorSystemTest {
 						new IgnoreMsg() {
 
 							protected boolean ignore(Object message) {
-								return !(message instanceof RetryTimedJobMessage);
+								return !(message instanceof RetryTimedJobMessage || message instanceof CamelMessage);
 							}
 						};
 					}
@@ -200,6 +251,9 @@ public class TimedJobTest extends ActorSystemTest {
 				int retryCount = 3;
 				TimedJobFactory.createTimedJob(system, TestWorker.class.getName(), "test-1", "quartz://test-timer-1",
 						params, retryCount, agentProbe.getRef());
+
+				// Wait for Camel to start up
+				agentProbe.expectMsgClass(duration(CAMEL_WAIT_TIME), CamelMessage.class);
 
 				RetryTimedJobMessage timedJobMessage = agentProbe.expectMsgClass(duration("2 seconds"),
 						RetryTimedJobMessage.class);
@@ -225,19 +279,19 @@ public class TimedJobTest extends ActorSystemTest {
 	public void timedJobGetsRestartedWhenKilled() {
 		new JavaTestKit(system) {
 			{
-				// Create an agent probe
-				final JavaTestKit agentProbe = new JavaTestKit(system) {
+				// Create a timed job probe
+				final JavaTestKit timedJobProbe = new JavaTestKit(system) {
 
 					{
 						new IgnoreMsg() {
 
 							protected boolean ignore(Object message) {
-								return !(message instanceof RetryTimedJobMessage);
+								return !(message instanceof RetryTimedJobMessage || message instanceof CamelMessage);
 							}
 						};
 					}
 				};
-
+				
 				// Create a scheduler
 				createScheduler(system, null);
 
@@ -248,10 +302,13 @@ public class TimedJobTest extends ActorSystemTest {
 				String workerType = "oncue.workers.TestWorker";
 				String actorPath = "quartz://test-timer-1";
 				TimedJobFactory.createTimedJob(system, workerType, "test-1", actorPath, params, null,
-						agentProbe.getRef());
+						timedJobProbe.getRef());
+				
+				// Wait for Camel to start up
+				timedJobProbe.expectMsgClass(duration(CAMEL_WAIT_TIME), CamelMessage.class);
 
 				// Observe the timed job trying to schedule the job itself
-				RetryTimedJobMessage timedJobMessage = agentProbe.expectMsgClass(duration("2 seconds"),
+				RetryTimedJobMessage timedJobMessage = timedJobProbe.expectMsgClass(duration("2 seconds"),
 						RetryTimedJobMessage.class);
 				validateRetryTimedJobMessageParams(params, workerType, timedJobMessage);
 
@@ -261,10 +318,10 @@ public class TimedJobTest extends ActorSystemTest {
 
 				// Observe the timed job has restarted and is trying to schedule
 				// the job itself
-				timedJobMessage = agentProbe.expectMsgClass(duration("2 seconds"), RetryTimedJobMessage.class);
+				timedJobMessage = timedJobProbe.expectMsgClass(duration("2 seconds"), RetryTimedJobMessage.class);
 				validateRetryTimedJobMessageParams(params, workerType, timedJobMessage);
 
-				timedJobMessage = agentProbe.expectMsgClass(duration("2 seconds"), RetryTimedJobMessage.class);
+				timedJobMessage = timedJobProbe.expectMsgClass(duration("2 seconds"), RetryTimedJobMessage.class);
 				validateRetryTimedJobMessageParams(params, workerType, timedJobMessage);
 
 				expectNoMsg(duration("10 seconds"));

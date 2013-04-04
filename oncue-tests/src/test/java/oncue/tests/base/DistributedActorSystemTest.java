@@ -140,7 +140,7 @@ public abstract class DistributedActorSystemTest {
 	public void stopActorSystems() throws Exception {
 		serviceSystem.shutdown();
 		agentSystem.shutdown();
-		while (!serviceSystem.isTerminated() && !agentSystem.isTerminated()) {
+		while (!serviceSystem.isTerminated() || !agentSystem.isTerminated()) {
 			serviceLog.debug("Waiting for systems to shut down...");
 			Thread.sleep(500);
 		}
