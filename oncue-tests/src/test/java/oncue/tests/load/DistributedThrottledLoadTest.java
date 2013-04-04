@@ -19,12 +19,10 @@ import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 import junit.framework.Assert;
-import oncue.agent.ThrottledAgent;
 import oncue.backingstore.RedisBackingStore;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobProgress;
-import oncue.scheduler.ThrottledScheduler;
 import oncue.tests.base.DistributedActorSystemTest;
 import oncue.tests.load.workers.SimpleLoadTestWorker;
 
