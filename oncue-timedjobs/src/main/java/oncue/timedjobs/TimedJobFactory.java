@@ -15,8 +15,7 @@ import akka.actor.UntypedActorFactory;
 public class TimedJobFactory {
 
 	@SuppressWarnings("unchecked")
-	public static void createTimedJobs(ActorSystem system, List<Map<String, Object>> jobList,
-			ActorRef testingProbe) {
+	public static void createTimedJobs(ActorSystem system, List<Map<String, Object>> jobList, ActorRef testingProbe) {
 		for (Map<String, Object> jobMap : jobList) {
 			String name = (String) jobMap.get("name");
 			String workerType = (String) jobMap.get("type");
@@ -32,8 +31,7 @@ public class TimedJobFactory {
 				parameters = (Map<String, String>) jobMap.get("parameters");
 			}
 
-			createTimedJob(system, workerType, name, endpointUri, parameters, failureRetryCount,
-					testingProbe);
+			createTimedJob(system, workerType, name, endpointUri, parameters, failureRetryCount, testingProbe);
 		}
 	}
 
@@ -42,27 +40,26 @@ public class TimedJobFactory {
 	}
 
 	@SuppressWarnings("serial")
-	public static void createTimedJob(ActorSystem system, final String workerType,
-			final String jobName, final String endpointUri, final Map<String, String> parameters,
-			final Integer failureRetryCount, final ActorRef testProbe) {
+	public static void createTimedJob(ActorSystem system, final String workerType, final String jobName,
+			final String endpointUri, final Map<String, String> parameters, final Integer failureRetryCount,
+			final ActorRef testProbe) {
 
 		system.actorOf(new Props(new UntypedActorFactory() {
 			@Override
 			public Actor create() throws Exception {
-				return new TimedJob(workerType, endpointUri, parameters, failureRetryCount,
-						testProbe);
+				return new TimedJob(workerType, endpointUri, parameters, failureRetryCount, testProbe);
 
 			}
 		}), "job-timer-" + jobName);
 	}
 
-	public static void createTimedJob(ActorSystem system, final String workerType,
-			final String jobName, final String endpointUri, final Map<String, String> parameters, ActorRef testProbe) {
+	public static void createTimedJob(ActorSystem system, final String workerType, final String jobName,
+			final String endpointUri, final Map<String, String> parameters, ActorRef testProbe) {
 		createTimedJob(system, workerType, jobName, endpointUri, parameters, null, testProbe);
 	}
-	
-	public static void createTimedJob(ActorSystem system, final String workerType,
-			final String jobName, final String endpointUri, final Map<String, String> parameters) {
+
+	public static void createTimedJob(ActorSystem system, final String workerType, final String jobName,
+			final String endpointUri, final Map<String, String> parameters) {
 		createTimedJob(system, workerType, jobName, endpointUri, parameters, null, null);
 	}
 }

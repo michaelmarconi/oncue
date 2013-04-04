@@ -27,12 +27,12 @@
 	<modules>
 		<module>oncue-common</module>
 		<module>oncue-agent</module>
-    		<module>oncue-queuemanager</module>
-    		<module>oncue-scheduler</module>
-    		<module>oncue-backingstore</module>
-    		<module>oncue-timedjobs</module>
-    		<module>oncue-tests</module>
-    		<module>oncue-client</module>
+		<module>oncue-queuemanager</module>
+		<module>oncue-scheduler</module>
+		<module>oncue-backingstore</module>
+		<module>oncue-timedjobs</module>
+		<module>oncue-tests</module>
+		<module>oncue-client</module>
     <module>oncue-worker</module>
   </modules>
 
@@ -56,26 +56,16 @@
 			<artifactId>akka-actor_2.10</artifactId>
 			<version>2.1.0</version>
 		</dependency>
-
-		<!--
 		<dependency>
-			<groupId>joda-time</groupId>
-			<artifactId>joda-time</artifactId>
-			<version>2.1</version>
-		</dependency>
-
-
+	    <groupId>com.typesafe.akka</groupId>
+	    <artifactId>akka-slf4j_2.10</artifactId>
+	    <version>2.1.0</version>
+		</dependency>		
 		<dependency>
-			<groupId>com.typesafe.akka</groupId>
-			<artifactId>akka-camel_2.10</artifactId>
-			<version>2.1.0</version>
+  		<groupId>ch.qos.logback</groupId>
+  		<artifactId>logback-classic</artifactId>
+  		<version>1.0.7</version>
 		</dependency>
-
-
-
-
-
-	-->
 	</dependencies>
 
 	<build>

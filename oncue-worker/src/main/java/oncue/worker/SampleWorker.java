@@ -25,8 +25,7 @@ public class SampleWorker extends AbstractWorker {
 	@Override
 	protected void doWork(Job job) {
 		double progress = 0.0;
-		System.out
-				.print("Sample worker doing work on Job " + job.getId() + ".");
+		System.out.print("Sample worker doing work on Job " + job.getId() + ".");
 		for (int i = 0; i < 3; i++) {
 			progress += 0.25;
 			System.out.print(".");

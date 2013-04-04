@@ -26,11 +26,11 @@ public class Jobs extends Controller {
 
 	private final static Settings settings = SettingsProvider.SettingsProvider.get(Akka.system());
 	private final static ObjectMapper mapper = new ObjectMapper();
-	
+
 	static {
 		mapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssz"));
 	}
-		
+
 	public static Result listJobs() {
 		ActorRef scheduler = Akka.system().actorFor(settings.SCHEDULER_PATH);
 		return async(Akka.asPromise(

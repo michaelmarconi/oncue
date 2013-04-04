@@ -21,9 +21,9 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.PriorityBlockingQueue;
 
+import oncue.backingstore.BackingStore;
 import oncue.common.comparators.JobComparator;
 import oncue.common.messages.Job;
-import oncue.backingstore.BackingStore;
 import akka.event.LoggingAdapter;
 
 /**

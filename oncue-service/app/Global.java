@@ -15,7 +15,7 @@ public class Global extends GlobalSettings {
 	@Override
 	@SuppressWarnings("serial")
 	public void onStart(Application app) {
-		
+
 		Logger.info("onCue service starting...");
 
 		final Settings settings = SettingsProvider.SettingsProvider.get(Akka.system());
@@ -27,7 +27,7 @@ public class Global extends GlobalSettings {
 				return (Actor) Class.forName(settings.QUEUE_MANAGER_CLASS).newInstance();
 			}
 		}), settings.QUEUE_MANAGER_NAME);
-		
+
 		// Start the scheduler
 		Akka.system().actorOf(new Props(new UntypedActorFactory() {
 			@Override
