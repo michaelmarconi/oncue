@@ -16,22 +16,18 @@ public class RetryTimedJobMessage implements Serializable {
 		this.jobParameters = jobParameters;
 	}
 
-	
 	public String getWorkerType() {
 		return workerType;
 	}
 
-	
 	public void setWorkerType(String workerType) {
 		this.workerType = workerType;
 	}
 
-	
 	public Map<String, String> getJobParameters() {
 		return jobParameters;
 	}
 
-	
 	public void setJobParameters(Map<String, String> jobParameters) {
 		this.jobParameters = jobParameters;
 	}

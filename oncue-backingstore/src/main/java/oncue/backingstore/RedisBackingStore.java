@@ -219,18 +219,8 @@ public class RedisBackingStore extends AbstractBackingStore {
 		String jobKey = String.format(JOB_KEY, job.getId());
 		if (!redis.exists(jobKey))
 			persistJob(job, UNSCHEDULED_JOBS, redis);
-		else {
-			/*
-			 * A Redis-backed queue manager will have pushed the job onto the
-			 * "unscheduled" queue atomically already, so don't add it again!
-			 */
-			// TODO re-enable!
-			// if
-			// (!settings.QUEUE_MANAGER_CLASS.equals(RedisQueueManager.class.getName()))
-			// {
-			// redis.lpush(UNSCHEDULED_JOBS, new Long(job.getId()).toString());
-			// }
-		}
+		else
+			redis.lpush(UNSCHEDULED_JOBS, new Long(job.getId()).toString());
 
 		RedisBackingStore.releaseConnection(redis);
 	}

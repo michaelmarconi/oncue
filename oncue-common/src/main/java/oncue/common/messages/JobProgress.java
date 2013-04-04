@@ -36,7 +36,7 @@ public class JobProgress implements Serializable {
 	public double getProgress() {
 		return progress;
 	}
-	
+
 	@Override
 	public String toString() {
 		return job + ("( " + progress + ")");

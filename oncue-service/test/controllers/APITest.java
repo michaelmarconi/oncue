@@ -62,14 +62,14 @@ public class APITest {
 		stop(fakeApplication);
 		DateTimeUtils.setCurrentMillisSystem();
 	}
-	
+
 	@Before
 	public void setUp() {
 		expectedEnqueuedAt = new DateTime(2013, 03, 27, 12, 34, 56, DateTimeZone.forTimeZone(TimeZone.getDefault()));
 	}
-	
+
 	@Ignore
-	//TODO: fix this up
+	// TODO: fix this up
 	@Test
 	public void listJobsButNoneHaveBeenQueued() {
 		Result result = route(fakeRequest(GET, "/api/jobs"));
@@ -83,13 +83,11 @@ public class APITest {
 		assertThat(json.findPath("jobs").size() == 1);
 
 		// There should be no jobs
-		assertFalse("There should be no jobs", json.findPath("jobs")
-				.getElements().hasNext());
+		assertFalse("There should be no jobs", json.findPath("jobs").getElements().hasNext());
 	}
 
 	@Test
-	public void createJobWithNoParameters() throws JsonParseException,
-			JsonMappingException, IOException {
+	public void createJobWithNoParameters() throws JsonParseException, JsonMappingException, IOException {
 		EnqueueJob enqueueJob = new EnqueueJob("oncue.test.TestWorker");
 
 		/*
@@ -101,15 +99,13 @@ public class APITest {
 		 * Json.toJson(enqueueJob)));
 		 */
 
-		Result result = routeAndCall(fakeRequest(POST, "/api/jobs")
-				.withJsonBody(Json.toJson(enqueueJob)));
+		Result result = routeAndCall(fakeRequest(POST, "/api/jobs").withJsonBody(Json.toJson(enqueueJob)));
 
 		assertEquals(OK, status(result));
 		assertEquals("application/json", contentType(result));
 		assertEquals("utf-8", charset(result));
 
-		Job job = mapper.readValue(Json.parse(contentAsString(result)),
-				Job.class);
+		Job job = mapper.readValue(Json.parse(contentAsString(result)), Job.class);
 
 		assertEquals("oncue.test.TestWorker", job.getWorkerType());
 		assertTrue(expectedEnqueuedAt.isEqual(job.getEnqueuedAt()));
@@ -123,8 +119,7 @@ public class APITest {
 	 * constant!
 	 */
 	@Test
-	public void createJobWithParameters() throws JsonParseException,
-			JsonMappingException, IOException {
+	public void createJobWithParameters() throws JsonParseException, JsonMappingException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put("key1", "Value 1");
 		params.put("key2", "Value 2");
@@ -139,15 +134,13 @@ public class APITest {
 		 * Json.toJson(enqueueJob)));
 		 */
 
-		Result result = routeAndCall(fakeRequest(POST, "/api/jobs")
-				.withJsonBody(Json.toJson(enqueueJob)));
+		Result result = routeAndCall(fakeRequest(POST, "/api/jobs").withJsonBody(Json.toJson(enqueueJob)));
 
 		assertEquals(OK, status(result));
 		assertEquals("application/json", contentType(result));
 		assertEquals("utf-8", charset(result));
 
-		Job job = mapper.readValue(Json.parse(contentAsString(result)),
-				Job.class);
+		Job job = mapper.readValue(Json.parse(contentAsString(result)), Job.class);
 
 		assertEquals("oncue.test.TestWorker", job.getWorkerType());
 		assertTrue(expectedEnqueuedAt.isEqual(job.getEnqueuedAt()));

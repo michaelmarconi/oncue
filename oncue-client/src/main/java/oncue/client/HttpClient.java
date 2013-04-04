@@ -28,9 +28,9 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
 class HttpClient implements Client {
-	
+
 	private static GenericUrl enqueueJobUrl;
-	
+
 	static {
 		Config config = ConfigFactory.load();
 		String hostName = config.getString("oncue.service.hostname");
@@ -39,11 +39,11 @@ class HttpClient implements Client {
 		String enqueueJobUrlString = String.format("http://%s:%s%s/jobs", hostName, port, basePath);
 		enqueueJobUrl = new GenericUrl(enqueueJobUrlString);
 	}
-	
+
 	private HttpRequestFactory requestFactory;
 	private Gson gson;
-		
-	HttpClient(HttpTransport transport){
+
+	HttpClient(HttpTransport transport) {
 		requestFactory = transport.createRequestFactory();
 		GsonBuilder gsonBuilder = new GsonBuilder();
 		gsonBuilder.registerTypeAdapter(DateTime.class, new DateTimeDeserializer());
@@ -52,13 +52,13 @@ class HttpClient implements Client {
 
 	@Override
 	public Job enqueueJob(String workerType) throws ClientException {
-		return enqueueJob(workerType, Collections.<String, String>emptyMap());
+		return enqueueJob(workerType, Collections.<String, String> emptyMap());
 	}
 
 	@Override
-	public Job enqueueJob(String workerType, Map<String, String> jobParams)
-			throws ClientException {
-		EnqueueJob job = new EnqueueJob(workerType, jobParams == null ? Collections.<String, String>emptyMap() : jobParams);
+	public Job enqueueJob(String workerType, Map<String, String> jobParams) throws ClientException {
+		EnqueueJob job = new EnqueueJob(workerType, jobParams == null ? Collections.<String, String> emptyMap()
+				: jobParams);
 		try {
 			ByteArrayContent content = new ByteArrayContent("application/json", toJson(job));
 			HttpRequest request = requestFactory.buildPostRequest(enqueueJobUrl, content);
@@ -66,14 +66,14 @@ class HttpClient implements Client {
 			return parseJob(response);
 		} catch (IOException e) {
 			throw new ClientException("Error enqueueing job.", e);
-		} 
+		}
 	}
 
 	private Job parseJob(HttpResponse response) throws ClientException {
 		try {
 			InputStream content = response.getContent();
 			Job job = gson.fromJson(new InputStreamReader(content), Job.class);
-			if(job == null) {
+			if (job == null) {
 				throw new ClientException("Invalid response body");
 			}
 			return job;
@@ -88,11 +88,10 @@ class HttpClient implements Client {
 	}
 
 	private class DateTimeDeserializer implements JsonDeserializer<DateTime> {
-		  public DateTime deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
-		      throws JsonParseException {
-		    return new DateTime(json.getAsJsonPrimitive().getAsString());
-		  }
+		public DateTime deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+				throws JsonParseException {
+			return new DateTime(json.getAsJsonPrimitive().getAsString());
 		}
-	
-	
+	}
+
 }

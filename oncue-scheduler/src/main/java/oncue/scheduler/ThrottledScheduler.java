@@ -18,9 +18,9 @@ package oncue.scheduler;
 import java.util.ArrayList;
 import java.util.List;
 
+import oncue.backingstore.BackingStore;
 import oncue.common.messages.Job;
 import oncue.common.messages.ThrottledWorkRequest;
-import oncue.backingstore.BackingStore;
 
 /**
  * This implementation of {@linkplain AbstractScheduler} employs a throttling

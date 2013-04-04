@@ -33,15 +33,13 @@ import akka.util.Timeout;
 
 public abstract class AbstractWorker extends UntypedActor {
 
-	protected LoggingAdapter log = Logging.getLogger(getContext().system(),
-			this);
+	protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
 	protected ActorRef agent;
 
 	protected Job job;
 
-	protected Settings settings = SettingsProvider.SettingsProvider
-			.get(getContext().system());
+	protected Settings settings = SettingsProvider.SettingsProvider.get(getContext().system());
 
 	/**
 	 * Begin working on a job immediately.
@@ -71,8 +69,7 @@ public abstract class AbstractWorker extends UntypedActor {
 	 */
 	protected void reportProgress(double progress) {
 		if (progress < 0 || progress > 1)
-			throw new RuntimeException(
-					"Job progress must be reported as a double between 0 and 1");
+			throw new RuntimeException("Job progress must be reported as a double between 0 and 1");
 
 		agent.tell(new JobProgress(job, progress), getSelf());
 	}
@@ -96,15 +93,12 @@ public abstract class AbstractWorker extends UntypedActor {
 	 *             If the queue manager does not exist or the job is not
 	 *             accepted within the timeout
 	 */
-	protected void enqueueJob(String workerType,
-			Map<String, String> jobParameters) throws EnqueueJobException {
+	protected void enqueueJob(String workerType, Map<String, String> jobParameters) throws EnqueueJobException {
 
 		try {
 			Await.result(
-					ask(getContext().actorFor(settings.QUEUE_MANAGER_PATH),
-							new EnqueueJob(workerType, jobParameters),
-							new Timeout(settings.QUEUE_MANAGER_TIMEOUT)),
-					settings.QUEUE_MANAGER_TIMEOUT);
+					ask(getContext().actorFor(settings.QUEUE_MANAGER_PATH), new EnqueueJob(workerType, jobParameters),
+							new Timeout(settings.QUEUE_MANAGER_TIMEOUT)), settings.QUEUE_MANAGER_TIMEOUT);
 		} catch (Exception e) {
 			if (e instanceof AskTimeoutException) {
 				log.error(e, "Timeout waiting for queue manager to enqueue job");

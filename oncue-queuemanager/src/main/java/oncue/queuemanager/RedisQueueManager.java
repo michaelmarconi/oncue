@@ -15,16 +15,10 @@
  ******************************************************************************/
 package oncue.queuemanager;
 
-import static akka.dispatch.Futures.future;
-import static akka.pattern.Patterns.pipe;
-
 import java.util.Map;
-import java.util.concurrent.Callable;
 
-import oncue.common.messages.Job;
 import oncue.backingstore.RedisBackingStore;
-import redis.clients.jedis.Jedis;
-import scala.concurrent.Future;
+import oncue.common.messages.Job;
 
 /**
  * A persistent, Redis-backed queue manager implementation. This component
@@ -33,63 +27,17 @@ import scala.concurrent.Future;
  */
 public class RedisQueueManager extends AbstractQueueManager {
 
-	private Jedis redis;
-
 	@Override
 	protected Job createJob(String workerType, Map<String, String> jobParams) {
-		return RedisBackingStore.createJob(workerType, jobParams);
+
+		// Create a new job
+		Job job = RedisBackingStore.createJob(workerType, jobParams);
+
+		getLog().debug("Enqueueing {} for worker {}", job, workerType);
+
+		// Tell the scheduler about it
+		getContext().actorFor(getSettings().SCHEDULER_PATH).tell(job, getSelf());
+
+		return job;
 	}
-
-	/**
-	 * Monitor the new jobs queue using the Redis the 'BRPOPLPUSH' command,
-	 * which blocks until a new item arrives on the queue. The new job is
-	 * atomically popped/pushed on the "unscheduled jobs" queue, to prevent a
-	 * job being lost if the service goes down.
-	 */
-	private void listenForNewJobs() {
-		Future<Job> jobListener = future(new Callable<Job>() {
-			public Job call() {
-				redis = RedisBackingStore.getConnection();
-				String jobId = redis.brpoplpush(RedisBackingStore.NEW_JOBS,
-						RedisBackingStore.UNSCHEDULED_JOBS, 0);
-				return RedisBackingStore.loadJob(new Long(jobId), redis);
-			}
-		}, getContext().dispatcher());
-		pipe(jobListener, getContext().dispatcher()).to(getSelf());
-	}
-
-	@Override
-	public void onReceive(Object message) throws Exception {
-
-		if (message instanceof Job) {
-			log.debug("Found a new job: {}", message);
-
-			// Tell the scheduler about it
-			getContext().actorFor(getSettings().SCHEDULER_PATH).tell(message,
-					getSelf());
-
-			// Keep listening for new jobs
-			listenForNewJobs();
-		}
-		super.onReceive(message);
-	}
-
-	@Override
-	public void postStop() {
-		super.postStop();
-
-		/*
-		 * Break the connection to redis, in order to stop the blocking job
-		 * listener!
-		 */
-		redis.disconnect();
-		RedisBackingStore.releaseConnection(redis);
-	}
-
-	@Override
-	public void preStart() {
-		super.preStart();
-		listenForNewJobs();
-	}
-
 }

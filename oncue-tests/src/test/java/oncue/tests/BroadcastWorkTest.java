@@ -102,7 +102,7 @@ public class BroadcastWorkTest extends ActorSystemTest {
 
 				// Create an agent
 				createAgent(system, Arrays.asList(TestWorker.class.getName()), agentProbe.getRef());
-				
+
 				// Wait until the agent receives an empty work response
 				WorkResponse workResponse = agentProbe.expectMsgClass(WorkResponse.class);
 				assertEquals(0, workResponse.getJobs().size());

@@ -43,8 +43,7 @@ public class Job implements Serializable {
 	}
 
 	public Job(long id, String workerType, Map<String, String> params) {
-		this(id, new DateTime(DateTimeUtils.currentTimeMillis()), workerType,
-				params);
+		this(id, new DateTime(DateTimeUtils.currentTimeMillis()), workerType, params);
 	}
 
 	public Job(long id, DateTime enqueuedAt, String workerType) {
@@ -67,8 +66,7 @@ public class Job implements Serializable {
 	 * @param params
 	 *            is an unbounded list of String-based parameters
 	 */
-	public Job(long id, DateTime enqueuedAt, String workerType,
-			Map<String, String> params) {
+	public Job(long id, DateTime enqueuedAt, String workerType, Map<String, String> params) {
 		this.id = id;
 		this.enqueuedAt = enqueuedAt;
 		this.workerType = workerType;
@@ -101,7 +99,6 @@ public class Job implements Serializable {
 
 	@Override
 	public String toString() {
-		return String.format("Job %s (enqueuedAt=%s, workerType=%s)", id,
-				enqueuedAt, workerType);
+		return String.format("Job %s (enqueuedAt=%s, workerType=%s)", id, enqueuedAt, workerType);
 	}
 }
