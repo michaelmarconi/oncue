@@ -22,10 +22,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import oncue.backingstore.BackingStore;
 import oncue.common.messages.JVMCapacityWorkRequest;
 import oncue.common.messages.Job;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
-import oncue.backingstore.BackingStore;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 import akka.actor.ActorRef;

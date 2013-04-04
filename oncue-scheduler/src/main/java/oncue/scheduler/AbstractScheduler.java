@@ -48,7 +48,7 @@ import akka.remote.RemoteClientShutdown;
 
 /**
  * A scheduler is responsible for keeping a list of registered
- * {@linkplain Agent}s, broadcasting new work to them when it arrives and
+ * agents, broadcasting new work to them when it arrives and
  * distributing the work using a variety of scheduling algorithms, depending on
  * the concrete implementation.
  */
@@ -216,7 +216,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	}
 
 	/**
-	 * @return the set of all registered {@linkplain Agent}s
+	 * @return the set of all registered agents
 	 */
 	protected Set<String> getAgents() {
 		return agents.keySet();
@@ -319,7 +319,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	/**
 	 * Construct and reply with a job summary message
 	 * 
-	 * TODO fixme
+	 * TODO Finish me!
 	 */
 	private void replyWithJobSummary() {
 		List<Job> jobs = new ArrayList<Job>();
@@ -410,12 +410,12 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	}
 
 	/**
-	 * Register the heartbeat of an {@linkplain Agent}, capturing the heartbeat
+	 * Register the heartbeat of an agent, capturing the heartbeat
 	 * time as a timestamp. If this is a new Agent, return a message indicating
 	 * that it has been registered.
 	 * 
 	 * @param agent
-	 *            is the {@linkplain Agent} to register
+	 *            is the agent to register
 	 */
 	private void registerAgent(String agent) {
 		if (!agents.containsKey(agent)) {

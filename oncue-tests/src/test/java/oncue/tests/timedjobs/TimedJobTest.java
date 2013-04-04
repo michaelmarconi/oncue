@@ -178,7 +178,7 @@ public class TimedJobTest extends ActorSystemTest {
 						};
 					}
 				};
-				
+
 				// Create a timed job probe
 				final JavaTestKit timedJobProbe = new JavaTestKit(system) {
 
@@ -291,7 +291,7 @@ public class TimedJobTest extends ActorSystemTest {
 						};
 					}
 				};
-				
+
 				// Create a scheduler
 				createScheduler(system, null);
 
@@ -303,7 +303,7 @@ public class TimedJobTest extends ActorSystemTest {
 				String actorPath = "quartz://test-timer-1";
 				TimedJobFactory.createTimedJob(system, workerType, "test-1", actorPath, params, null,
 						timedJobProbe.getRef());
-				
+
 				// Wait for Camel to start up
 				timedJobProbe.expectMsgClass(duration(CAMEL_WAIT_TIME), CamelMessage.class);
 

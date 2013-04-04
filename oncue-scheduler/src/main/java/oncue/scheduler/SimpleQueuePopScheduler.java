@@ -15,8 +15,8 @@
  ******************************************************************************/
 package oncue.scheduler;
 
-import oncue.common.messages.AbstractWorkRequest;
 import oncue.backingstore.BackingStore;
+import oncue.common.messages.AbstractWorkRequest;
 
 /**
  * This concrete implementation of {@linkplain AbstractScheduler} employs a very

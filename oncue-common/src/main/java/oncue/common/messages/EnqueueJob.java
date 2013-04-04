@@ -34,7 +34,7 @@ public class EnqueueJob implements Serializable {
 	}
 
 	public EnqueueJob(String workerType) {
-		this(workerType, Collections.<String,String>emptyMap());
+		this(workerType, Collections.<String, String> emptyMap());
 	}
 
 	public EnqueueJob(String workerType, Map<String, String> jobParams) {

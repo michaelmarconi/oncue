@@ -20,8 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import oncue.common.messages.Job;
 import oncue.backingstore.BackingStore;
+import oncue.common.messages.Job;
 import sun.management.Agent;
 import akka.actor.ActorRef;
 

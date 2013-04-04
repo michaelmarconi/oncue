@@ -49,10 +49,10 @@ public class DistributedTimedJobTest extends DistributedActorSystemTest {
 		createScheduler(null);
 
 		// Create a throttled agent
-		createAgent(Collections.singletonList(SimpleLoadTestWorker.class.getName()),
-				agentProbe.getRef());
+		createAgent(Collections.singletonList(SimpleLoadTestWorker.class.getName()), agentProbe.getRef());
 
-		// The agent should connect to the scheduler and get an empty work response
+		// The agent should connect to the scheduler and get an empty work
+		// response
 		agentProbe.expectMsgClass(WorkResponse.class);
 
 		// Initialise timed jobs
@@ -61,11 +61,11 @@ public class DistributedTimedJobTest extends DistributedActorSystemTest {
 		// Wait until all the jobs have completed
 		final Jedis redis = RedisBackingStore.getConnection();
 
-		final int JOB_COUNT = serviceConfig.getInt("oncue.timed-jobs.repeatCount") + 1;
+		final int JOB_COUNT = serviceConfig.getInt("oncue.timed-jobs.repeatCount");
 
 		new JavaTestKit(serviceSystem) {
 			{
-				new AwaitCond(duration("5 minutes"), duration("10 seconds")) {
+				new AwaitCond(duration("5 minutes"), duration("5 seconds")) {
 
 					@Override
 					protected boolean cond() {

@@ -96,8 +96,8 @@ public class Settings implements Extension {
 		AGENT_HEARTBEAT_FREQUENCY = Duration.create(config.getMilliseconds("agent.heartbeat-frequency"),
 				TimeUnit.MILLISECONDS);
 
-		TIMED_JOBS_RETRY_DELAY = Duration
-				.create(config.getMilliseconds("timed-jobs.retry-delay"), TimeUnit.MILLISECONDS);
+		TIMED_JOBS_RETRY_DELAY = Duration.create(config.getMilliseconds("timed-jobs.retry-delay"),
+				TimeUnit.MILLISECONDS);
 
 		// Timed jobs are optional
 		if (config.hasPath("timed-jobs.timetable")) {

@@ -4,7 +4,6 @@ import java.util.Map;
 
 import oncue.common.messages.Job;
 
-
 /**
  * A client for submitting jobs to an onCue service.
  */

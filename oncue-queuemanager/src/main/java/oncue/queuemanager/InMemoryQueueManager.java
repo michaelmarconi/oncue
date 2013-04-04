@@ -33,8 +33,8 @@ public class InMemoryQueueManager extends AbstractQueueManager {
 
 		// Create a new job
 		Job job = new Job(getNextJobID(), workerType, jobParams);
-		
-		getLog().debug("Enqueueing {} for worker {}", job,  workerType);
+
+		getLog().debug("Enqueueing {} for worker {}", job, workerType);
 
 		// Tell the scheduler about it
 		getContext().actorFor(getSettings().SCHEDULER_PATH).tell(job, getSelf());

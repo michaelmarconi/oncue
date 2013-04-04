@@ -19,7 +19,6 @@ import java.util.Comparator;
 
 import oncue.common.messages.Job;
 
-
 /**
  * Compare {@linkplain Job}s by comparing their enqueue times.
  */

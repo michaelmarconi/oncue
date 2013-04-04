@@ -38,21 +38,18 @@ public class TimedJob extends UntypedConsumerActor {
 
 	private String schedule;
 
-	private Settings settings = SettingsProvider.SettingsProvider
-			.get(getContext().system());
+	private Settings settings = SettingsProvider.SettingsProvider.get(getContext().system());
 
 	// An optional probe for testing
 	protected ActorRef testProbe;
 
 	private String workerType;
 
-	public TimedJob(String workerType, String schedule,
-			Map<String, String> params) {
+	public TimedJob(String workerType, String schedule, Map<String, String> params) {
 		this(workerType, schedule, params, null, null);
 	}
 
-	public TimedJob(String workerType, String schedule,
-			Map<String, String> params, Integer failureRetryCount,
+	public TimedJob(String workerType, String schedule, Map<String, String> params, Integer failureRetryCount,
 			ActorRef testProbe) {
 		this.workerType = workerType;
 		this.schedule = schedule;
@@ -72,13 +69,10 @@ public class TimedJob extends UntypedConsumerActor {
 	 *             If the queue manager does not exist or the job is not
 	 *             accepted within the timeout
 	 */
-	private void enqueueJob(String workerType, Map<String, String> jobParameters)
-			throws Exception {
+	private void enqueueJob(String workerType, Map<String, String> jobParameters) throws Exception {
 		Await.result(
-				ask(getContext().actorFor(settings.QUEUE_MANAGER_PATH),
-						new EnqueueJob(workerType, jobParameters), new Timeout(
-								settings.QUEUE_MANAGER_TIMEOUT)),
-				settings.QUEUE_MANAGER_TIMEOUT);
+				ask(getContext().actorFor(settings.QUEUE_MANAGER_PATH), new EnqueueJob(workerType, jobParameters),
+						new Timeout(settings.QUEUE_MANAGER_TIMEOUT)), settings.QUEUE_MANAGER_TIMEOUT);
 	}
 
 	@Override
@@ -93,16 +87,12 @@ public class TimedJob extends UntypedConsumerActor {
 		}
 
 		if (message instanceof CamelMessage) {
-			log.debug(
-					"Received Camel message for timed job submission for worker type {}",
-					workerType);
+			log.debug("Received Camel message for timed job submission for worker type {}", workerType);
 			tryEnqueueJob(workerType, params);
 		} else if (message instanceof RetryTimedJobMessage) {
-			log.info("Retrying timed job submission for worker type {}",
-					workerType);
+			log.info("Retrying timed job submission for worker type {}", workerType);
 			RetryTimedJobMessage retryMessage = (RetryTimedJobMessage) message;
-			tryEnqueueJob(retryMessage.getWorkerType(),
-					retryMessage.getJobParameters());
+			tryEnqueueJob(retryMessage.getWorkerType(), retryMessage.getJobParameters());
 		} else {
 			unhandled(message);
 		}
@@ -112,15 +102,10 @@ public class TimedJob extends UntypedConsumerActor {
 	 * This actor will post a "note to self" on a delay, in order to re-attempt
 	 * to enqueue a job at a later stage.
 	 */
-	private void sendRetryMessage(String workerType,
-			Map<String, String> jobParameters) {
-		RetryTimedJobMessage retryMessage = new RetryTimedJobMessage(
-				workerType, jobParameters);
-		getContext()
-				.system()
-				.scheduler()
-				.scheduleOnce(settings.TIMED_JOBS_RETRY_DELAY, getSelf(),
-						retryMessage, getContext().dispatcher());
+	private void sendRetryMessage(String workerType, Map<String, String> jobParameters) {
+		RetryTimedJobMessage retryMessage = new RetryTimedJobMessage(workerType, jobParameters);
+		getContext().system().scheduler()
+				.scheduleOnce(settings.TIMED_JOBS_RETRY_DELAY, getSelf(), retryMessage, getContext().dispatcher());
 	}
 
 	/**
@@ -133,13 +118,11 @@ public class TimedJob extends UntypedConsumerActor {
 	 * @param jobParameters
 	 *            The user-defined parameters map to pass to the job
 	 */
-	private void tryEnqueueJob(String workerType,
-			Map<String, String> jobParameters) throws TimedJobException {
+	private void tryEnqueueJob(String workerType, Map<String, String> jobParameters) throws TimedJobException {
 		try {
 			enqueueJob(workerType, jobParameters);
 		} catch (Exception e) {
-			log.info("Failed to enqueue timed job for worker type {}",
-					workerType);
+			log.error(e, "Failed to enqueue timed job for worker type {}", workerType);
 
 			if (failureRetryCount == null) {
 				sendRetryMessage(workerType, jobParameters);
