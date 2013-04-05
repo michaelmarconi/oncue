@@ -23,7 +23,7 @@ import oncue.common.messages.Job;
 public class SampleWorker extends AbstractWorker {
 
 	@Override
-	protected void doWork(Job job) {
+	protected JobState doWork(Job job) {
 		double progress = 0.0;
 		System.out.print("Sample worker doing work on Job " + job.getId() + ".");
 		for (int i = 0; i < 3; i++) {
@@ -37,7 +37,8 @@ public class SampleWorker extends AbstractWorker {
 			}
 		}
 		System.out.println("Complete!");
-		workComplete();
+
+		return JobState.COMPLETE;
 	}
 
 }

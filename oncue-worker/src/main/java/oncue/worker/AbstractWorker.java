@@ -33,11 +33,18 @@ import akka.util.Timeout;
 
 public abstract class AbstractWorker extends UntypedActor {
 
+	protected enum JobState {
+		COMPLETE,
+		IN_PROGRESS
+	}
+
 	protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
 	protected ActorRef agent;
 
 	protected Job job;
+
+	private boolean isComplete;
 
 	protected Settings settings = SettingsProvider.SettingsProvider.get(getContext().system());
 
@@ -47,7 +54,7 @@ public abstract class AbstractWorker extends UntypedActor {
 	 * @param job
 	 *            is the specification for the work to be done
 	 */
-	protected abstract void doWork(Job job) throws Exception;
+	protected abstract JobState doWork(Job job) throws Exception;
 
 	@Override
 	public void onReceive(Object message) throws Exception {
@@ -57,7 +64,10 @@ public abstract class AbstractWorker extends UntypedActor {
 		if (message instanceof Job) {
 			this.job = (Job) message;
 			getSender().tell(new JobProgress((Job) message, 0), getSelf());
-			doWork((Job) message);
+			JobState state = doWork((Job) message);
+			if (!isComplete && state == JobState.COMPLETE) {
+				workComplete();
+			}
 		}
 	}
 
@@ -79,6 +89,7 @@ public abstract class AbstractWorker extends UntypedActor {
 	 */
 	protected void workComplete() {
 		agent.tell(new JobProgress(job, 1), getSelf());
+		isComplete = true;
 		getContext().stop(getSelf());
 	}
 

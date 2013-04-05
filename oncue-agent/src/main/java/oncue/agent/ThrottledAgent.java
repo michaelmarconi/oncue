@@ -52,6 +52,9 @@ public class ThrottledAgent extends AbstractAgent {
 			int jobsToRequest = MAX_WORKERS - jobsInProgress.size();
 			log.debug("Requesting {} new jobs", jobsToRequest);
 			getScheduler().tell(new ThrottledWorkRequest(getSelf(), getWorkerTypes(), jobsToRequest), getSelf());
+		} else {
+			log.debug("Not requesting work because {} jobs in progress and limited to {} workers", 
+					jobsInProgress.size(), MAX_WORKERS);
 		}
 	}
 }

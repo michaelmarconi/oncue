@@ -21,7 +21,7 @@ import oncue.worker.AbstractWorker;
 public class TestWorker extends AbstractWorker {
 
 	@Override
-	public void doWork(Job job) {
+	public JobState doWork(Job job) {
 		double progress = 0.0;
 		for (int i = 0; i < 3; i++) {
 			progress += 0.25;
@@ -32,7 +32,7 @@ public class TestWorker extends AbstractWorker {
 				e.printStackTrace();
 			}
 		}
-		workComplete();
+		return JobState.COMPLETE;
 	}
 
 }
