@@ -10,4 +10,3 @@ branches:
 services:
   - redis-server
 
-install: mvn -q -Dplay2.location=/home/travis/build/michaelmarconi/oncue/lib -DskipTests=true install
