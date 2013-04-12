@@ -1,8 +1,13 @@
 language: java
+
 jdk:
   - oraclejdk7
+
 branches:
   only:
     - master
+
 services:
   - redis-server
+
+script: "mvn -Dplay2.location=~/build/michaelmarconi/oncue/lib test"
