@@ -33,6 +33,7 @@ public class Settings implements Extension {
 	public final String SCHEDULER_PATH;
 	public final String SCHEDULER_CLASS;
 	public String SCHEDULER_BACKING_STORE_CLASS;
+	public final FiniteDuration SCHEDULER_TIMEOUT;
 	public final FiniteDuration SCHEDULER_BROADCAST_JOBS_FREQUENCY;
 	public final FiniteDuration SCHEDULER_BROADCAST_JOBS_QUIESCENCE_PERIOD;
 	public final FiniteDuration SCHEDULER_MONITOR_AGENTS_FREQUENCY;
@@ -50,9 +51,6 @@ public class Settings implements Extension {
 	public final String AGENT_CLASS;
 	public final FiniteDuration AGENT_HEARTBEAT_FREQUENCY;
 
-	public final String API_NAME;
-	public final FiniteDuration API_TIMEOUT;
-
 	public final List<Map<String, Object>> TIMED_JOBS_TIMETABLE;
 
 	@SuppressWarnings("unchecked")
@@ -63,6 +61,7 @@ public class Settings implements Extension {
 		SCHEDULER_NAME = config.getString("scheduler.name");
 		SCHEDULER_PATH = config.getString("scheduler.path");
 		SCHEDULER_CLASS = config.getString("scheduler.class");
+		SCHEDULER_TIMEOUT = Duration.create(config.getMilliseconds("scheduler.response-timeout"), TimeUnit.MILLISECONDS);
 
 		try {
 			SCHEDULER_BACKING_STORE_CLASS = config.getString("scheduler.backing-store-class");
@@ -85,10 +84,7 @@ public class Settings implements Extension {
 		QUEUE_MANAGER_NAME = config.getString("queue-manager.name");
 		QUEUE_MANAGER_CLASS = config.getString("queue-manager.class");
 		QUEUE_MANAGER_PATH = config.getString("queue-manager.path");
-		QUEUE_MANAGER_TIMEOUT = Duration.create(config.getMilliseconds("queue-manager.timeout"), TimeUnit.MILLISECONDS);
-
-		API_NAME = config.getString("api.name");
-		API_TIMEOUT = Duration.create(config.getMilliseconds("api.timeout"), TimeUnit.MILLISECONDS);
+		QUEUE_MANAGER_TIMEOUT = Duration.create(config.getMilliseconds("queue-manager.response-timeout"), TimeUnit.MILLISECONDS);
 
 		AGENT_NAME = config.getString("agent.name");
 		AGENT_PATH = config.getString("agent.path");

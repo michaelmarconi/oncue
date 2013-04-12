@@ -25,25 +25,22 @@ import org.joda.time.DateTimeUtils;
 public class Job implements Serializable {
 
 	public enum State {
-		QUEUED, SCHEDULED, RUNNING, FAILED
+		FAILED, QUEUED, IN_PROGRESS, SCHEDULED, COMPLETE
 	}
 
 	private static final long serialVersionUID = -2375588116753600617L;
 
 	private DateTime enqueuedAt;
-	private String workerType;
 	private long id;
 	private Map<String, String> params = new HashMap<>();
 	private Double progress;
+	private State state = State.QUEUED;
+	private String workerType;
 
 	/**
 	 * This is required for Jackson JSON serialization
 	 */
 	public Job() {
-	}
-
-	public Job(long id, String workerType, Map<String, String> params) {
-		this(id, new DateTime(DateTimeUtils.currentTimeMillis()), workerType, params);
 	}
 
 	public Job(long id, DateTime enqueuedAt, String workerType) {
@@ -73,6 +70,10 @@ public class Job implements Serializable {
 		this.params = params;
 	}
 
+	public Job(long id, String workerType, Map<String, String> params) {
+		this(id, new DateTime(DateTimeUtils.currentTimeMillis()), workerType, params);
+	}
+
 	public DateTime getEnqueuedAt() {
 		return enqueuedAt;
 	}
@@ -89,6 +90,10 @@ public class Job implements Serializable {
 		return progress;
 	}
 
+	public State getState() {
+		return state;
+	}
+
 	public String getWorkerType() {
 		return workerType;
 	}
@@ -97,8 +102,13 @@ public class Job implements Serializable {
 		this.progress = progress;
 	}
 
+	public void setState(State state) {
+		this.state = state;
+	}
+
 	@Override
 	public String toString() {
-		return String.format("Job %s (enqueuedAt=%s, workerType=%s)", id, enqueuedAt, workerType);
+		return String.format("Job %s (state=%s, enqueuedAt=%s, workerType=%s, progress=%s)", id, state, enqueuedAt,
+				workerType, progress);
 	}
 }

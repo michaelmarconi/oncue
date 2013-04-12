@@ -32,7 +32,7 @@ public class OnCueAgent implements Bootable {
 	@Override
 	public void startup() {
 		Config config = ConfigFactory.load();
-		system = ActorSystem.create("oncue-agent", config);
+		system = ActorSystem.create("oncue-agent", config.getConfig("oncue").withFallback(config));
 
 		final Settings settings = SettingsProvider.SettingsProvider.get(system);
 		final Set<String> workers = new HashSet<String>(config.getStringList("oncue.agent.workers"));

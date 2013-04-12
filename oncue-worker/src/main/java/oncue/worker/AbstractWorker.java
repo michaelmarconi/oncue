@@ -20,6 +20,7 @@ import java.util.Map;
 import oncue.common.exceptions.EnqueueJobException;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
+import oncue.common.messages.Job.State;
 import oncue.common.messages.JobProgress;
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
@@ -33,9 +34,8 @@ import akka.util.Timeout;
 
 public abstract class AbstractWorker extends UntypedActor {
 
-	protected enum JobState {
-		COMPLETE,
-		IN_PROGRESS
+	protected enum Work {
+		COMPLETE, IN_PROGRESS
 	}
 
 	protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
@@ -54,7 +54,7 @@ public abstract class AbstractWorker extends UntypedActor {
 	 * @param job
 	 *            is the specification for the work to be done
 	 */
-	protected abstract JobState doWork(Job job) throws Exception;
+	protected abstract Work doWork(Job job) throws Exception;
 
 	@Override
 	public void onReceive(Object message) throws Exception {
@@ -63,9 +63,10 @@ public abstract class AbstractWorker extends UntypedActor {
 
 		if (message instanceof Job) {
 			this.job = (Job) message;
-			getSender().tell(new JobProgress((Job) message, 0), getSelf());
-			JobState state = doWork((Job) message);
-			if (!isComplete && state == JobState.COMPLETE) {
+			job.setState(State.IN_PROGRESS);
+			getSender().tell(new JobProgress(job, 0), getSelf());
+			Work state = doWork((Job) message);
+			if (!isComplete && state == Work.COMPLETE) {
 				workComplete();
 			}
 		}
@@ -88,6 +89,7 @@ public abstract class AbstractWorker extends UntypedActor {
 	 * Indicate that work on this job is complete.
 	 */
 	protected void workComplete() {
+		job.setState(State.COMPLETE);
 		agent.tell(new JobProgress(job, 1), getSelf());
 		isComplete = true;
 		getContext().stop(getSelf());

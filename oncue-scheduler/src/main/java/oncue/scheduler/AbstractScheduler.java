@@ -23,19 +23,19 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import oncue.backingstore.BackingStore;
-import oncue.common.events.AgentAvailable;
+import oncue.common.events.AgentStarted;
+import oncue.common.events.AgentStopped;
 import oncue.common.messages.AbstractWorkRequest;
+import oncue.common.messages.Agent;
+import oncue.common.messages.AgentSummary;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobFailed;
 import oncue.common.messages.JobProgress;
-import oncue.common.messages.JobSummaryResponse;
+import oncue.common.messages.JobSummary;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
 import oncue.common.messages.WorkResponse;
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
-
-import org.joda.time.DateTime;
-
 import scala.concurrent.duration.Deadline;
 import akka.actor.ActorInitializationException;
 import akka.actor.ActorRef;
@@ -47,10 +47,9 @@ import akka.event.LoggingAdapter;
 import akka.remote.RemoteClientShutdown;
 
 /**
- * A scheduler is responsible for keeping a list of registered
- * agents, broadcasting new work to them when it arrives and
- * distributing the work using a variety of scheduling algorithms, depending on
- * the concrete implementation.
+ * A scheduler is responsible for keeping a list of registered agents,
+ * broadcasting new work to them when it arrives and distributing the work using
+ * a variety of scheduling algorithms, depending on the concrete implementation.
  */
 public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest> extends UntypedActor {
 
@@ -66,10 +65,11 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	// A scheduled check for jobs to broadcast
 	private Cancellable jobsBroadcast;
 
-	protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
-
 	// A flag to indicate that jobs should not be scheduled temporarily
 	private boolean paused = false;
+
+	// The queue of unscheduled jobs
+	protected UnscheduledJobs unscheduledJobs;
 
 	// The map of scheduled jobs
 	private ScheduledJobs scheduledJobs;
@@ -79,8 +79,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	// A probe for testing
 	private ActorRef testProbe;
 
-	// The queue of unscheduled jobs
-	protected UnscheduledJobs unscheduledJobs;
+	protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
 	/**
 	 * @param backingStore
@@ -157,7 +156,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 			Deadline deadline = agents.get(agent);
 
 			if (deadline.isOverdue()) {
-				log.error("Found a dead agent: {}", agent);
+				log.error("Found a dead agent: '{}'", agent);
 
 				if (testProbe != null)
 					testProbe.tell(SimpleMessage.AGENT_DEAD, getSelf());
@@ -180,18 +179,18 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	}
 
 	/**
-	 * Deregister an agent
+	 * De-register an agent
 	 */
-	private void deregisterAgent(String agent) {
-		agents.remove(agent);
+	private void deregisterAgent(String url) {
+		agents.remove(url);
 
-		/*
-		 * TODO Is this necessary? If an agent is dead, we can't look it up
-		 * anyway!
-		 * 
-		 * Stop listening to remote events
-		 */
-		getContext().system().eventStream().unsubscribe(getContext().actorFor(agent));
+		// Stop listening to remote events
+		getContext().system().eventStream().unsubscribe(getContext().actorFor(url));
+
+		// Broadcast agent stopped event
+		Agent agent = new Agent(url);
+		getContext().system().eventStream().publish(new AgentStopped(agent));
+
 	}
 
 	/**
@@ -257,7 +256,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 			testProbe.forward(message, getContext());
 
 		if (message.equals(SimpleMessage.AGENT_HEARTBEAT)) {
-			log.debug("Got a heartbeat from agent {}", getSender());
+			log.debug("Got a heartbeat from agent: '{}'", getSender());
 			registerAgent(getSender().path().toString());
 		}
 
@@ -265,7 +264,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 			String system = ((RemoteClientShutdown) message).getRemoteAddress().system();
 			if (system.equals("oncue-agent")) {
 				String agent = ((RemoteClientShutdown) message).getRemoteAddress().toString() + settings.AGENT_PATH;
-				log.info("Agent {} has shut down", agent);
+				log.info("Agent '{}' has shut down", agent);
 				deregisterAgent(agent);
 				rebroadcastJobs(agent);
 
@@ -286,7 +285,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 		}
 
 		else if (message instanceof AbstractWorkRequest) {
-			log.debug("Got a work request from agent {}: {}", getSender(), message);
+			log.debug("Got a work request from agent '{}': {}", getSender(), message);
 			if (unscheduledJobs.getSize() == 0 || paused)
 				replyWithNoWork(getSender());
 			else
@@ -310,22 +309,15 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 			replyWithJobSummary();
 		}
 
+		else if (message == SimpleMessage.LIST_AGENTS) {
+			log.debug("Received a request for a the list of registered agents from {}", getSender());
+			replyWithAgentSummary();
+		}
+
 		else {
 			log.error("Unrecognised message: {}", message);
 			unhandled(message);
 		}
-	}
-
-	/**
-	 * Construct and reply with a job summary message
-	 * 
-	 * TODO Finish me!
-	 */
-	private void replyWithJobSummary() {
-		List<Job> jobs = new ArrayList<Job>();
-		jobs.add(new Job(0, DateTime.now(), "oncue.test.Worker"));
-		JobSummaryResponse response = new JobSummaryResponse(jobs);
-		getSender().tell(response, getSelf());
 	}
 
 	/**
@@ -410,22 +402,46 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	}
 
 	/**
-	 * Register the heartbeat of an agent, capturing the heartbeat
-	 * time as a timestamp. If this is a new Agent, return a message indicating
-	 * that it has been registered.
+	 * Register the heartbeat of an agent, capturing the heartbeat time as a
+	 * timestamp. If this is a new Agent, return a message indicating that it
+	 * has been registered.
 	 * 
 	 * @param agent
 	 *            is the agent to register
 	 */
-	private void registerAgent(String agent) {
-		if (!agents.containsKey(agent)) {
-			getContext().actorFor(agent).tell(SimpleMessage.AGENT_REGISTERED, getSelf());
+	private void registerAgent(String url) {
+		if (!agents.containsKey(url)) {
+			Agent agent = new Agent(url);
+			getContext().actorFor(url).tell(SimpleMessage.AGENT_REGISTERED, getSelf());
 			getContext().system().eventStream().subscribe(getSelf(), RemoteClientShutdown.class);
-			getContext().system().eventStream().publish(new AgentAvailable(agent));
-			log.info("Registered agent: {}", agent);
+			getContext().system().eventStream().publish(new AgentStarted(agent));
+			log.info("Registered agent: {}", url);
 		}
 
-		agents.put(agent, settings.SCHEDULER_AGENT_HEARTBEAT_TIMEOUT.fromNow());
+		agents.put(url, settings.SCHEDULER_AGENT_HEARTBEAT_TIMEOUT.fromNow());
+	}
+
+	/**
+	 * Reply with the list of registered agents
+	 */
+	private void replyWithAgentSummary() {
+		List<Agent> agents = new ArrayList<>();
+		for (String url : this.agents.keySet()) {
+			Agent agent = new oncue.common.messages.Agent(url);
+			agents.add(agent);
+		}
+		getSender().tell(new AgentSummary(agents), getSelf());
+	}
+
+	/**
+	 * Construct and reply with a job summary message
+	 */
+	private void replyWithJobSummary() {
+		List<Job> jobs = new ArrayList<Job>();
+		jobs.addAll(unscheduledJobs.getJobs());
+		jobs.addAll(scheduledJobs.getJobs());
+		JobSummary response = new JobSummary(jobs);
+		getSender().tell(response, getSelf());
 	}
 
 	/**

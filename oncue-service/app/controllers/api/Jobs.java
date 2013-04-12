@@ -4,7 +4,10 @@ import static akka.pattern.Patterns.ask;
 
 import java.text.SimpleDateFormat;
 
+import oncue.OnCueService;
 import oncue.common.messages.EnqueueJob;
+import oncue.common.messages.Job;
+import oncue.common.messages.JobSummary;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
@@ -24,17 +27,22 @@ import akka.util.Timeout;
 
 public class Jobs extends Controller {
 
-	private final static Settings settings = SettingsProvider.SettingsProvider.get(Akka.system());
+	private final static Settings settings = SettingsProvider.SettingsProvider.get(OnCueService.system());
 	private final static ObjectMapper mapper = new ObjectMapper();
 
 	static {
 		mapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssz"));
 	}
 
-	public static Result listJobs() {
-		ActorRef scheduler = Akka.system().actorFor(settings.SCHEDULER_PATH);
+	/**
+	 * List all jobs
+	 * 
+	 * @return a {@linkplain JobSummary}
+	 */
+	public static Result index() {
+		ActorRef scheduler = OnCueService.system().actorFor(settings.SCHEDULER_PATH);
 		return async(Akka.asPromise(
-				ask(scheduler, SimpleMessage.JOB_SUMMARY, new Timeout(settings.API_TIMEOUT)).recover(
+				ask(scheduler, SimpleMessage.JOB_SUMMARY, new Timeout(settings.SCHEDULER_TIMEOUT)).recover(
 						new Recover<Object>() {
 							@Override
 							public Object recover(Throwable t) throws Throwable {
@@ -46,7 +54,7 @@ public class Jobs extends Controller {
 									return internalServerError("Failed to request jobs from scheduler");
 								}
 							}
-						}, Akka.system().dispatcher())).map(new Function<Object, Result>() {
+						}, OnCueService.system().dispatcher())).map(new Function<Object, Result>() {
 			@Override
 			public Result apply(Object response) {
 				if (response instanceof Result) {
@@ -59,7 +67,12 @@ public class Jobs extends Controller {
 		}));
 	}
 
-	public static Result createJob() {
+	/**
+	 * Create a new job
+	 * 
+	 * @return a {@linkplain Job}
+	 */
+	public static Result create() {
 		EnqueueJob enqueueJob;
 		try {
 			enqueueJob = mapper.readValue(request().body().asJson(), EnqueueJob.class);
@@ -68,9 +81,9 @@ public class Jobs extends Controller {
 			return badRequest(request().body().asJson());
 		}
 
-		ActorRef queueManager = Akka.system().actorFor(settings.QUEUE_MANAGER_PATH);
+		ActorRef queueManager = OnCueService.system().actorFor(settings.QUEUE_MANAGER_PATH);
 		return async(Akka.asPromise(
-				ask(queueManager, enqueueJob, new Timeout(settings.API_TIMEOUT)).recover(new Recover<Object>() {
+				ask(queueManager, enqueueJob, new Timeout(settings.SCHEDULER_TIMEOUT)).recover(new Recover<Object>() {
 					@Override
 					public Object recover(Throwable t) throws Throwable {
 						if (t instanceof AskTimeoutException) {
@@ -81,7 +94,7 @@ public class Jobs extends Controller {
 							return internalServerError("Failed to enqueue job");
 						}
 					}
-				}, Akka.system().dispatcher())).map(new Function<Object, Result>() {
+				}, OnCueService.system().dispatcher())).map(new Function<Object, Result>() {
 			@Override
 			public Result apply(Object response) {
 				if (response instanceof Result) {

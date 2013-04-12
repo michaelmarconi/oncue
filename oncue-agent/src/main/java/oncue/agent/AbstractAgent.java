@@ -25,6 +25,7 @@ import java.util.Map;
 
 import oncue.common.comparators.JobComparator;
 import oncue.common.messages.Job;
+import oncue.common.messages.Job.State;
 import oncue.common.messages.JobFailed;
 import oncue.common.messages.JobProgress;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
@@ -230,6 +231,7 @@ public abstract class AbstractAgent extends UntypedActor {
 		} catch (ClassNotFoundException e) {
 			MissingWorkerException missingWorkerException = new MissingWorkerException("Failed to spawn a worker for "
 					+ job.toString(), e);
+			job.setState(State.FAILED);
 			getScheduler().tell(new JobFailed(job, missingWorkerException), getSelf());
 			throw missingWorkerException;
 		}
@@ -262,6 +264,7 @@ public abstract class AbstractAgent extends UntypedActor {
 			public Directive apply(Throwable error) throws Exception {
 				log.error(error, "The worker {} has died a horrible death!", getSender());
 				Job job = jobsInProgress.remove(getSender());
+				job.setState(State.FAILED);
 				getScheduler().tell(new JobFailed(job, error), getSelf());
 				return stop();
 			}

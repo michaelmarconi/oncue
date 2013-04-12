@@ -31,11 +31,11 @@ import akka.actor.ActorRef;
  */
 public class ScheduledJobs {
 
-	// Map a list of scheduled jobs to logical agent address
-	private Map<String, List<Job>> scheduledJobs = new ConcurrentHashMap<String, List<Job>>();
-
 	// An optional, persistent backing store
 	private BackingStore backingStore;
+
+	// Map a list of scheduled jobs to logical agent address
+	private Map<String, List<Job>> scheduledJobs = new ConcurrentHashMap<String, List<Job>>();
 
 	/**
 	 * @param backingStore
@@ -64,6 +64,18 @@ public class ScheduledJobs {
 
 		if (backingStore != null)
 			backingStore.addScheduledJobs(jobs);
+	}
+
+	/**
+	 * @return a list of scheduled jobs
+	 */
+	public List<Job> getJobs() {
+		List<Job> jobs = new ArrayList<>();
+		for (String agent : scheduledJobs.keySet()) {
+			jobs.addAll(scheduledJobs.get(agent));
+		}
+		return jobs;
+
 	}
 
 	/**

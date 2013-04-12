@@ -19,7 +19,7 @@ import oncue.worker.AbstractWorker;
 public class JobEnqueueingTestWorker extends AbstractWorker {
 
 	@Override
-	public JobState doWork(Job job) {
+	public Work doWork(Job job) {
 		try {
 			// Give this job to a test worker
 			Thread.sleep(500);
@@ -29,6 +29,6 @@ public class JobEnqueueingTestWorker extends AbstractWorker {
 			throw new RuntimeException(e);
 		}
 
-		return JobState.COMPLETE;
+		return Work.COMPLETE;
 	}
 }

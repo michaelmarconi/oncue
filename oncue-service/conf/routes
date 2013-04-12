@@ -1,10 +1,8 @@
 # Application Routes
 # ~~~~
 
-# Home page
 GET     /                           controllers.Application.index()
 GET     /websocket                  controllers.Application.socketHandler()
-
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)
@@ -12,6 +10,7 @@ GET     /assets/*file               controllers.Assets.at(path="/public", file)
 
 # API Routes
 # ~~~~
-GET		/api/jobs					controllers.api.Jobs.listJobs()
-POST	/api/jobs					controllers.api.Jobs.createJob()
+GET     /api/agents                 controllers.api.Agents.index()
+GET		/api/jobs					controllers.api.Jobs.index()
+POST	/api/jobs					controllers.api.Jobs.create()
 

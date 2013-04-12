@@ -4,7 +4,6 @@ import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertTrue;
 import static org.fest.assertions.Assertions.assertThat;
-import static org.junit.Assert.assertFalse;
 import static play.mvc.Http.Status.OK;
 import static play.test.Helpers.GET;
 import static play.test.Helpers.POST;
@@ -26,8 +25,8 @@ import java.util.TimeZone;
 
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
+import oncue.common.messages.JobSummary;
 
-import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -37,7 +36,6 @@ import org.joda.time.DateTimeZone;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import play.libs.Json;
@@ -68,22 +66,28 @@ public class APITest {
 		expectedEnqueuedAt = new DateTime(2013, 03, 27, 12, 34, 56, DateTimeZone.forTimeZone(TimeZone.getDefault()));
 	}
 
-	@Ignore
-	// TODO: fix this up
 	@Test
-	public void listJobsButNoneHaveBeenQueued() {
+	public void listJobsButNoneHaveBeenQueued() throws JsonParseException, JsonMappingException, IOException {
 		Result result = route(fakeRequest(GET, "/api/jobs"));
 
 		assertThat(status(result)).isEqualTo(OK);
 		assertThat(contentType(result)).isEqualTo("application/json");
 		assertThat(charset(result)).isEqualTo("utf-8");
-		JsonNode json = Json.parse(contentAsString(result));
 
-		// The root node should be 'jobs'
-		assertThat(json.findPath("jobs").size() == 1);
+		JobSummary jobSummary = mapper.readValue(Json.parse(contentAsString(result)), JobSummary.class);
+		assertTrue("There should be no jobs", jobSummary.getJobs().size() == 0);
+	}
 
-		// There should be no jobs
-		assertFalse("There should be no jobs", json.findPath("jobs").getElements().hasNext());
+	@Test
+	public void listJobsWithOneQueued() throws JsonParseException, JsonMappingException, IOException {
+		Result result = route(fakeRequest(GET, "/api/jobs"));
+
+		assertThat(status(result)).isEqualTo(OK);
+		assertThat(contentType(result)).isEqualTo("application/json");
+		assertThat(charset(result)).isEqualTo("utf-8");
+
+		JobSummary jobSummary = mapper.readValue(Json.parse(contentAsString(result)), JobSummary.class);
+		assertTrue("There should be one job", jobSummary.getJobs().size() == 1);
 	}
 
 	@Test

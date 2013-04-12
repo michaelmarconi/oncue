@@ -11,15 +11,10 @@ object ApplicationBuild extends Build {
     // Add your project dependencies here,
     javaCore,
     javaJdbc,
-    javaEbean,
-    "oncue" % "oncue-common" % "1.0-SNAPSHOT",
-    "oncue" % "oncue-queuemanager" % "1.0-SNAPSHOT",
-    "oncue" % "oncue-scheduler" % "1.0-SNAPSHOT",
-    "oncue" % "oncue-timedjobs" % "1.0-SNAPSHOT"
+    javaEbean
   )
 
   val main = play.Project(appName, appVersion, appDependencies).settings(
-	resolvers += "Local Maven Repository" at "file:///"+Path.userHome+"/.m2/repository"    
   )
 
 }

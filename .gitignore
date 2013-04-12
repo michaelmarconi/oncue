@@ -2,11 +2,12 @@ target/
 
 .project
 .metadata
-bin/**
+bin/
 tmp/**
 tmp/**/*
 *.tmp
 *.bak
+*.orig
 local.properties
 .classpath
 .settings/
@@ -20,5 +21,4 @@ local.properties
 
 **.DS_Store
 /microkernel/
-
-/oncue-tests/bin/
+/.idea/

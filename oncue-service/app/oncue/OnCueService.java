@@ -1,27 +1,42 @@
+package oncue;
+
+import oncue.actors.EventMachine;
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
 import oncue.timedjobs.TimedJobFactory;
 import play.Application;
 import play.GlobalSettings;
-import play.Logger;
 import play.libs.Akka;
-import actors.EventMachine;
 import akka.actor.Actor;
+import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.actor.UntypedActorFactory;
 
-public class Global extends GlobalSettings {
+import com.typesafe.config.Config;
+
+public class OnCueService extends GlobalSettings {
+
+	// The onCue actor system
+	private static ActorSystem system;
+
+	public static ActorSystem system() {
+		return system;
+	}
 
 	@Override
 	@SuppressWarnings("serial")
 	public void onStart(Application app) {
 
-		Logger.info("onCue service starting...");
-
 		final Settings settings = SettingsProvider.SettingsProvider.get(Akka.system());
 
+		/*
+		 * Boot a custom Akka actor system for the onCue service components
+		 */
+		Config config = Akka.system().settings().config();
+		system = ActorSystem.create("oncue-service", config.getConfig("oncue").withFallback(config));
+
 		// Start the queue manager
-		Akka.system().actorOf(new Props(new UntypedActorFactory() {
+		system.actorOf(new Props(new UntypedActorFactory() {
 			@Override
 			public Actor create() throws Exception {
 				return (Actor) Class.forName(settings.QUEUE_MANAGER_CLASS).newInstance();
@@ -29,7 +44,7 @@ public class Global extends GlobalSettings {
 		}), settings.QUEUE_MANAGER_NAME);
 
 		// Start the scheduler
-		Akka.system().actorOf(new Props(new UntypedActorFactory() {
+		system.actorOf(new Props(new UntypedActorFactory() {
 			@Override
 			public Actor create() throws Exception {
 				Class<?> schedulerClass = Class.forName(settings.SCHEDULER_CLASS);
@@ -41,14 +56,9 @@ public class Global extends GlobalSettings {
 		}), settings.SCHEDULER_NAME);
 
 		// Start up any timed jobs
-		TimedJobFactory.createTimedJobs(Akka.system(), settings.TIMED_JOBS_TIMETABLE);
+		TimedJobFactory.createTimedJobs(system, settings.TIMED_JOBS_TIMETABLE);
 
 		// Start the event stream listener
-		Akka.system().actorOf(new Props(EventMachine.class), "event-stream-listener");
-	}
-
-	@Override
-	public void onStop(Application app) {
-		Logger.info("onCue service shutdown.");
+		system.actorOf(new Props(EventMachine.class), "event-stream-listener");
 	}
 }
