@@ -10,4 +10,5 @@ branches:
 services:
   - redis-server
 
-script: "mvn -Dplay2.location=~/build/michaelmarconi/oncue/lib test"
+install: mvn -Dplay2.location=/home/travis/build/michaelmarconi/oncue/ clean install
+script: mvn test
