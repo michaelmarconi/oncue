@@ -32,10 +32,17 @@ import org.json.simple.JSONValue;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
+import redis.clients.jedis.Protocol;
 import redis.clients.jedis.Transaction;
 import akka.actor.ActorSystem;
 
+import com.typesafe.config.Config;
+
 public class RedisBackingStore extends AbstractBackingStore {
+
+	// Config keys
+	private static final String REDIS_PORT = "oncue.scheduler.backing-store.redis.port";
+	private static final String REDIS_HOST = "oncue.scheduler.backing-store.redis.host";
 
 	// The total count of persisted jobs
 	public static final String JOB_COUNT_KEY = "oncue:job_count";
@@ -63,6 +70,12 @@ public class RedisBackingStore extends AbstractBackingStore {
 
 	// The worker type assigned to a job
 	public static final String JOB_WORKER_TYPE = "job_worker_type";
+
+	// Redis host
+	private static String host = "localhost";
+
+	// Redis port
+	private static int port = Protocol.DEFAULT_PORT;
 
 	/*
 	 * The queue of jobs that acts as an external interface; the scheduler
@@ -113,9 +126,9 @@ public class RedisBackingStore extends AbstractBackingStore {
 	 *         when you're done with it!
 	 */
 	public static Jedis getConnection() {
-		if (redisPool == null)
-			// TODO use the config
-			redisPool = new JedisPool(new JedisPoolConfig(), "localhost");
+		if (redisPool == null) {
+			redisPool = new JedisPool(new JedisPoolConfig(), host, port, Protocol.DEFAULT_TIMEOUT, null);
+		}
 		return redisPool.getResource();
 	}
 
@@ -198,6 +211,18 @@ public class RedisBackingStore extends AbstractBackingStore {
 
 	public RedisBackingStore(ActorSystem system, Settings settings) {
 		super(system, settings);
+
+		/*
+		 * Override Redis hostname and port from configuration
+		 */
+		Config config = system.settings().config();
+		if (config.hasPath(REDIS_HOST)) {
+			host = config.getString(REDIS_HOST);
+		}
+		if (config.hasPath(REDIS_PORT)) {
+			port = config.getInt(REDIS_PORT);
+		}
+		system.log().info("Backing store expects Redis at: host={}, port={}", host, port);
 	}
 
 	@Override

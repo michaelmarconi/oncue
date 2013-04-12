@@ -50,7 +50,7 @@ public class DistributedThrottledLoadTest extends DistributedActorSystemTest {
 	private static final int JOB_COUNT = 20000;
 
 	@Test
-	public void throttledLoadTest() {
+	public void distributedThrottledLoadTest() {
 
 		// Create a queue manager probe
 		final JavaTestKit queueManagerProbe = new JavaTestKit(serviceSystem);
