@@ -14,7 +14,8 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<play.version>2.1.0</play.version>
+		<play2.version>2.1.0</play2.version>
+		<play2.location>${user.home}/lib</play2.location>
 	</properties>
 
 	<repositories>
@@ -50,13 +51,13 @@
 		<dependency>
 			<groupId>play</groupId>
 			<artifactId>play_2.10</artifactId>
-			<version>${play.version}</version>
+			<version>${play2.version}</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>play</groupId>
 			<artifactId>play-test_2.10</artifactId>
-			<version>${play.version}</version>
+			<version>${play2.version}</version>
 			<scope>provided</scope>
 		</dependency>
 
@@ -64,7 +65,7 @@
 		<dependency>
 			<groupId>play</groupId>
 			<artifactId>play-java_2.10</artifactId>
-			<version>${play.version}</version>
+			<version>${play2.version}</version>
 			<scope>provided</scope>
 		</dependency>
 	</dependencies>
@@ -80,6 +81,22 @@
 				<artifactId>play2-maven-plugin</artifactId>
 				<version>1.2.2</version>
 				<extensions>true</extensions>
+				<configuration>
+					<play2Home>${play2.location}/play-${play2.version}</play2Home>
+				</configuration>
+				<executions>
+					<execution>
+						<id>play-installation</id>
+						<goals>
+							<goal>install-play</goal>
+						</goals>
+						<phase>pre-clean</phase>
+						<configuration>
+							<play2version>${play2.version}</play2version>
+							<play2basedir>${play2.location}</play2basedir>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -90,6 +107,7 @@
 					<target>1.7</target>
 				</configuration>
 			</plugin>
+
 
 			<!-- For Eclipse IDE support -->
 			<plugin>
