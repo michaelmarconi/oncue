@@ -64,7 +64,7 @@ public class Settings implements Extension {
 		SCHEDULER_TIMEOUT = Duration.create(config.getMilliseconds("scheduler.response-timeout"), TimeUnit.MILLISECONDS);
 
 		try {
-			SCHEDULER_BACKING_STORE_CLASS = config.getString("scheduler.backing-store-class");
+			SCHEDULER_BACKING_STORE_CLASS = config.getString("scheduler.backing-store.class");
 		} catch (ConfigException.Missing e) {
 			SCHEDULER_BACKING_STORE_CLASS = null;
 		}
