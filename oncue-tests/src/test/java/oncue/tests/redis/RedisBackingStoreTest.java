@@ -247,87 +247,104 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 
 	@Test
 	public void popUnscheduledJob() {
-		Jedis redis = RedisBackingStore.getConnection();
-		RedisBackingStore backingStore = new RedisBackingStore(null, null);
+		new JavaTestKit(system) {
+			{
+				Jedis redis = RedisBackingStore.getConnection();
+				RedisBackingStore backingStore = new RedisBackingStore(system, settings);
 
-		// Push a job into Redis
-		Job job = new Job(1, DateTime.now(), TestWorker.class.getName());
-		RedisBackingStore.persistJob(job, RedisBackingStore.UNSCHEDULED_JOBS, redis);
+				// Push a job into Redis
+				Job job = new Job(1, DateTime.now(), TestWorker.class.getName());
+				RedisBackingStore.persistJob(job, RedisBackingStore.UNSCHEDULED_JOBS, redis);
 
-		long jobID = backingStore.popUnscheduledJob();
-		Job poppedJob = RedisBackingStore.loadJob(jobID, redis);
+				long jobID = backingStore.popUnscheduledJob();
+				Job poppedJob = RedisBackingStore.loadJob(jobID, redis);
 
-		assertEquals(job.getId(), poppedJob.getId());
-		assertEquals(job.getEnqueuedAt().toString(), poppedJob.getEnqueuedAt().toString());
-		assertEquals(job.getWorkerType(), poppedJob.getWorkerType());
+				assertEquals(job.getId(), poppedJob.getId());
+				assertEquals(job.getEnqueuedAt().toString(), poppedJob.getEnqueuedAt().toString());
+				assertEquals(job.getWorkerType(), poppedJob.getWorkerType());
 
-		RedisBackingStore.releaseConnection(redis);
+				RedisBackingStore.releaseConnection(redis);
+			}
+		};
 	}
 
 	@Test
 	public void removeScheduledJob() {
-		Jedis redis = RedisBackingStore.getConnection();
-		RedisBackingStore backingStore = new RedisBackingStore(null, null);
+		new JavaTestKit(system) {
+			{
+				Jedis redis = RedisBackingStore.getConnection();
+				RedisBackingStore backingStore = new RedisBackingStore(system, settings);
 
-		// Push a job into Redis
-		Job job = new Job(1, DateTime.now(), TestWorker.class.getName());
-		RedisBackingStore.persistJob(job, RedisBackingStore.SCHEDULED_JOBS, redis);
+				// Push a job into Redis
+				Job job = new Job(1, DateTime.now(), TestWorker.class.getName());
+				RedisBackingStore.persistJob(job, RedisBackingStore.SCHEDULED_JOBS, redis);
 
-		// Remove the scheduled job
-		backingStore.removeScheduledJob(job);
+				// Remove the scheduled job
+				backingStore.removeScheduledJob(job);
 
-		// Check scheduled list in Redis
-		assertEquals("Expected no jobs in the scheduled jobs list", 0,
-				redis.lrange(RedisBackingStore.SCHEDULED_JOBS, 0, -1).size());
+				// Check scheduled list in Redis
+				assertEquals("Expected no jobs in the scheduled jobs list", 0,
+						redis.lrange(RedisBackingStore.SCHEDULED_JOBS, 0, -1).size());
 
-		RedisBackingStore.releaseConnection(redis);
+				RedisBackingStore.releaseConnection(redis);
+			}
+		};
 	}
 
 	@Test
 	public void removeUnscheduledJob() {
-		Jedis redis = RedisBackingStore.getConnection();
-		RedisBackingStore backingStore = new RedisBackingStore(null, null);
+		new JavaTestKit(system) {
+			{
+				Jedis redis = RedisBackingStore.getConnection();
+				RedisBackingStore backingStore = new RedisBackingStore(system, settings);
 
-		// Push a job into Redis
-		Job job = new Job(1, DateTime.now(), TestWorker.class.getName());
-		RedisBackingStore.persistJob(job, RedisBackingStore.UNSCHEDULED_JOBS, redis);
+				// Push a job into Redis
+				Job job = new Job(1, DateTime.now(), TestWorker.class.getName());
+				RedisBackingStore.persistJob(job, RedisBackingStore.UNSCHEDULED_JOBS, redis);
 
-		// Remove the scheduled job
-		backingStore.removeUnscheduledJob(job);
+				// Remove the scheduled job
+				backingStore.removeUnscheduledJob(job);
 
-		// Check scheduled list in Redis
-		assertEquals("Expected no jobs in the unscheduled jobs list", 0,
-				redis.lrange(RedisBackingStore.UNSCHEDULED_JOBS, 0, -1).size());
+				// Check scheduled list in Redis
+				assertEquals("Expected no jobs in the unscheduled jobs list", 0,
+						redis.lrange(RedisBackingStore.UNSCHEDULED_JOBS, 0, -1).size());
 
-		RedisBackingStore.releaseConnection(redis);
+				RedisBackingStore.releaseConnection(redis);
+
+			}
+		};
 	}
 
 	@Test
 	public void restoreJobs() {
-		Jedis redis = RedisBackingStore.getConnection();
-		RedisBackingStore backingStore = new RedisBackingStore(null, null);
+		new JavaTestKit(system) {
+			{
+				Jedis redis = RedisBackingStore.getConnection();
+				RedisBackingStore backingStore = new RedisBackingStore(system, settings);
 
-		// Push an unscheduled job into Redis
-		Job unscheduledJob = new Job(1, DateTime.now(), TestWorker.class.getName());
-		RedisBackingStore.persistJob(unscheduledJob, RedisBackingStore.UNSCHEDULED_JOBS, redis);
+				// Push an unscheduled job into Redis
+				Job unscheduledJob = new Job(1, DateTime.now(), TestWorker.class.getName());
+				RedisBackingStore.persistJob(unscheduledJob, RedisBackingStore.UNSCHEDULED_JOBS, redis);
 
-		// Push a scheduled job into Redis
-		Job scheduledJob = new Job(2, DateTime.now(), TestWorker.class.getName());
-		RedisBackingStore.persistJob(scheduledJob, RedisBackingStore.SCHEDULED_JOBS, redis);
+				// Push a scheduled job into Redis
+				Job scheduledJob = new Job(2, DateTime.now(), TestWorker.class.getName());
+				RedisBackingStore.persistJob(scheduledJob, RedisBackingStore.SCHEDULED_JOBS, redis);
 
-		// Restore the jobs
-		List<Job> restoredJobs = backingStore.restoreJobs();
+				// Restore the jobs
+				List<Job> restoredJobs = backingStore.restoreJobs();
 
-		// Check the set of restored jobs
-		assertTrue(restoredJobs.size() == 2);
-		for (Job job : restoredJobs) {
-			assertTrue(job.getId() == unscheduledJob.getId() || job.getId() == scheduledJob.getId());
-		}
+				// Check the set of restored jobs
+				assertTrue(restoredJobs.size() == 2);
+				for (Job job : restoredJobs) {
+					assertTrue(job.getId() == unscheduledJob.getId() || job.getId() == scheduledJob.getId());
+				}
 
-		// Make sure no scheduled jobs remain
-		assertEquals(0, redis.lrange(RedisBackingStore.SCHEDULED_JOBS, 0, -1).size());
+				// Make sure no scheduled jobs remain
+				assertEquals(0, redis.lrange(RedisBackingStore.SCHEDULED_JOBS, 0, -1).size());
 
-		RedisBackingStore.releaseConnection(redis);
+				RedisBackingStore.releaseConnection(redis);
+			}
+		};
 	}
 
 	@Test
