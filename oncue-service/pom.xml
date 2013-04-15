@@ -89,7 +89,7 @@
 						<goals>
 							<goal>install-play</goal>
 						</goals>
-						<phase>initialize</phase>
+						<phase>pre-clean</phase>
 						<configuration>
 							<play2version>${play2.version}</play2version>
 							<play2basedir>${project.basedir}/play2</play2basedir>

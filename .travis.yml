@@ -10,3 +10,6 @@ branches:
 services:
   - redis-server
 
+install: mvn clean
+
+script: mvn install
