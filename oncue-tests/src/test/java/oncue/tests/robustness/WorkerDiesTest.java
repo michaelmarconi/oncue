@@ -19,6 +19,7 @@ import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
 
 import java.util.Arrays;
+import java.util.HashSet;
 
 import oncue.agent.UnlimitedCapacityAgent;
 import oncue.common.messages.EnqueueJob;
@@ -26,7 +27,6 @@ import oncue.common.messages.Job;
 import oncue.common.messages.JobFailed;
 import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.IncompetentTestWorker;
-import oncue.tests.workers.TestWorker;
 
 import org.junit.Test;
 
@@ -73,7 +73,8 @@ public class WorkerDiesTest extends ActorSystemTest {
 						new UntypedActorFactory() {
 							@Override
 							public Actor create() throws Exception {
-								return new UnlimitedCapacityAgent(Arrays.asList(TestWorker.class.getName()));
+								return new UnlimitedCapacityAgent(new HashSet<String>(Arrays
+										.asList(IncompetentTestWorker.class.getName())));
 							}
 						}), settings.AGENT_NAME);
 				final UnlimitedCapacityAgent agent = agentRef.underlyingActor();

@@ -14,6 +14,7 @@
 package oncue.tests;
 
 import java.util.Arrays;
+import java.util.HashSet;
 
 import oncue.common.messages.SimpleMessages.SimpleMessage;
 import oncue.tests.base.ActorSystemTest;
@@ -68,7 +69,7 @@ public class AgentShutdownTest extends ActorSystemTest {
 				final JavaTestKit agentProbe = new JavaTestKit(system);
 
 				createScheduler(system, schedulerProbe.getRef());
-				createAgent(agentSystem, Arrays.asList(TestWorker.class.getName()), agentProbe.getRef());
+				createAgent(agentSystem, new HashSet<String>(Arrays.asList(TestWorker.class.getName())), agentProbe.getRef());
 
 				// Wait until the agent is registered
 				agentProbe.expectMsgEquals(SimpleMessage.AGENT_REGISTERED);

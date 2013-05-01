@@ -15,9 +15,12 @@
  ******************************************************************************/
 package oncue.tests.robustness;
 
-import java.util.Arrays;
+import static akka.pattern.Patterns.gracefulStop;
 
-import junit.framework.Assert;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.concurrent.TimeUnit;
+
 import oncue.backingstore.RedisBackingStore;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
@@ -30,6 +33,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import redis.clients.jedis.Jedis;
+import scala.concurrent.Await;
+import scala.concurrent.Future;
+import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
 import akka.actor.PoisonPill;
 import akka.testkit.JavaTestKit;
@@ -49,7 +55,7 @@ public class SchedulerDiesTest extends ActorSystemTest {
 	}
 
 	@Test
-	public void testAgentDiesAndAnotherReplacesIt() {
+	public void testAgentDiesAndAnotherReplacesIt() throws Exception {
 		new JavaTestKit(system) {
 			{
 				// Create a scheduler probe
@@ -91,19 +97,19 @@ public class SchedulerDiesTest extends ActorSystemTest {
 				final ActorRef scheduler = createScheduler(system, schedulerProbe.getRef());
 
 				// Create an agent with a probe
-				createAgent(system, Arrays.asList(TestWorker.class.getName()), agentProbe.getRef());
+				ActorRef agent = createAgent(system, new HashSet<String>(Arrays.asList(TestWorker.class.getName())),
+						agentProbe.getRef());
 
 				// Enqueue a job
 				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
 				Job job = expectMsgClass(Job.class);
 
-				// Wait for some progress
+				// Wait for some initial progress
 				schedulerProbe.expectMsgClass(JobProgress.class);
 
-				// Tell the scheduler to commit seppuku
+				// Tell the scheduler to commit seppuku and wait for it to die
+				log.info("Scheduler committing seppuku...");
 				scheduler.tell(PoisonPill.getInstance(), getRef());
-
-				// Wait until the scheduler dies
 				new AwaitCond(duration("5 seconds"), duration("1 second")) {
 
 					@Override
@@ -113,16 +119,37 @@ public class SchedulerDiesTest extends ActorSystemTest {
 				};
 
 				// Wait until the job is finished at the agent
-				for (int i = 0; i < 5; i++) {
-					agentProbe.expectMsgClass(JobProgress.class);
-				}
+				new AwaitCond(duration("5 seconds"), duration("1 second")) {
+
+					@Override
+					protected boolean cond() {
+						JobProgress jobProgress = agentProbe.expectMsgClass(JobProgress.class);
+						log.debug("Waiting for completion of {}", jobProgress.getJob());
+						return jobProgress.getJob().getState() == Job.State.COMPLETE;
+					}
+				};
+
+				log.debug("First run of {} complete.", job);
 
 				// Resurrect the scheduler
+				log.info("Resurrecting scheduler!");
 				createScheduler(system, schedulerProbe.getRef());
 
-				// Wait for some progress
-				JobProgress jobProgress = schedulerProbe.expectMsgClass(duration("10 seconds"), JobProgress.class);
-				Assert.assertEquals(job.getId(), jobProgress.getJob().getId());
+				// Wait until the job is finished at the scheduler
+				new AwaitCond(duration("10 seconds"), duration("1 second")) {
+
+					@Override
+					protected boolean cond() {
+						JobProgress jobProgress = schedulerProbe.expectMsgClass(duration("10 seconds"),
+								JobProgress.class);
+						log.debug("Waiting for completion of re-scheduled {}", jobProgress.getJob());
+						return jobProgress.getJob().getState() == Job.State.COMPLETE;
+					}
+				};
+				
+				// The agent should shut down first to prevent lookup exceptions
+				Future<Boolean> stopped = gracefulStop(agent, duration("5 seconds"), system);
+				Await.result(stopped, Duration.create(5, TimeUnit.SECONDS));
 			}
 		};
 	}

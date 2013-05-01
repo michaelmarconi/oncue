@@ -18,11 +18,12 @@ package oncue.tests;
 import static junit.framework.Assert.assertEquals;
 
 import java.util.Arrays;
+import java.util.HashSet;
 
 import oncue.common.messages.AbstractWorkRequest;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
-import oncue.common.messages.SimpleMessages.SimpleMessage;
+import oncue.common.messages.WorkAvailable;
 import oncue.common.messages.WorkResponse;
 import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.TestWorker;
@@ -85,7 +86,7 @@ public class BroadcastWorkTest extends ActorSystemTest {
 					{
 						new IgnoreMsg() {
 							protected boolean ignore(Object message) {
-								if (message instanceof WorkResponse || message.equals(SimpleMessage.WORK_AVAILABLE))
+								if (message instanceof WorkResponse || message instanceof WorkAvailable)
 									return false;
 								else
 									return true;
@@ -101,7 +102,7 @@ public class BroadcastWorkTest extends ActorSystemTest {
 				createScheduler(system, schedulerProbe.getRef());
 
 				// Create an agent
-				createAgent(system, Arrays.asList(TestWorker.class.getName()), agentProbe.getRef());
+				createAgent(system, new HashSet<String>(Arrays.asList(TestWorker.class.getName())), agentProbe.getRef());
 
 				// Wait until the agent receives an empty work response
 				WorkResponse workResponse = agentProbe.expectMsgClass(WorkResponse.class);
@@ -111,7 +112,7 @@ public class BroadcastWorkTest extends ActorSystemTest {
 				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
 
 				// Expect the broadcast about the job
-				agentProbe.expectMsgEquals(SimpleMessage.WORK_AVAILABLE);
+				agentProbe.expectMsgClass(WorkAvailable.class);
 			}
 		};
 	}

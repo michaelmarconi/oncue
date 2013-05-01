@@ -1,6 +1,7 @@
 package oncue.tests.timedjobs;
 
-import java.util.Collections;
+import java.util.Arrays;
+import java.util.HashSet;
 
 import junit.framework.Assert;
 import oncue.backingstore.RedisBackingStore;
@@ -49,7 +50,7 @@ public class DistributedTimedJobTest extends DistributedActorSystemTest {
 		createScheduler(null);
 
 		// Create a throttled agent
-		createAgent(Collections.singletonList(SimpleLoadTestWorker.class.getName()), agentProbe.getRef());
+		createAgent(new HashSet<String>(Arrays.asList(SimpleLoadTestWorker.class.getName())), agentProbe.getRef());
 
 		// The agent should connect to the scheduler and get an empty work
 		// response

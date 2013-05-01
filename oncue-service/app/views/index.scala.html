@@ -6,15 +6,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <!-- Le styles -->
-    <link rel="stylesheet" media="screen" href="@routes.Assets.at("stylesheets/main.css")">
-    <link rel="stylesheet" media="screen" href="@routes.Assets.at("stylesheets/bootstrap.min.css")">
+    @minified=@{ if (play.Play.isProd()) ".min" else "" }
+    <link rel="stylesheet" href="@routes.Assets.at("stylesheets/bootstrap/bootstrap"+ minified + ".css")">
+
+    <link rel="stylesheet" media="screen" href="@routes.Assets.at("stylesheets/bootstrap/bootstrap.css")">
     <link rel="stylesheet" media="screen" href="@routes.Assets.at("stylesheets/font-awesome.min.css")">
+    <link rel="stylesheet" media="screen" href="@routes.Assets.at("stylesheets/main.css")">
     <style>
         body {
-            padding-top: 40px;  60px to make the container go all the way to the bottom of the topbar
+            padding-top: 60px;
         }
     </style>
-    <link rel="stylesheet" media="screen" href="@routes.Assets.at("stylesheets/bootstrap-responsive.min.css")">
+    <link rel="stylesheet" href="@routes.Assets.at("stylesheets/bootstrap/responsive"+ minified + ".css")">
 </head>
 
 <body>
@@ -29,16 +32,14 @@
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </button>
-                    <a class="brand" href="#">
-                        <i class="icon-cog"></i>
-                        nCue Service
+                    <a class="brand">
+                        <i class="icon-off text-info"></i>
+                        nCue
                     </a>
-                    <!--<div id="connection-state" class="pull-right">-->
-                      <!--<span class="badge badge-success">-->
-                        <!--<i class="icon-off success"></i>-->
-                        <!--connected-->
-                      <!--</span>-->
-                    <!--</div>-->
+                    <ul class="nav">
+                        {{#linkTo 'jobs' tagName='li'}}<a>Jobs</a>{{/linkTo}}
+                        {{#linkTo 'agents' tagName='li'}}<a>Agents</a>{{/linkTo}}
+                    </ul>
                 </div>
             </div>
         </div>
@@ -51,10 +52,11 @@
     </script>
 
     <script type="text/x-handlebars" data-template-name="agents">
-        <div class="offset8 span4">
-            <h3 class="page-header">Agents</h3>
+        <div class="span12">
+            <p class="lead">Agents run remotely and process scheduled jobs.</p>
             {{#if content}}
-                <table class="table table-condensed table-hover">
+                <p class="muted">The following agents have registered to process jobs:</p>
+                <table class="table table-hover">
                     <thead>
                     <tr>
                         <th>URL</th>
@@ -69,20 +71,231 @@
                     </tbody>
                 </table>
             {{else}}
-                <div class="alert">
-                    <strong>Warning!</strong> There are no agents connected to the service.
+                <div class="alert alert-block">
+                    <h4>
+                        <i class='icon-warning-sign'></i>
+                        No agents!
+                    </h4>
+                    There are no agents registered with the service. At least one agent must be registered before jobs can be processed.
                 </div>
             {{/if}}
+        </div>
+    </script>
 
+    <script type="text/x-handlebars" data-template-name="_worker-filter">
+        <div class="btn-group">
+            <a class="btn disabled dropdown-toggle" data-toggle="dropdown">
+                <span class="muted">Worker:</span> All
+                <span class="caret"></span>
+            </a>
+            <ul class="dropdown-menu">
+                <li>
+                    <a>
+                        <label class="checkbox">
+                            <input type="checkbox" value="">
+                            <span class="monospace">com.duco.workers.NightlyCleaner</span>
+                        </label>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </script>
+
+    <script type="text/x-handlebars" data-template-name="_status-filter">
+        <div class="btn-group">
+            <a class="btn disabled dropdown-toggle" data-toggle="dropdown">
+                <span class="muted">Status:</span> All
+                <span class="caret"></span>
+            </a>
+            <ul class="dropdown-menu">
+                <li>
+                    <a>
+                        <label class="checkbox">
+                            <input type="checkbox" value="">
+                            Queued
+                        </label>
+                    </a>
+                </li>
+                <li>
+                    <a>
+                        <label class="checkbox">
+                            <input type="checkbox" value="">
+                            Running
+                        </label>
+                    </a>
+                </li>
+                <li>
+                    <a>
+                        <label class="checkbox">
+                            <input type="checkbox" value="">
+                            Complete
+                        </label>
+                    </a>
+                </li>
+                <li>
+                    <a>
+                        <label class="checkbox">
+                            <input type="checkbox" value="">
+                            Failed
+                        </label>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </script>
+
+    <script type="text/x-handlebars" data-template-name="_job-tools">
+        <div class="btn-group">
+            <button class="btn btn-info dropdown-toggle" data-toggle="dropdown">
+                <i class="icon-wrench"></i>
+                Tools
+                <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu">
+                <li>
+                    <a id="run-test-job">
+                        <i class="icon-play"></i>
+                        Run test job
+                    </a>
+                </li>
+                <li>
+                    <a id="clear-old-jobs">
+                        <i class="icon-trash"></i>
+                        Clear old jobs
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </script>
+
+    <script type="text/x-handlebars" data-template-name="_job_progress">
+
+        <div class="progress"></div>
+    </script>
+
+    <script type="text/x-handlebars" data-template-name="jobs">
+        <div class='span12'>
+            <p class="lead">Jobs are scheduled by the service to run remotely on agents.</p>
+        </div>
+        <div id='job-tools-error' class="span12">
+            <div class="alert alert-error fade in hide">
+                <strong>Service error!</strong> Your action failed.  Please try again later.
+            </div>
+        </div>
+        <div class="span12">
+            {{#if content}}
+                <div class="btn-toolbar well well-small">
+                    <div id="job-filters" class="pull-left">
+                        {{partial "worker-filter"}}
+                        {{partial "status-filter"}}
+                    </div>
+                    <div id="job-tools" class="pull-right">
+                        {{view App.JobToolsView}}
+                    </div>
+                    <div class="clearfix"></div>
+                </div>
+                <table id="jobs" class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Worker type</th>
+                            <th>Enqueued</th>
+                            <th>State</th>
+                            <th>Progress</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {{#each controller}}
+                        <tr {{bindAttr class="state"}}>
+                            <td class="id">{{#linkTo job this}} Job {{ id }} {{/linkTo}}</td>
+                            <td class="worker-type">{{ workerType }}</td>
+                            <td class="enqueued-at">{{ showLocalDateTime enqueuedAt }}</td>
+                            <td class="state">{{ state }}</td>
+                            <td class="progress-container">
+                                {{#if isQueued}}
+                                    <div class="progress"></div>
+                                {{/if}}
+                                {{#if isRunning}}
+                                    {{ showProgress progress }}
+                                {{/if}}
+                                {{#if isComplete}}
+                                    <div class='progress progress-success'>
+                                        <div class='bar' style='width: 100%;'></div>
+                                    </div>
+                                {{/if}}
+                                {{#if isFailed}}
+                                    <div class='progress progress-danger'>
+                                        <div class='bar' style='width: 100%;'></div>
+                                    </div>
+                                {{/if}}
+                            </td>
+                        </tr>
+                    {{/each}}
+                    </tbody>
+                </table>
+            {{else}}
+                <div class="alert alert-block alert-info">
+                    <h4>
+                        <i class='icon-info-sign'></i>
+                        No jobs
+                    </h4>
+                   <p>No jobs have been enqueued or run by the service.</p>
+                   <button id='run-first-job' class="btn btn-info pull-right">
+                       <i class="icon-play"></i>
+                       Run test job
+                   </button>
+                </div>
+            {{/if}}
+        </div>
+    </script>
+
+    <script type="text/x-handlebars" data-template-name="job">
+        <div class="span12">
+            <div class="page-header">
+                <h1>Job {{ id }} <small>{{ workerType }}</small></h1>
+            </div>
+            {{#if errorMessage }}
+                <div class="alert alert-error alert-block">
+                    <h4>Job failed!</h4>
+                    {{ errorMessage }}
+                </div>
+            {{/if}}
+            <table id="job" class="table">
+                <tbody>
+                    <tr>
+                        <th>ID</th>
+                        <td>{{ id }}</td>
+                    </tr>
+                    <tr>
+                        <th>Worker Type</th>
+                        <td class="worker-type">{{ workerType }}</td>
+                    </tr>
+                    <tr>
+                        <th>Enqueued</th>
+                        <td>{{ showLocalDateTime enqueuedAt }}</td>
+                    </tr>
+                    <tr>
+                        <th>Parameters</th>
+                        <td>{{ showParams params }}</td>
+                    </tr>
+                    <tr {{bindAttr class="state"}}>
+                        <th>State</th>
+                        <td class="state">
+                            {{ state }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </script>
 
     <script src="@routes.Assets.at("javascripts/jquery-1.9.0.min.js")" type="text/javascript"></script>
     <script src="@routes.Assets.at("javascripts/underscore.js")" type="text/javascript"></script>
     <script src="@routes.Assets.at("javascripts/handlebars-1.0.0-rc.3.js")" type="text/javascript"></script>
-    <script src="@routes.Assets.at("javascripts/ember-1.0.0-rc.2.js")" type="text/javascript"></script>
+    <script src="@routes.Assets.at("javascripts/ember-1.0.0-rc.3.js")" type="text/javascript"></script>
     <script src="@routes.Assets.at("javascripts/ember-data.js")" type="text/javascript"></script>
     <script src="@routes.Assets.at("javascripts/bootstrap.min.js")" type="text/javascript"></script>
+    <script src="@routes.Assets.at("javascripts/moment-2.0.0.min.js")" type="text/javascript"></script>
     <script src="@routes.Assets.at("javascripts/app.js")" type="text/javascript"></script>
 </body>
 </html>

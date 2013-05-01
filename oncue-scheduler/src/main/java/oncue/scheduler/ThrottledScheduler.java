@@ -16,6 +16,7 @@
 package oncue.scheduler;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import oncue.backingstore.BackingStore;
@@ -40,18 +41,15 @@ public class ThrottledScheduler extends AbstractScheduler<ThrottledWorkRequest> 
 	@Override
 	protected void scheduleJobs(ThrottledWorkRequest workRequest) {
 
-		// Pop the requested number of jobs
 		List<Job> jobs = new ArrayList<>();
-		for (int i = 0; i < workRequest.getJobs(); i++) {
-			try {
-				jobs.add(unscheduledJobs.popJob());
-			} catch (NoJobsException e) {
-				// No more jobs on the queue!
-				break;
-			}
+		Iterator<Job> iterator = unscheduledJobs.iterator();
+		while (iterator.hasNext() && jobs.size() < workRequest.getMaxJobs()) {
+			Job job = iterator.next();
+			if (workRequest.getWorkerTypes().contains(job.getWorkerType()))
+				jobs.add(job);
 		}
 
-		// Create a schedule
+		// Create the schedule
 		Schedule schedule = new Schedule();
 		schedule.setJobs(getSender(), jobs);
 

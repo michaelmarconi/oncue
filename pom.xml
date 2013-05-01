@@ -58,6 +58,11 @@
             <artifactId>akka-actor_2.10</artifactId>
             <version>2.1.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.codehaus.jackson</groupId>
+            <artifactId>jackson-mapper-asl</artifactId>
+            <version>1.9.10</version>
+        </dependency>
     </dependencies>
 
     <build>

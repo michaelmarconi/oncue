@@ -14,7 +14,12 @@ object ApplicationBuild extends Build {
     javaEbean
   )
 
-  val main = play.Project(appName, appVersion, appDependencies).settings(
-  )
+  def customLessEntryPoints(base: File): PathFinder = (
+    (base / "app" / "assets" / "stylesheets" / "bootstrap" * "bootstrap.less") +++
+    (base / "app" / "assets" / "stylesheets" / "bootstrap" * "responsive.less") +++
+    (base / "app" / "assets" / "stylesheets" * "*.less"))
 
+  val main = play.Project(appName, appVersion, appDependencies).settings(
+  	lessEntryPoints <<= baseDirectory(customLessEntryPoints)
+  )
 }

@@ -22,24 +22,18 @@ public class JobProgress implements Serializable {
 	private static final long serialVersionUID = 3715228030356566880L;
 
 	private final Job job;
-	private final double progress;
 
-	public JobProgress(Job job, double progress) {
-		this.job = job;
-		this.progress = progress;
+	public JobProgress(Job job) {
+		this.job = (Job) job.clone();
 	}
 
 	public Job getJob() {
 		return job;
 	}
 
-	public double getProgress() {
-		return progress;
-	}
-
 	@Override
 	public String toString() {
-		return job + ("( " + progress + ")");
+		return job.toString();
 	}
 
 }

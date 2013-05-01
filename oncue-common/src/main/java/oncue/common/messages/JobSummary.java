@@ -1,6 +1,7 @@
 package oncue.common.messages;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -11,7 +12,7 @@ public class JobSummary implements Serializable {
 
 	private static final long serialVersionUID = 8252819036997216081L;
 
-	private List<Job> jobs;
+	private List<Job> jobs = new ArrayList<>();
 
 	/**
 	 * empty constructor required for JSON mapping
@@ -21,7 +22,9 @@ public class JobSummary implements Serializable {
 
 	public JobSummary(List<Job> jobs) {
 		super();
-		this.jobs = jobs;
+		for (Job job : jobs) {
+			this.jobs.add((Job) job.clone());
+		}
 	}
 
 	public List<Job> getJobs() {

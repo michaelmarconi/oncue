@@ -17,11 +17,11 @@ package oncue.agent;
 
 import static akka.actor.SupervisorStrategy.stop;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import oncue.common.comparators.JobComparator;
 import oncue.common.messages.Job;
@@ -29,6 +29,7 @@ import oncue.common.messages.Job.State;
 import oncue.common.messages.JobFailed;
 import oncue.common.messages.JobProgress;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
+import oncue.common.messages.WorkAvailable;
 import oncue.common.messages.WorkResponse;
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
@@ -67,7 +68,7 @@ public abstract class AbstractAgent extends UntypedActor {
 	protected ActorRef testProbe;
 
 	// The list of worker types this agent can spawn
-	private final Collection<String> workerTypes;
+	private final Set<String> workerTypes;
 
 	// A scheduled request for new work
 	private Cancellable workRequest;
@@ -83,7 +84,7 @@ public abstract class AbstractAgent extends UntypedActor {
 	 * @throws MissingWorkerException
 	 *             thrown if a class representing a worker cannot be found
 	 */
-	public AbstractAgent(Collection<String> workerTypes) throws MissingWorkerException {
+	public AbstractAgent(Set<String> workerTypes) throws MissingWorkerException {
 		this.workerTypes = workerTypes;
 		for (String workerType : workerTypes) {
 			try {
@@ -105,14 +106,18 @@ public abstract class AbstractAgent extends UntypedActor {
 	 * @return a reference to the scheduler
 	 */
 	protected ActorRef getScheduler() {
-		return getContext().actorFor(settings.SCHEDULER_PATH);
+		try {
+			return getContext().actorFor(settings.SCHEDULER_PATH);
+		} catch (NullPointerException e) {
+			throw new RuntimeException("Could not get a reference to the Scheduler.  Is the system shutting down?", e);
+		}
 	}
 
 	/**
 	 * @return the set of {@linkplain AbstractWorker} types this agent is
 	 *         capable of spawning.
 	 */
-	public Collection<String> getWorkerTypes() {
+	public Set<String> getWorkerTypes() {
 		return workerTypes;
 	}
 
@@ -122,6 +127,7 @@ public abstract class AbstractAgent extends UntypedActor {
 
 	@Override
 	public void onReceive(Object message) throws Exception {
+
 		if (testProbe != null)
 			testProbe.forward(message, getContext());
 
@@ -131,7 +137,7 @@ public abstract class AbstractAgent extends UntypedActor {
 		}
 
 		else if (message instanceof WorkResponse) {
-			log.debug("Got a response to my work request: {}", message);
+			log.debug("Agent {} got a response to my work request: {}", getSelf().path().toString(), message);
 			List<Job> jobs = ((WorkResponse) message).getJobs();
 			Collections.sort(jobs, new JobComparator());
 			for (Job job : jobs) {
@@ -139,14 +145,24 @@ public abstract class AbstractAgent extends UntypedActor {
 			}
 		}
 
-		else if (message.equals(SimpleMessage.WORK_AVAILABLE)) {
-			log.debug("Work is available");
-			requestWork();
+		else if (message instanceof WorkAvailable) {
+			WorkAvailable workAvailable = (WorkAvailable) message;
+			log.debug("Agent {} found work available for the following worker types: {}", getSelf().path().toString(),
+					workAvailable.getWorkerTypes());
+			boolean canDoWork = false;
+			for (String workerTypeRequired : workAvailable.getWorkerTypes()) {
+				if (workerTypes.contains(workerTypeRequired)) {
+					canDoWork = true;
+					break;
+				}
+			}
+			if (canDoWork)
+				requestWork();
 		}
 
 		else if (message instanceof JobProgress) {
-			log.debug("Worker reported progress of {} on job {}", ((JobProgress) message).getProgress(),
-					((JobProgress) message).getJob());
+			Job job = ((JobProgress) message).getJob();
+			log.debug("Worker reported progress of {} on {}", job.getProgress(), job);
 			recordProgress((JobProgress) message, getSender());
 		}
 
@@ -160,6 +176,9 @@ public abstract class AbstractAgent extends UntypedActor {
 	public void postStop() {
 		super.postStop();
 		heartbeat.cancel();
+		if (workRequest != null && !workRequest.isCancelled())
+			workRequest.cancel();
+		log.info("Shut down.");
 	}
 
 	@Override
@@ -180,14 +199,14 @@ public abstract class AbstractAgent extends UntypedActor {
 	 * Note the progress against a job. If it is complete, remove it from the
 	 * jobs in progress map.
 	 * 
-	 * @param progress
+	 * @param jobProgress
 	 *            is the {@linkplain JobProgress} made against a job
 	 * @param worker
 	 *            is the {@linkplain AbstractWorker} completing the job
 	 */
-	private void recordProgress(JobProgress progress, ActorRef worker) {
-		getScheduler().tell(progress, getSelf());
-		if (progress.getProgress() == 1.0) {
+	private void recordProgress(JobProgress jobProgress, ActorRef worker) {
+		getScheduler().tell(jobProgress, getSelf());
+		if (jobProgress.getJob().getProgress() == 1.0) {
 			jobsInProgress.remove(worker);
 			scheduleWorkRequest();
 		}
@@ -265,6 +284,10 @@ public abstract class AbstractAgent extends UntypedActor {
 				log.error(error, "The worker {} has died a horrible death!", getSender());
 				Job job = jobsInProgress.remove(getSender());
 				job.setState(State.FAILED);
+				if (error.getCause() == null)
+					job.setErrorMessage(error.toString());
+				else
+					job.setErrorMessage(error.toString() + " (Caused by: " + error.getCause().toString() + ")");
 				getScheduler().tell(new JobFailed(job, error), getSelf());
 				return stop();
 			}

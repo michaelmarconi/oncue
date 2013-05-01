@@ -15,7 +15,7 @@
  ******************************************************************************/
 package oncue.tests.base;
 
-import java.util.Collection;
+import java.util.Set;
 
 import oncue.agent.AbstractAgent;
 import oncue.common.settings.Settings;
@@ -40,9 +40,19 @@ import com.typesafe.config.ConfigFactory;
 public abstract class ActorSystemTest {
 
 	protected Config config;
-	protected ActorSystem system;
-	protected Settings settings;
 	protected LoggingAdapter log;
+	protected Settings settings;
+	protected ActorSystem system;
+
+	// Required for naming agents uniquely
+	private int agentCount = 0;
+
+	/**
+	 * Construct a Agent without a probe
+	 */
+	public ActorRef createAgent(ActorSystem system, final Set<String> workers) {
+		return createAgent(system, workers, null);
+	}
 
 	/**
 	 * Create an agent component, with a set of workers and an optional probe
@@ -51,17 +61,25 @@ public abstract class ActorSystemTest {
 	 *            can be null
 	 */
 	@SuppressWarnings("serial")
-	public ActorRef createAgent(ActorSystem system, final Collection<String> workers, final ActorRef probe) {
+	public ActorRef createAgent(ActorSystem system, final Set<String> workers, final ActorRef probe) {
+		agentCount++;
 		return system.actorOf(new Props(new UntypedActorFactory() {
 			@Override
 			public Actor create() throws Exception {
-				AbstractAgent agent = (AbstractAgent) Class.forName(settings.AGENT_CLASS)
-						.getConstructor(Collection.class).newInstance(workers);
+				AbstractAgent agent = (AbstractAgent) Class.forName(settings.AGENT_CLASS).getConstructor(Set.class)
+						.newInstance(workers);
 				if (probe != null)
 					agent.injectProbe(probe);
 				return agent;
 			}
-		}), settings.AGENT_NAME);
+		}), settings.AGENT_NAME + agentCount);
+	}
+
+	/**
+	 * Construct a Queue Manager without a probe
+	 */
+	public ActorRef createQueueManager(ActorSystem system) {
+		return createQueueManager(system, null);
 	}
 
 	/**
@@ -82,6 +100,13 @@ public abstract class ActorSystemTest {
 				return queueManager;
 			}
 		}), settings.QUEUE_MANAGER_NAME);
+	}
+
+	/**
+	 * Construct a Scheduler without a probe
+	 */
+	public ActorRef createScheduler(ActorSystem system) {
+		return createScheduler(system, null);
 	}
 
 	/**

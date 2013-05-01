@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -66,7 +67,7 @@ public class TimedJobTest extends ActorSystemTest {
 				createScheduler(system, null);
 
 				// Create an agent with a probe
-				createAgent(system, Arrays.asList(TestWorker.class.getName()), agentProbe.getRef());
+				createAgent(system, new HashSet<String>(Arrays.asList(TestWorker.class.getName())), agentProbe.getRef());
 
 				// Expect a work response with no jobs
 				WorkResponse response = agentProbe.expectMsgClass(duration("2 seconds"), WorkResponse.class);
@@ -133,7 +134,7 @@ public class TimedJobTest extends ActorSystemTest {
 				createScheduler(system, null);
 
 				// Create an agent with a probe
-				createAgent(system, Arrays.asList(TestWorker.class.getName()), agentProbe.getRef());
+				createAgent(system, new HashSet<String>(Arrays.asList(TestWorker.class.getName())), agentProbe.getRef());
 
 				// Expect a work response with no jobs
 				WorkResponse response = agentProbe.expectMsgClass(duration("2 seconds"), WorkResponse.class);
@@ -196,7 +197,7 @@ public class TimedJobTest extends ActorSystemTest {
 				createScheduler(system, null);
 
 				// Create an agent with a probe
-				createAgent(system, Arrays.asList(TestWorker.class.getName()), agentProbe.getRef());
+				createAgent(system, new HashSet<String>(Arrays.asList(TestWorker.class.getName())), agentProbe.getRef());
 
 				// Initial work response when agent starts
 				WorkResponse response = agentProbe.expectMsgClass(duration("2 seconds"), WorkResponse.class);

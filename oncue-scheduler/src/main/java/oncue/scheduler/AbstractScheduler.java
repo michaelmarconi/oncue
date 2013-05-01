@@ -17,25 +17,31 @@ package oncue.scheduler;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import oncue.backingstore.BackingStore;
-import oncue.common.events.AgentStarted;
-import oncue.common.events.AgentStopped;
+import oncue.common.events.AgentStartedEvent;
+import oncue.common.events.AgentStoppedEvent;
+import oncue.common.events.JobFailedEvent;
+import oncue.common.events.JobProgressEvent;
 import oncue.common.messages.AbstractWorkRequest;
 import oncue.common.messages.Agent;
 import oncue.common.messages.AgentSummary;
 import oncue.common.messages.Job;
+import oncue.common.messages.Job.State;
 import oncue.common.messages.JobFailed;
 import oncue.common.messages.JobProgress;
 import oncue.common.messages.JobSummary;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
+import oncue.common.messages.WorkAvailable;
 import oncue.common.messages.WorkResponse;
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
+import oncue.scheduler.exceptions.ScheduleException;
 import scala.concurrent.duration.Deadline;
 import akka.actor.ActorInitializationException;
 import akka.actor.ActorRef;
@@ -59,17 +65,19 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	// Map an agent to a deadline for deregistration
 	private Map<String, Deadline> agents = new ConcurrentHashMap<>();
 
+	// Map an agent to a the set of worker types it can process
+	private Map<String, Set<String>> agentWorkers = new ConcurrentHashMap<>();
+
 	// The optional persistent backing store
 	protected BackingStore backingStore;
 
 	// A scheduled check for jobs to broadcast
 	private Cancellable jobsBroadcast;
 
+	protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
+
 	// A flag to indicate that jobs should not be scheduled temporarily
 	private boolean paused = false;
-
-	// The queue of unscheduled jobs
-	protected UnscheduledJobs unscheduledJobs;
 
 	// The map of scheduled jobs
 	private ScheduledJobs scheduledJobs;
@@ -79,7 +87,8 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	// A probe for testing
 	private ActorRef testProbe;
 
-	protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
+	// The queue of unscheduled jobs
+	protected UnscheduledJobs unscheduledJobs;
 
 	/**
 	 * @param backingStore
@@ -126,8 +135,8 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 
 		for (String agent : agents.keySet()) {
 			if (testProbe != null)
-				testProbe.tell(SimpleMessage.WORK_AVAILABLE, getSelf());
-			getContext().actorFor(agent).tell(SimpleMessage.WORK_AVAILABLE, getSelf());
+				testProbe.tell(createWorkAvailable(), getSelf());
+			getContext().actorFor(agent).tell(createWorkAvailable(), getSelf());
 		}
 
 		// Tee-up another broadcast if necessary
@@ -175,7 +184,15 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	 *            is the {@linkplain Job} to clean up after
 	 */
 	private void cleanupJob(Job job, String agent) {
+		log.debug("Cleaning up {} for agent {}", job, agent);
 		scheduledJobs.removeJob(job, agent);
+	}
+
+	/**
+	 * Construct a message to advertise the type of work available.
+	 */
+	private WorkAvailable createWorkAvailable() {
+		return new WorkAvailable(unscheduledJobs.getWorkerTypes());
 	}
 
 	/**
@@ -183,13 +200,14 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	 */
 	private void deregisterAgent(String url) {
 		agents.remove(url);
+		agentWorkers.remove(url);
 
 		// Stop listening to remote events
 		getContext().system().eventStream().unsubscribe(getContext().actorFor(url));
 
 		// Broadcast agent stopped event
 		Agent agent = new Agent(url);
-		getContext().system().eventStream().publish(new AgentStopped(agent));
+		getContext().system().eventStream().publish(new AgentStoppedEvent(agent));
 
 	}
 
@@ -202,11 +220,13 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	 *            is the {@linkplain Schedule} that maps agents to jobs
 	 */
 	protected void dispatchJobs(Schedule schedule) {
+		validateSchedule(schedule);
 		for (Map.Entry<String, WorkResponse> entry : schedule.getEntries()) {
 			ActorRef agent = getContext().actorFor(entry.getKey());
 			WorkResponse workResponse = entry.getValue();
 
 			// Assign the jobs to the agent
+			unscheduledJobs.removeJobs(workResponse.getJobs());
 			scheduledJobs.addJobs(agent, workResponse.getJobs());
 
 			// Tell the agent about the work
@@ -219,6 +239,49 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	 */
 	protected Set<String> getAgents() {
 		return agents.keySet();
+	}
+
+	/**
+	 * @return the map of agents to the worker types they can process
+	 */
+	protected Map<String, Set<String>> getAgentWorkers() {
+		return agentWorkers;
+	}
+
+	/**
+	 * Record the details of a failed job
+	 * 
+	 * @param jobFailed
+	 *            contains both the failed job and the cause of failure
+	 */
+	private void handleJobFailure(Job job, Throwable error, String agent) {
+		if (backingStore != null)
+			backingStore.persistJobFailure(job);
+
+		log.error(error, "{} has failed.", job);
+		cleanupJob(job, agent);
+
+		getContext().system().eventStream().publish(new JobFailedEvent(job));
+	}
+
+	/**
+	 * Record any progress made against a job. If the job is complete, remove it
+	 * from the jobs scheduled against an agent.
+	 * 
+	 * @param jobProgress
+	 *            describes the job and associated progress.
+	 */
+	private void handleJobProgress(Job job, String agent) {
+		if (backingStore != null)
+			backingStore.persistJobProgress(job);
+
+		if (job.getProgress() == 1.0) {
+			log.debug("{} is complete.", job);
+			cleanupJob(job, agent);
+		} else if (job.getState() != State.QUEUED)
+			scheduledJobs.updateJob(job, agent);
+
+		getContext().system().eventStream().publish(new JobProgressEvent(job));
 	}
 
 	/**
@@ -285,23 +348,29 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 		}
 
 		else if (message instanceof AbstractWorkRequest) {
-			log.debug("Got a work request from agent '{}': {}", getSender(), message);
-			if (unscheduledJobs.getSize() == 0 || paused)
+			log.debug("Got a work request from agent '{}': {}", getSender().path().toString(), message);
+			AbstractWorkRequest workRequest = (AbstractWorkRequest) message;
+			agentWorkers.put(getSender().path().toString(), workRequest.getWorkerTypes());
+			boolean workAvailable = unscheduledJobs.isWorkAvailable(workRequest.getWorkerTypes());
+			if (!workAvailable || paused)
 				replyWithNoWork(getSender());
-			else
-				scheduleJobs((WorkRequest) message);
+			else {
+				scheduleJobs((WorkRequest) workRequest);
+			}
 		}
 
 		else if (message instanceof JobProgress) {
-			log.debug("Agent reported progress of {} on job {}", ((JobProgress) message).getProgress(),
-					((JobProgress) message).getJob());
-			recordJobProgress((JobProgress) message, getSender().path().toString());
+			Job job = ((JobProgress) message).getJob();
+			log.debug("Agent reported progress of {} on {}", job.getProgress(), job);
+			handleJobProgress(job, getSender().path().toString());
 		}
 
 		else if (message instanceof JobFailed) {
+			Job job = ((JobFailed) message).getJob();
+			Throwable error = ((JobFailed) message).getError();
 			log.debug("Agent reported a failed job {} ({})", ((JobFailed) message).getJob(), ((JobFailed) message)
 					.getError().getMessage());
-			recordJobFailure((JobFailed) message);
+			handleJobFailure(job, error, getSender().path().toString());
 		}
 
 		else if (message == SimpleMessage.JOB_SUMMARY) {
@@ -367,38 +436,16 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 				// Remove job from the agent
 				scheduledJobs.removeJob(job, agent);
 
+				// Reset job state and progress
+				job.setState(State.QUEUED);
+				job.setProgress(0);
+				handleJobProgress(job, agent);
+
 				// Add jobs back onto the unscheduled queue
 				unscheduledJobs.addJob(job);
 			}
 		}
 		broadcastJobs();
-	}
-
-	/**
-	 * Record the details of a failed job
-	 * 
-	 * @param jobFailed
-	 *            contains both the failed job and the cause of failure
-	 */
-	private void recordJobFailure(JobFailed jobFailed) {
-		if (backingStore != null)
-			backingStore.persistJobFailure(jobFailed);
-	}
-
-	/**
-	 * Record any progress made against a job. If the job is complete, remove it
-	 * from the jobs scheduled against an agent.
-	 * 
-	 * @param jobProgress
-	 *            describes the job and associated progress.
-	 */
-	private void recordJobProgress(JobProgress jobProgress, String agent) {
-		if (backingStore != null)
-			backingStore.persistJobProgress(jobProgress);
-		if (jobProgress.getProgress() == 1.0) {
-			log.debug("{} is complete.", jobProgress.getJob());
-			cleanupJob(jobProgress.getJob(), agent);
-		}
 	}
 
 	/**
@@ -414,7 +461,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 			Agent agent = new Agent(url);
 			getContext().actorFor(url).tell(SimpleMessage.AGENT_REGISTERED, getSelf());
 			getContext().system().eventStream().subscribe(getSelf(), RemoteClientShutdown.class);
-			getContext().system().eventStream().publish(new AgentStarted(agent));
+			getContext().system().eventStream().publish(new AgentStartedEvent(agent));
 			log.info("Registered agent: {}", url);
 		}
 
@@ -437,9 +484,15 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	 * Construct and reply with a job summary message
 	 */
 	private void replyWithJobSummary() {
-		List<Job> jobs = new ArrayList<Job>();
-		jobs.addAll(unscheduledJobs.getJobs());
+		List<Job> jobs = new ArrayList<>();
+		for (Iterator<Job> iterator = unscheduledJobs.iterator(); iterator.hasNext();) {
+			jobs.add(iterator.next());
+		}
 		jobs.addAll(scheduledJobs.getJobs());
+		if (backingStore != null) {
+			jobs.addAll(backingStore.getCompletedJobs());
+			jobs.addAll(backingStore.getFailedJobs());
+		}
 		JobSummary response = new JobSummary(jobs);
 		getSender().tell(response, getSelf());
 	}
@@ -483,5 +536,31 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	 */
 	public void unpause() {
 		paused = false;
+	}
+
+	/**
+	 * Ensure that the schedule produced by the scheduler is valid, e.g. ensure
+	 * that no agent is scheduled a job it does not have the worker to process.
+	 * 
+	 * @param schedule
+	 *            is the {@linkplain Schedule} to validate
+	 */
+	private void validateSchedule(Schedule schedule) {
+		for (Map.Entry<String, WorkResponse> entry : schedule.getEntries()) {
+			String agent = entry.getKey();
+			WorkResponse workResponse = entry.getValue();
+			for (Job job : workResponse.getJobs()) {
+				boolean foundWorkerType = false;
+				for (String workerType : agentWorkers.get(agent)) {
+					if (job.getWorkerType().equals(workerType)) {
+						foundWorkerType = true;
+						break;
+					}
+				}
+				if (!foundWorkerType)
+					throw new ScheduleException("Agent " + agent + " was assigned " + job.toString()
+							+ ", but does not have a worker capable of processing it!");
+			}
+		}
 	}
 }

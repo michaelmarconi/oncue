@@ -1,6 +1,5 @@
 package oncue.agent;
 
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -42,7 +41,7 @@ public class OnCueAgent implements Bootable {
 
 			@Override
 			public Actor create() throws Exception {
-				return (Actor) Class.forName(settings.AGENT_CLASS).getConstructor(Collection.class)
+				return (Actor) Class.forName(settings.AGENT_CLASS).getConstructor(Set.class)
 						.newInstance(workers);
 			}
 		}), settings.AGENT_NAME);

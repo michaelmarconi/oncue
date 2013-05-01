@@ -34,66 +34,22 @@ import akka.util.Timeout;
 
 public abstract class AbstractWorker extends UntypedActor {
 
-	protected enum Work {
-		COMPLETE, IN_PROGRESS
-	}
-
-	protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
-
 	protected ActorRef agent;
 
 	protected Job job;
 
-	private boolean isComplete;
+	protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
 	protected Settings settings = SettingsProvider.SettingsProvider.get(getContext().system());
 
 	/**
-	 * Begin working on a job immediately.
+	 * Begin working on a job immediately. Once the worker returns from this
+	 * method, we assume the work on the job is complete.
 	 * 
 	 * @param job
 	 *            is the specification for the work to be done
 	 */
-	protected abstract Work doWork(Job job) throws Exception;
-
-	@Override
-	public void onReceive(Object message) throws Exception {
-		if (agent == null)
-			agent = getSender();
-
-		if (message instanceof Job) {
-			this.job = (Job) message;
-			job.setState(State.IN_PROGRESS);
-			getSender().tell(new JobProgress(job, 0), getSelf());
-			Work state = doWork((Job) message);
-			if (!isComplete && state == Work.COMPLETE) {
-				workComplete();
-			}
-		}
-	}
-
-	/**
-	 * Report on the percentage progress made on this job.
-	 * 
-	 * @param progress
-	 *            is a double, between 0 and 1
-	 */
-	protected void reportProgress(double progress) {
-		if (progress < 0 || progress > 1)
-			throw new RuntimeException("Job progress must be reported as a double between 0 and 1");
-
-		agent.tell(new JobProgress(job, progress), getSelf());
-	}
-
-	/**
-	 * Indicate that work on this job is complete.
-	 */
-	protected void workComplete() {
-		job.setState(State.COMPLETE);
-		agent.tell(new JobProgress(job, 1), getSelf());
-		isComplete = true;
-		getContext().stop(getSelf());
-	}
+	protected abstract void doWork(Job job) throws Exception;
 
 	/**
 	 * Submit the job to the specified queue manager.
@@ -121,5 +77,52 @@ public abstract class AbstractWorker extends UntypedActor {
 
 			throw new EnqueueJobException(e);
 		}
+	}
+
+	@Override
+	public void onReceive(Object message) throws Exception {
+		if (agent == null)
+			agent = getSender();
+
+		if (message instanceof Job) {
+			this.job = (Job) message;
+			prepareWork();
+			doWork((Job) message);
+			workComplete();
+		}
+	}
+
+	/**
+	 * Set the job state to running and let the agent know we have begun
+	 * working.
+	 */
+	private void prepareWork() {
+		job.setState(State.RUNNING);
+		job.setProgress(0.0);
+		getSender().tell(new JobProgress(job), getSelf());
+	}
+
+	/**
+	 * Report on the percentage progress made on this job.
+	 * 
+	 * @param progress
+	 *            is a double, between 0 and 1
+	 */
+	protected void reportProgress(double progress) {
+		if (progress < 0 || progress > 1)
+			throw new RuntimeException("Job progress must be reported as a double between 0 and 1");
+		job.setProgress(progress);
+		agent.tell(new JobProgress(job), getSelf());
+	}
+
+	/**
+	 * Indicate that work on this job is complete.
+	 */
+	private void workComplete() {
+		job.setState(State.COMPLETE);
+		job.setProgress(1);
+		log.debug("Work on {} is complete.", job);
+		agent.tell(new JobProgress(job), getSelf());
+		getContext().stop(getSelf());
 	}
 }

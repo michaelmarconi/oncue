@@ -32,7 +32,9 @@ public class InMemoryQueueManager extends AbstractQueueManager {
 	protected Job createJob(String workerType, Map<String, String> jobParams) {
 
 		// Create a new job
-		Job job = new Job(getNextJobID(), workerType, jobParams);
+		Job job = new Job(getNextJobID(), workerType);
+		if (jobParams != null)
+			job.setParams(jobParams);
 
 		getLog().debug("Enqueueing {} for worker {}", job, workerType);
 

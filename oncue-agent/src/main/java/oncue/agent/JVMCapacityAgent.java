@@ -15,7 +15,6 @@
  ******************************************************************************/
 package oncue.agent;
 
-import java.util.Collection;
 import java.util.Set;
 
 import oncue.common.messages.JVMCapacityWorkRequest;
@@ -39,7 +38,7 @@ public class JVMCapacityAgent extends AbstractAgent {
 	 * @param testCapacity
 	 *            overrides the maximum number of jobs to deal with concurrently
 	 */
-	public JVMCapacityAgent(Collection<String> workerTypes, long testCapacity) throws MissingWorkerException {
+	public JVMCapacityAgent(Set<String> workerTypes, long testCapacity) throws MissingWorkerException {
 		super(workerTypes);
 		this.testCapacity = testCapacity;
 	}

@@ -15,7 +15,8 @@
  ******************************************************************************/
 package oncue.tests.load;
 
-import java.util.Collections;
+import java.util.Arrays;
+import java.util.HashSet;
 
 import junit.framework.Assert;
 import oncue.agent.ThrottledAgent;
@@ -29,6 +30,7 @@ import oncue.tests.load.workers.SimpleLoadTestWorker;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import redis.clients.jedis.Jedis;
@@ -53,6 +55,7 @@ public class ThrottledLoadTest extends ActorSystemTest {
 	}
 
 	@Test
+	@Ignore("Performance issues need to be cured before we get this running again.")
 	public void throttledLoadTest() {
 		new JavaTestKit(system) {
 			{
@@ -90,7 +93,7 @@ public class ThrottledLoadTest extends ActorSystemTest {
 				log.info("Jobs enqueued.");
 
 				// Create a throttled agent
-				createAgent(system, Collections.singletonList(SimpleLoadTestWorker.class.getName()), null);
+				createAgent(system, new HashSet<String>(Arrays.asList(SimpleLoadTestWorker.class.getName())), null);
 
 				// Wait until all the jobs have completed
 				final Jedis redis = RedisBackingStore.getConnection();

@@ -18,6 +18,7 @@ package oncue.tests;
 import static org.junit.Assert.assertEquals;
 
 import java.util.Arrays;
+import java.util.HashSet;
 
 import oncue.common.messages.AgentSummary;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
@@ -85,7 +86,7 @@ public class ListAgentsTest extends ActorSystemTest {
 				ActorRef scheduler = createScheduler(system, schedulerProbe.getRef());
 
 				// Create an agent and wait for the heart beat
-				createAgent(system, Arrays.asList(TestWorker.class.getName()), null);
+				createAgent(system, new HashSet<String>(Arrays.asList(TestWorker.class.getName())), null);
 				schedulerProbe.expectMsgEquals(SimpleMessage.AGENT_HEARTBEAT);
 
 				// Ask the scheduler about the agents
@@ -94,7 +95,7 @@ public class ListAgentsTest extends ActorSystemTest {
 				// Expect a single agent
 				AgentSummary agents = expectMsgClass(AgentSummary.class);
 				assertEquals(1, agents.getAgents().size());
-				assertEquals("akka://oncue-test/user/agent", agents.getAgents().get(0).getUrl());
+				assertEquals("akka://oncue-test/user/agent1", agents.getAgents().get(0).getUrl());
 			}
 		};
 	}

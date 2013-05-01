@@ -16,6 +16,7 @@
 package oncue.tests.robustness;
 
 import java.util.Arrays;
+import java.util.HashSet;
 
 import junit.framework.Assert;
 import oncue.agent.UnlimitedCapacityAgent;
@@ -74,7 +75,7 @@ public class AgentDiesTest extends ActorSystemTest {
 				ActorRef agent1 = system.actorOf(new Props(new UntypedActorFactory() {
 					@Override
 					public Actor create() throws Exception {
-						return new UnlimitedCapacityAgent(Arrays.asList(TestWorker.class.getName()));
+						return new UnlimitedCapacityAgent(new HashSet<String>(Arrays.asList(TestWorker.class.getName())));
 					}
 				}), "agent1");
 
@@ -99,7 +100,7 @@ public class AgentDiesTest extends ActorSystemTest {
 				system.actorOf(new Props(new UntypedActorFactory() {
 					@Override
 					public Actor create() throws Exception {
-						return new UnlimitedCapacityAgent(Arrays.asList(TestWorker.class.getName()));
+						return new UnlimitedCapacityAgent(new HashSet<String>(Arrays.asList(TestWorker.class.getName())));
 					}
 				}), "agent2");
 

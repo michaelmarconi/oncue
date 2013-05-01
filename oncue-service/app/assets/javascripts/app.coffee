@@ -18,10 +18,16 @@ websocket.onmessage = (message) ->
 # ----------------------------
 
 handleEvent = (subject, event, payload) ->
-  if subject== 'agent' and event == 'started'
+  if subject == 'agent' and event == 'started'
     DS.defaultStore.load(App.Agent, payload)
-  else if subject== 'agent' and event == 'stopped'
+  else if subject == 'agent' and event == 'stopped'
     DS.defaultStore.deleteRecord(App.Agent.find(payload.id))
+  else if subject == 'job'
+    DS.defaultStore.load(App.Job, payload)
+  else
+    console.log "Unrecognised event: #{subject}, #{event}"
+    console.log payload
+
 
 # ----------------------------
 # -------- ember.js ----------
@@ -31,49 +37,180 @@ handleEvent = (subject, event, payload) ->
 window.App = Ember.Application.create()
 
 # Set up ember data
-App.Store = DS.Store.extend (
-  revision: 12,
-#  adapter: 'DS.FixtureAdapter'
-)
+App.Store = DS.Store.extend
+  revision: 12
 
-# Index route used to set up nested controllers & views
-App.IndexRoute = Ember.Route.extend(
-  setupController: ->
-    this.controllerFor('agents').set('model', App.Agent.find())
-  renderTemplate: ->
-    this.render('agents')
+# Customise the REST adapter to use the API endpoint
+DS.RESTAdapter.reopen
+  namespace: 'api'
+
+DS.RESTAdapter.registerTransform('params',
+  deserialize: (value) ->
+    params = []
+    for key, param of value
+      params.push(App.Param.createRecord(key: key, value: param))
+    return params
 )
 
 #
-# Models
+# ROUTES
+# -----------------------------
+
+App.Router.reopen
+  location: 'history'
+  rootURL: '/'
+
+App.Router.map ->
+  @resource 'jobs'
+  @resource 'job', { path: '/jobs/:job_id' }
+  @resource 'agents'
+
+App.IndexRoute = Ember.Route.extend
+  redirect: ->
+    @transitionTo 'jobs'
+
+App.AgentsRoute = Ember.Route.extend
+  model: ->
+    return App.Agent.find()
+
+App.JobsRoute = Ember.Route.extend
+  model: ->
+    return App.Job.find()
+
+
+#
+# MODELS
 # ----------------------------
 
-App.Agent = DS.Model.extend(
+# A navigation item on the navbar
+App.NavItem = DS.Model.extend
+  name: DS.attr('string')
+  count: DS.attr('number')
+  active: DS.attr('boolean')
+  link: DS.attr('string')
+
+App.Agent = DS.Model.extend
   url: DS.attr('string')
+
+App.Job = DS.Model.extend(
+  enqueuedAt: DS.attr('date')
+  workerType: DS.attr('string')
+  params: DS.attr('params')
+  progress: DS.attr('number')
+  state: DS.attr('string')
+  errorMessage: DS.attr('string')
+
+  order: (->
+    parseInt(@get('id'))
+  ).property('id')
+
+  isQueued: ( ->
+    @get('state') == 'queued'
+  ).property('state')
+
+  isRunning: ( ->
+    @get('state') == 'running'
+  ).property('state')
+
+  isComplete: ( ->
+    @get('state') == 'complete'
+  ).property('state')
+
+  isFailed: ( ->
+    @get('state') == 'failed'
+  ).property('state')
+)
+
+App.Param = DS.Model.extend(
+  key: DS.attr('string')
+  value: DS.attr('string')
 )
 
 #
-# Controllers
+# VIEWS
 # ----------------------------
-App.AgentsController = Ember.ArrayController.extend(
-  agentsRegistered: ->
-    console.log this.length
-    this.size() > 0
-)
+
+App.JobsView = Ember.View.extend
+  templateName: 'jobs'
+  click: (event) ->
+    if event.target.id == 'run-first-job'
+      @get('controller').send('runTestJob')
+
+App.JobToolsView = Ember.View.extend
+  templateName: '_job-tools'
+  click: (event) ->
+    if event.target.id == 'run-test-job'
+      @get('controller').send('runTestJob')
+    else if event.target.id == 'clear-old-jobs'
+      @get('controller').send('clearOldJobs')
+
+
+# TODO Prevent check-bx drop-downs from closing too early
+#$('li').click(function(event){
+#event.stopPropagation();
+#});
+
 
 #
-# Fixtures
+# VIEW HELPERS
 # ----------------------------
 
-#App.Agent.FIXTURES = [
-#  {
-#  id: 1,
-#  type: 'UnlimitedCapacity'
-#  url: 'akka://localhost/1'
-#  },
-#  {
-#  id: 2,
-#  type: 'UnlimitedCapacity'
-#  url: 'akka://localhost/2'
-#  }
-#];
+# Display a progress bar for a specific work percentage
+Ember.Handlebars.registerBoundHelper 'showProgress', (value, options) ->
+  progress = value
+  new Handlebars.SafeString(
+    "<div class='progress progress-striped active'>" +
+      "<div class='bar' style='width: #{progress * 100}%;'></div>" +
+    "</div>"
+  )
+
+# Display 'time ago' in words
+Ember.Handlebars.registerBoundHelper 'showLocalDateTime', (value, options) ->
+  moment(value).format('LLL');
+
+# Display a grid of parameters
+Ember.Handlebars.registerBoundHelper 'showParams', (value, options) ->
+  params = value
+  if params? and params.toArray().length > 0
+    paramString = ""
+    params.forEach (item, index) ->
+      paramString = paramString + "<div><span class='key'>#{item.get('key')}</span> &rarr; #{item.get('value')}</div>"
+    new Handlebars.SafeString(paramString)
+  else
+    new Handlebars.SafeString("&ndash;")
+
+
+#
+# CONTROLLERS
+# ----------------------------
+
+App.AgentsController = Ember.ArrayController.extend()
+
+App.JobsController = Ember.ArrayController.extend(
+  sortProperties: ['order']
+  sortAscending: false
+
+  runTestJob: ->
+    # Jobs API doesn't follow ember data conventions
+    # hence the custom AJAX call.
+    jQuery.ajax
+      url: '/api/jobs'
+      type: 'POST'
+      data: JSON.stringify(
+        {
+          worker_type: 'oncue.worker.TestWorker'
+          params : {
+            key1 : "Value 1"
+            key2 : "Value 2"
+          }
+        }
+      )
+      contentType: 'application/json'
+      success: ->
+        $('#job-tools-error .alert').fadeOut('fast')
+      error: ->
+        $('#job-tools-error .alert').fadeIn('fast').delay(3000).fadeOut('fast')
+
+  clearOldJobs: ->
+    console.log "Clearing old jobs..."
+)

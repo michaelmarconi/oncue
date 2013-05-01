@@ -33,6 +33,7 @@ public class ServiceSupervisor implements SupervisorStrategyConfigurator {
 
 			@Override
 			public Directive apply(Throwable t) throws Exception {
+				
 				if (t instanceof ActorInitializationException)
 					return escalate();
 				return restart();

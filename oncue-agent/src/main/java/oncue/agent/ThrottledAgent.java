@@ -15,7 +15,7 @@
  ******************************************************************************/
 package oncue.agent;
 
-import java.util.Collection;
+import java.util.Set;
 
 import oncue.common.messages.ThrottledWorkRequest;
 
@@ -30,7 +30,7 @@ public class ThrottledAgent extends AbstractAgent {
 	// The maximum number of concurrent workers
 	private final Integer MAX_WORKERS;
 
-	public ThrottledAgent(Collection<String> workerTypes) throws MissingWorkerException {
+	public ThrottledAgent(Set<String> workerTypes) throws MissingWorkerException {
 		super(workerTypes);
 		Config config = getContext().system().settings().config();
 		if (!config.hasPath("oncue.agent.throttled-agent.max-jobs")) {
@@ -43,7 +43,6 @@ public class ThrottledAgent extends AbstractAgent {
 
 	@Override
 	protected void requestWork() {
-
 		/*
 		 * Don't request work if this agent is already dealing with all the jobs
 		 * it can manage
@@ -53,7 +52,7 @@ public class ThrottledAgent extends AbstractAgent {
 			log.debug("Requesting {} new jobs", jobsToRequest);
 			getScheduler().tell(new ThrottledWorkRequest(getSelf(), getWorkerTypes(), jobsToRequest), getSelf());
 		} else {
-			log.debug("Not requesting work because {} jobs in progress and limited to {} workers", 
+			log.debug("Not requesting work because {} jobs in progress and limited to {} workers",
 					jobsInProgress.size(), MAX_WORKERS);
 		}
 	}

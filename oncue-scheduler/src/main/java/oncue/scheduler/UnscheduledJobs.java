@@ -15,11 +15,11 @@
  ******************************************************************************/
 package oncue.scheduler;
 
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.concurrent.PriorityBlockingQueue;
+import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 import oncue.backingstore.BackingStore;
 import oncue.common.comparators.JobComparator;
@@ -32,13 +32,13 @@ import akka.event.LoggingAdapter;
  */
 public class UnscheduledJobs {
 
-	// The prioritised queue of jobs
-	private PriorityBlockingQueue<Job> unscheduledJobs = new PriorityBlockingQueue<>(10, new JobComparator());
-
 	// An optional, persistent backing store
 	private BackingStore backingStore;
 
 	private LoggingAdapter log;
+
+	// The prioritised queue of unscheduled jobs
+	private ConcurrentSkipListSet<Job> unscheduledJobs = new ConcurrentSkipListSet<>(new JobComparator());
 
 	/**
 	 * @param backingStore
@@ -62,19 +62,23 @@ public class UnscheduledJobs {
 	}
 
 	/**
-	 * @return the entire list of sorted, unscheduled {@linkplain Job}s
-	 */
-	public List<Job> getJobs() {
-		List<Job> jobs = new ArrayList<Job>(unscheduledJobs);
-		Collections.sort(jobs, new JobComparator());
-		return jobs;
-	}
-
-	/**
 	 * @return the number of jobs in the queue
 	 */
 	public int getSize() {
 		return unscheduledJobs.size();
+	}
+
+	/**
+	 * @return the set of worker types that enqueued jobs require to process
+	 */
+	public Set<String> getWorkerTypes() {
+		Set<String> workerTypes = new HashSet<>();
+		Iterator<Job> itrJobs = unscheduledJobs.iterator();
+		while (itrJobs.hasNext()) {
+			Job job = itrJobs.next();
+			workerTypes.add(job.getWorkerType());
+		}
+		return workerTypes;
 	}
 
 	/**
@@ -84,17 +88,24 @@ public class UnscheduledJobs {
 		return unscheduledJobs.isEmpty();
 	}
 
-	public Job popJob() throws NoJobsException {
-		try {
-			Job job = unscheduledJobs.remove();
-
-			if (backingStore != null && job != null)
-				backingStore.popUnscheduledJob();
-
-			return job;
-		} catch (NoSuchElementException e) {
-			throw new NoJobsException();
+	/**
+	 * Determine if there are unscheduled jobs for the specified worker type.
+	 */
+	public boolean isWorkAvailable(Set<String> workerTypes) {
+		Iterator<Job> itrJobs = unscheduledJobs.iterator();
+		while (itrJobs.hasNext()) {
+			Job job = itrJobs.next();
+			if (workerTypes.contains(job.getWorkerType()))
+				return true;
 		}
+		return false;
+	}
+
+	/**
+	 * @return a thread-safe iterator over the unscheduled jobs.
+	 */
+	public Iterator<Job> iterator() {
+		return unscheduledJobs.iterator();
 	}
 
 	/**
@@ -111,12 +122,27 @@ public class UnscheduledJobs {
 	}
 
 	/**
+	 * Remove a list of jobs from anywhere in the queue
+	 * 
+	 * @return a boolean, indicating if the removal was successful
+	 */
+	public boolean removeJobs(List<Job> jobs) {
+		boolean removed = unscheduledJobs.removeAll(jobs);
+		if (backingStore != null && removed)
+			for (Job job : jobs) {
+				backingStore.removeUnscheduledJob(job);
+			}
+		return removed;
+	}
+
+	/**
 	 * Restore any scheduled and unscheduled jobs from the backing store
 	 */
 	private void restoreJobs() {
 		List<Job> restoredJobs = backingStore.restoreJobs();
 		if (restoredJobs != null && restoredJobs.size() > 0)
 			log.info("Restoring {} jobs from the backing store", restoredJobs.size());
+
 		unscheduledJobs.addAll(restoredJobs);
 	}
 }

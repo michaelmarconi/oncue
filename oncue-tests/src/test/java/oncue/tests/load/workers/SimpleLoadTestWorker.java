@@ -23,8 +23,7 @@ public class SimpleLoadTestWorker extends AbstractWorker {
 	private static final int LOAD_FACTOR = 10000;
 
 	@Override
-	protected Work doWork(Job job) {
-
+	protected void doWork(Job job) {
 		int count = 0;
 		while (count < LOAD_FACTOR) {
 			count++;
@@ -36,8 +35,5 @@ public class SimpleLoadTestWorker extends AbstractWorker {
 			if (count % 10 == 0)
 				Thread.yield();
 		}
-
-		return Work.COMPLETE;
 	}
-
 }

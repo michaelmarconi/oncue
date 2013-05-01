@@ -26,6 +26,7 @@ import java.util.TimeZone;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobSummary;
+import oncue.common.serializers.ObjectMapperFactory;
 
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
@@ -44,10 +45,8 @@ import play.mvc.Result;
 import play.test.FakeApplication;
 
 public class APITest {
-
 	private final static FakeApplication fakeApplication = fakeApplication();
-	private final static ObjectMapper mapper = new ObjectMapper();
-
+	private final static ObjectMapper mapper = ObjectMapperFactory.getInstance();
 	private DateTime expectedEnqueuedAt;
 
 	@BeforeClass
@@ -68,7 +67,6 @@ public class APITest {
 	}
 
 	@Test
-	@Ignore
 	public void listJobsButNoneHaveBeenQueued() throws JsonParseException, JsonMappingException, IOException {
 		Result result = route(fakeRequest(GET, "/api/jobs"));
 
@@ -80,8 +78,8 @@ public class APITest {
 		assertTrue("There should be no jobs", jobSummary.getJobs().size() == 0);
 	}
 
+	@Ignore("Not yet implemented")
 	@Test
-	@Ignore
 	public void listJobsWithOneQueued() throws JsonParseException, JsonMappingException, IOException {
 		Result result = route(fakeRequest(GET, "/api/jobs"));
 
@@ -94,7 +92,6 @@ public class APITest {
 	}
 
 	@Test
-	@Ignore
 	public void createJobWithNoParameters() throws JsonParseException, JsonMappingException, IOException {
 		EnqueueJob enqueueJob = new EnqueueJob("oncue.test.TestWorker");
 
@@ -107,7 +104,7 @@ public class APITest {
 		 * Json.toJson(enqueueJob)));
 		 */
 
-		Result result = routeAndCall(fakeRequest(POST, "/api/jobs").withJsonBody(Json.toJson(enqueueJob)));
+		Result result = routeAndCall(fakeRequest(POST, "/api/jobs").withJsonBody(mapper.valueToTree(enqueueJob)));
 
 		assertEquals(OK, status(result));
 		assertEquals("application/json", contentType(result));
@@ -127,7 +124,6 @@ public class APITest {
 	 * constant!
 	 */
 	@Test
-	@Ignore
 	public void createJobWithParameters() throws JsonParseException, JsonMappingException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put("key1", "Value 1");
@@ -143,7 +139,7 @@ public class APITest {
 		 * Json.toJson(enqueueJob)));
 		 */
 
-		Result result = routeAndCall(fakeRequest(POST, "/api/jobs").withJsonBody(Json.toJson(enqueueJob)));
+		Result result = routeAndCall(fakeRequest(POST, "/api/jobs").withJsonBody(mapper.valueToTree(enqueueJob)));
 
 		assertEquals(OK, status(result));
 		assertEquals("application/json", contentType(result));

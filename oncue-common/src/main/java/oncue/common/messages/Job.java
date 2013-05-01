@@ -22,60 +22,103 @@ import java.util.Map;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 
-public class Job implements Serializable {
+public class Job implements Serializable, Cloneable {
 
 	public enum State {
-		FAILED, QUEUED, IN_PROGRESS, SCHEDULED, COMPLETE
+		COMPLETE {
+			public String toString() {
+				return "complete";
+			}
+		},
+		FAILED {
+			public String toString() {
+				return "failed";
+			}
+		},
+		QUEUED {
+			public String toString() {
+				return "queued";
+			}
+		},
+		RUNNING {
+			public String toString() {
+				return "running";
+			}
+		},
+		SCHEDULED {
+			public String toString() {
+				return "scheduled";
+			}
+		}
 	}
 
 	private static final long serialVersionUID = -2375588116753600617L;
 
 	private DateTime enqueuedAt;
+	private String errorMessage;
 	private long id;
-	private Map<String, String> params = new HashMap<>();
+	private Map<String, String> params;
 	private Double progress;
-	private State state = State.QUEUED;
+	private State state;
 	private String workerType;
 
 	/**
-	 * This is required for Jackson JSON serialization
+	 * This default constructor required for Jackson JSON serialization
 	 */
 	public Job() {
-	}
-
-	public Job(long id, DateTime enqueuedAt, String workerType) {
-		this(id, enqueuedAt, workerType, new HashMap<String, String>());
+		this.setEnqueuedAt(new DateTime(DateTimeUtils.currentTimeMillis()));
+		this.state = State.QUEUED;
+		this.progress = 0.0;
 	}
 
 	/**
-	 * Create a new job specification
+	 * Create a new job. Use this constructor when you are creating a job for
+	 * the first time. The job enqueued time will be set to now and the job
+	 * state will be set to queued.
 	 * 
 	 * @param id
 	 *            is the unique identifier for this job
 	 * 
-	 * @param enqueuedAt
-	 *            is the time at which this job was enqueued
-	 * 
 	 * @param workerType
 	 *            determines which type of worker is capable of completing this
 	 *            job
-	 * 
-	 * @param params
-	 *            is an unbounded list of String-based parameters
 	 */
-	public Job(long id, DateTime enqueuedAt, String workerType, Map<String, String> params) {
+	public Job(long id, String workerType) {
+		this();
 		this.id = id;
-		this.enqueuedAt = enqueuedAt;
 		this.workerType = workerType;
-		this.params = params;
+
 	}
 
-	public Job(long id, String workerType, Map<String, String> params) {
-		this(id, new DateTime(DateTimeUtils.currentTimeMillis()), workerType, params);
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#clone()
+	 */
+	public Object clone() {
+		Job clone = new Job(this.getId(), this.getWorkerType());
+		clone.setEnqueuedAt(this.getEnqueuedAt());
+		clone.setErrorMessage(this.getErrorMessage());
+		clone.setProgress(this.getProgress());
+		clone.setState(this.getState());
+
+		if (this.getParams() != null) {
+			Map<String, String> paramsClone = new HashMap<>();
+			for (String key : this.getParams().keySet()) {
+				paramsClone.put(key, this.params.get(key));
+			}
+			clone.setParams(paramsClone);
+		}
+		
+		return clone;
 	}
 
 	public DateTime getEnqueuedAt() {
 		return enqueuedAt;
+	}
+
+	public String getErrorMessage() {
+		return errorMessage;
 	}
 
 	public long getId() {
@@ -98,6 +141,18 @@ public class Job implements Serializable {
 		return workerType;
 	}
 
+	public void setEnqueuedAt(DateTime enqueuedAt) {
+		this.enqueuedAt = enqueuedAt;
+	}
+
+	public void setErrorMessage(String errorMessage) {
+		this.errorMessage = errorMessage;
+	}
+
+	public void setParams(Map<String, String> params) {
+		this.params = params;
+	}
+
 	public void setProgress(double progress) {
 		this.progress = progress;
 	}
@@ -108,7 +163,8 @@ public class Job implements Serializable {
 
 	@Override
 	public String toString() {
-		return String.format("Job %s (state=%s, enqueuedAt=%s, workerType=%s, progress=%s)", id, state, enqueuedAt,
-				workerType, progress);
+		return String.format("Job %s (state=%s, enqueuedAt=%s, workerType=%s, progress=%s)", id, state,
+				getEnqueuedAt(), workerType, progress);
 	}
+
 }

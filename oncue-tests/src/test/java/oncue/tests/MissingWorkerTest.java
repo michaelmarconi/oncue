@@ -15,23 +15,16 @@
  ******************************************************************************/
 package oncue.tests;
 
-import static junit.framework.Assert.assertEquals;
-
 import java.util.Arrays;
-import java.util.List;
+import java.util.HashSet;
 
-import oncue.agent.MissingWorkerException;
-import oncue.common.messages.AbstractWorkRequest;
-import oncue.common.messages.EnqueueJob;
-import oncue.common.messages.Job;
-import oncue.common.messages.JobFailed;
 import oncue.tests.base.ActorSystemTest;
-import oncue.tests.workers.TestWorker;
 import oncue.worker.AbstractWorker;
 
 import org.junit.Test;
 
-import akka.actor.ActorRef;
+import akka.event.Logging;
+import akka.event.LoggingAdapter;
 import akka.testkit.JavaTestKit;
 
 /**
@@ -47,13 +40,6 @@ import akka.testkit.JavaTestKit;
  * that the agent system will shut down if this is not the case.
  * </p>
  * 
- * <h3>Scheduler dispatched job to wrong agent</h3>
- * 
- * <p>
- * When an agent makes a request for work, it tells the scheduler what worker
- * types it is capable of spawning. If the scheduler ignores this and requests
- * that the agent complete a job it has no worker for, the job should fail.
- * </p>
  */
 public class MissingWorkerTest extends ActorSystemTest {
 
@@ -61,8 +47,10 @@ public class MissingWorkerTest extends ActorSystemTest {
 	public void startAgentWithMissingWorkerType() {
 		new JavaTestKit(system) {
 			{
+				LoggingAdapter log = Logging.getLogger(system, this);
+
 				// Start an agent
-				createAgent(system, Arrays.asList("oncue.workers.MissingWorker"), null);
+				createAgent(system, new HashSet<String>(Arrays.asList("oncue.workers.MissingWorker")), null);
 
 				// Wait for the system to shut down
 				new AwaitCond(duration("5 seconds"), duration("1 second")) {
@@ -71,53 +59,8 @@ public class MissingWorkerTest extends ActorSystemTest {
 						return system.isTerminated();
 					}
 				};
-			}
-		};
-	}
 
-	@Test
-	public void scheduleJobToUnqualifiedAgent() {
-		new JavaTestKit(system) {
-			{
-				// Create a scheduler probe
-				final JavaTestKit schedulerProbe = new JavaTestKit(system) {
-					{
-						new IgnoreMsg() {
-							protected boolean ignore(Object message) {
-								if (message instanceof AbstractWorkRequest || message instanceof JobFailed)
-									return false;
-								else
-									return true;
-							}
-						};
-					}
-				};
-
-				// Create a queue manager
-				ActorRef queueManager = createQueueManager(system, null);
-
-				// Create a scheduler with a probe
-				createScheduler(system, schedulerProbe.getRef());
-
-				// Create an agent
-				createAgent(system, Arrays.asList(TestWorker.class.getName()), null);
-
-				// Expect agent to report available worker types
-				AbstractWorkRequest workRequest = schedulerProbe.expectMsgClass(AbstractWorkRequest.class);
-				assertEquals(1, workRequest.getWorkerTypes().size());
-				assertEquals(TestWorker.class.getName(), ((List<String>) workRequest.getWorkerTypes()).get(0));
-
-				// Enqueue a job
-				queueManager.tell(new EnqueueJob("oncue.workers.MissingWorker"), getRef());
-				expectMsgClass(Job.class);
-
-				// Expect a work request
-				schedulerProbe.expectMsgClass(AbstractWorkRequest.class);
-
-				// Expect the job to fail
-				JobFailed jobFailed = schedulerProbe.expectMsgClass(JobFailed.class);
-				assertEquals(MissingWorkerException.class, jobFailed.getError().getClass());
-				assertEquals(ClassNotFoundException.class, jobFailed.getError().getCause().getClass());
+				log.info("Agent system shut down as expected");
 			}
 		};
 	}

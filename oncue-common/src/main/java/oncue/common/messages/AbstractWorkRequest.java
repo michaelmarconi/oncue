@@ -16,7 +16,7 @@
 package oncue.common.messages;
 
 import java.io.Serializable;
-import java.util.Collection;
+import java.util.Set;
 
 import akka.actor.ActorRef;
 
@@ -30,9 +30,9 @@ public abstract class AbstractWorkRequest implements Serializable {
 	private static final long serialVersionUID = -3802453222882202468L;
 
 	private final ActorRef agent;
-	private final Collection<String> workerTypes;
+	private final Set<String> workerTypes;
 
-	public AbstractWorkRequest(ActorRef agent, Collection<String> workerTypes) {
+	public AbstractWorkRequest(ActorRef agent, Set<String> workerTypes) {
 		this.agent = agent;
 		this.workerTypes = workerTypes;
 	}
@@ -41,13 +41,7 @@ public abstract class AbstractWorkRequest implements Serializable {
 		return agent;
 	}
 
-	public Collection<String> getWorkerTypes() {
+	public Set<String> getWorkerTypes() {
 		return workerTypes;
 	}
-
-	@Override
-	public String toString() {
-		return "Work request from " + agent;
-	}
-
 }

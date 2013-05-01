@@ -1,3 +1,6 @@
+@import "bootstrap/variables";
+@import "bootstrap/mixins";
+
 .monospace {
     font-family: monospace;
 }
@@ -6,9 +9,85 @@
     a.brand i {
         margin-right: -5px;
     }
-    #connection-state {
-      margin-top: 9px;
+    .nav a {
+      cursor: pointer;
     }
+}
+
+.progress {
+  margin-bottom: 0;
+}
+
+.capitalised {
+  &:first-letter {
+    text-transform: capitalize;
+  }
+}
+
+button#run-first-job {
+  margin-top: -35px;
+}
+
+#job-tools a {
+  cursor: pointer;
+}
+
+table#jobs, table#job {
+  td {
+    &.worker-type {
+      .monospace;
+    }
+    &.progress-container {
+      width: 25%;
+    }
+    &.state {
+      .capitalised;
+    }
+  }
+  tr.complete {
+    background-color: @successBackground;
+    td.id a {
+      color: @successText;
+      &:hover, focus {
+        color: darken(@successText, 10%);
+      }
+    }
+  }
+  tr.failed {
+    background-color: @errorBackground;
+    td.id a {
+      color: @errorText;
+      &:hover, focus {
+        color: darken(@errorText, 10%);
+      }
+    }
+  }
+}
+
+table#job {
+  span.key {
+    .monospace;
+  }
+  th {
+    width: 20%;
+  }
+  tr:first-child {
+    th, td {
+      border-top: none;
+    }
+  }
+  tr.complete {
+    background-color: transparent;
+    td.state {
+      color: @successText;
+    }
+  }
+  tr.failed {
+    background-color: transparent;
+    td.state {
+      color: @errorText;
+    }
+  }
 }
 
 #processing-jobs {

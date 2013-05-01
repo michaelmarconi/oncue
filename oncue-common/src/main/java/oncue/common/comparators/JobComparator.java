@@ -26,7 +26,7 @@ public class JobComparator implements Comparator<Job> {
 
 	@Override
 	public int compare(Job job1, Job job2) {
-		return job1.getEnqueuedAt().compareTo(job2.getEnqueuedAt());
+		return Long.compare(job1.getId(), job2.getId());
 	}
 
 }

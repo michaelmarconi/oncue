@@ -1,6 +1,5 @@
 package oncue;
 
-import oncue.actors.EventMachine;
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
 import oncue.timedjobs.TimedJobFactory;
@@ -60,5 +59,10 @@ public class OnCueService extends GlobalSettings {
 
 		// Start the event stream listener
 		system.actorOf(new Props(EventMachine.class), "event-stream-listener");
+	}
+
+	@Override
+	public void onStop(Application app) {
+		system.shutdown();
 	}
 }

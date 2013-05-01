@@ -15,8 +15,12 @@
  ******************************************************************************/
 package oncue.scheduler;
 
+import java.util.Collection;
+import java.util.Iterator;
+
 import oncue.backingstore.BackingStore;
-import oncue.common.messages.AbstractWorkRequest;
+import oncue.common.messages.Job;
+import oncue.common.messages.SimpleWorkRequest;
 
 /**
  * This concrete implementation of {@linkplain AbstractScheduler} employs a very
@@ -26,21 +30,27 @@ import oncue.common.messages.AbstractWorkRequest;
  * This is strictly first-come-first-served: which ever agent makes the request
  * first will get the job.
  */
-public class SimpleQueuePopScheduler extends AbstractScheduler<AbstractWorkRequest> {
+public class SimpleQueuePopScheduler extends AbstractScheduler<SimpleWorkRequest> {
 
 	public SimpleQueuePopScheduler(Class<? extends BackingStore> backingStore) {
 		super(backingStore);
 	}
 
 	@Override
-	protected void scheduleJobs(AbstractWorkRequest workRequest) {
+	protected void scheduleJobs(SimpleWorkRequest workRequest) {
+		String agent = getSender().path().toString();
 
-		// Create a schedule
+		Collection<String> workerTypes = getAgentWorkers().get(agent);
+		if (workerTypes == null)
+			throw new RuntimeException("No worker types registered for agent " + agent);
+
+		// Create the schedule
 		Schedule schedule = new Schedule();
-		try {
-			schedule.setJob(getSender(), unscheduledJobs.popJob());
-		} catch (NoJobsException e) {
-			// Ignore; no jobs on the queue
+		Iterator<Job> iterator = unscheduledJobs.iterator();
+		while (iterator.hasNext()) {
+			Job job = iterator.next();
+			if (workRequest.getWorkerTypes().contains(job.getWorkerType()))
+				schedule.setJob(getSender(), job);
 		}
 
 		// Dispatch the schedule

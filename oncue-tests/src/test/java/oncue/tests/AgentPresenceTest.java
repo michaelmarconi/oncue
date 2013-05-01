@@ -16,6 +16,7 @@
 package oncue.tests;
 
 import java.util.Arrays;
+import java.util.HashSet;
 
 import oncue.common.messages.SimpleMessages.SimpleMessage;
 import oncue.tests.base.ActorSystemTest;
@@ -50,7 +51,8 @@ public class AgentPresenceTest extends ActorSystemTest {
 				createScheduler(system, getRef());
 
 				// Create an agent
-				ActorRef agent = createAgent(system, Arrays.asList(TestWorker.class.getName()), null);
+				ActorRef agent = createAgent(system, new HashSet<String>(Arrays.asList(TestWorker.class.getName())),
+						null);
 
 				// Expect the initial heartbeat
 				expectMsgEquals(SimpleMessage.AGENT_HEARTBEAT);
@@ -88,7 +90,8 @@ public class AgentPresenceTest extends ActorSystemTest {
 				createScheduler(system, getRef());
 
 				// Create an agent
-				ActorRef agent = createAgent(system, Arrays.asList(TestWorker.class.getName()), null);
+				ActorRef agent = createAgent(system, new HashSet<String>(Arrays.asList(TestWorker.class.getName())),
+						null);
 
 				// Expect the initial heartbeat
 				expectMsgEquals(SimpleMessage.AGENT_HEARTBEAT);

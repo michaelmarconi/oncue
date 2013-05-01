@@ -18,6 +18,7 @@ package oncue.tests;
 import static junit.framework.Assert.assertEquals;
 
 import java.util.Arrays;
+import java.util.HashSet;
 
 import oncue.common.messages.AbstractWorkRequest;
 import oncue.common.messages.EnqueueJob;
@@ -77,7 +78,7 @@ public class WorkRequestTest extends ActorSystemTest {
 				createScheduler(system, schedulerProbe.getRef());
 
 				// Create an agent with a probe
-				createAgent(system, Arrays.asList(TestWorker.class.getName()), agentProbe.getRef());
+				createAgent(system, new HashSet<String>(Arrays.asList(TestWorker.class.getName())), agentProbe.getRef());
 
 				// Wait until the agent receives an empty work response
 				WorkResponse workResponse = agentProbe.expectMsgClass(WorkResponse.class);

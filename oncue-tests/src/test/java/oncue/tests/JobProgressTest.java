@@ -15,16 +15,24 @@
  ******************************************************************************/
 package oncue.tests;
 
-import java.util.Arrays;
+import static akka.pattern.Patterns.gracefulStop;
+import static junit.framework.Assert.assertEquals;
 
-import junit.framework.Assert;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.concurrent.TimeUnit;
+
 import oncue.common.messages.EnqueueJob;
+import oncue.common.messages.Job;
 import oncue.common.messages.JobProgress;
 import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.TestWorker;
 
 import org.junit.Test;
 
+import scala.concurrent.Await;
+import scala.concurrent.Future;
+import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
 import akka.testkit.JavaTestKit;
 
@@ -35,7 +43,7 @@ import akka.testkit.JavaTestKit;
 public class JobProgressTest extends ActorSystemTest {
 
 	@Test
-	public void monitorProgress() {
+	public void monitorProgress() throws Exception {
 		new JavaTestKit(system) {
 			{
 				// Create a scheduler probe
@@ -72,20 +80,42 @@ public class JobProgressTest extends ActorSystemTest {
 				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
 
 				// Start an agent with a probe
-				createAgent(system, Arrays.asList(TestWorker.class.getName()), agentProbe.getRef());
+				ActorRef agent = createAgent(system, new HashSet<String>(Arrays.asList(TestWorker.class.getName())),
+						agentProbe.getRef());
 
 				// Expect a series of progress reports
 				double expectedProgress = 0;
-				for (int i = 0; i < 5; i++) {
+				for (int i = 0; i < 4; i++) {
+
+					// Agent progress
 					JobProgress agentProgress = agentProbe.expectMsgClass(JobProgress.class);
+					assertEquals("Was expecting progress at the Agent of " + expectedProgress, expectedProgress,
+							agentProgress.getJob().getProgress());
+					assertEquals("Was expecting the job to be running.", Job.State.RUNNING, agentProgress.getJob()
+							.getState());
+
+					// Scheduler progress
 					JobProgress schedulerProgress = schedulerProbe.expectMsgClass(JobProgress.class);
-					Assert.assertEquals(expectedProgress, agentProgress.getProgress());
-					Assert.assertEquals(expectedProgress, schedulerProgress.getProgress());
+					assertEquals("Was expecting progress at the Scheduler of " + expectedProgress, expectedProgress,
+							schedulerProgress.getJob().getProgress());
+					assertEquals("Was expecting the job to be running.", Job.State.RUNNING, schedulerProgress.getJob()
+							.getState());
+
 					expectedProgress += 0.25;
 				}
 
-				// Expect no more progress
+				// Expect the final completion message
+				JobProgress schedulerProgress = schedulerProbe.expectMsgClass(JobProgress.class);
+				assertEquals(1.0, schedulerProgress.getJob().getProgress());
+				assertEquals(Job.State.COMPLETE, schedulerProgress.getJob().getState());
+
+				// Expect no more messages
 				schedulerProbe.expectNoMsg();
+
+				// The agent should shut down first to prevent lookup exceptions
+				Future<Boolean> stopped = gracefulStop(agent, duration("5 seconds"), system);
+				Await.result(stopped, Duration.create(5, TimeUnit.SECONDS));
+
 			}
 		};
 	}

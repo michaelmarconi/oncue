@@ -18,6 +18,7 @@ import static junit.framework.Assert.assertFalse;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 import oncue.agent.UnlimitedCapacityAgent;
@@ -81,8 +82,8 @@ public class WorkerTest extends ActorSystemTest {
 
 							@Override
 							public Actor create() throws Exception {
-								UnlimitedCapacityAgent agent = new UnlimitedCapacityAgent(Arrays
-										.asList(TestWorker.class.getName()));
+								UnlimitedCapacityAgent agent = new UnlimitedCapacityAgent(new HashSet<>(Arrays
+										.asList(TestWorker.class.getName())));
 								agent.injectProbe(agentProbe.getRef());
 								return agent;
 							}
@@ -104,7 +105,7 @@ public class WorkerTest extends ActorSystemTest {
 
 				// Expect a Job Progress message, showing no progress
 				JobProgress jobProgress = agentProbe.expectMsgClass(JobProgress.class);
-				assertEquals("Expected no progress on the job", 0.0, jobProgress.getProgress());
+				assertEquals("Expected no progress on the job", 0.0, jobProgress.getJob().getProgress());
 
 				final ActorRef worker = agent.getContext().getChildren().iterator().next();
 
@@ -113,7 +114,7 @@ public class WorkerTest extends ActorSystemTest {
 
 					@Override
 					protected boolean cond() {
-						return agentProbe.expectMsgClass(JobProgress.class).getProgress() == 1.0;
+						return agentProbe.expectMsgClass(JobProgress.class).getJob().getProgress() == 1;
 					}
 				};
 
@@ -157,8 +158,10 @@ public class WorkerTest extends ActorSystemTest {
 				createScheduler(system, null);
 
 				// Create an agent
-				createAgent(system, Arrays.asList(JobEnqueueingTestWorker.class.getName(), TestWorker.class.getName()),
-						null);
+				createAgent(
+						system,
+						new HashSet<String>(Arrays.asList(JobEnqueueingTestWorker.class.getName(),
+								TestWorker.class.getName())), null);
 
 				// Enqueue a job
 				Map<String, String> params = new HashMap<String, String>();
@@ -221,8 +224,10 @@ public class WorkerTest extends ActorSystemTest {
 				ActorRef queueManager = createQueueManager(system, null);
 
 				// Create an agent
-				createAgent(system, Arrays.asList(JobEnqueueingTestWorker.class.getName(), TestWorker.class.getName()),
-						null);
+				createAgent(
+						system,
+						new HashSet<String>(Arrays.asList(JobEnqueueingTestWorker.class.getName(),
+								TestWorker.class.getName())), null);
 
 				// Enqueue a job
 				Map<String, String> params = new HashMap<String, String>();

@@ -13,6 +13,9 @@ import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
 
 import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.PropertyNamingStrategy;
+import org.codehaus.jackson.map.SerializationConfig;
+import org.codehaus.jackson.node.ObjectNode;
 
 import play.Logger;
 import play.libs.Akka;
@@ -32,6 +35,8 @@ public class Jobs extends Controller {
 
 	static {
 		mapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssz"));
+		mapper.configure(SerializationConfig.Feature.WRITE_ENUMS_USING_TO_STRING, true);
+		mapper.setPropertyNamingStrategy(PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES);
 	}
 
 	/**
@@ -61,7 +66,56 @@ public class Jobs extends Controller {
 					// Result objects are returned by the recover handler above
 					return (Result) response;
 				} else {
-					return ok(Json.toJson(response));
+					JobSummary jobSummary = (JobSummary) response;
+					ObjectNode rootNode = Json.newObject();
+					rootNode.put("jobs", mapper.valueToTree(jobSummary.getJobs()));
+					return ok(rootNode);
+				}
+			}
+		}));
+	}
+
+	/**
+	 * Show an individual job
+	 * 
+	 * @return a {@linkplain JobSummary}
+	 */
+	public static Result show(final Long id) {
+		ActorRef scheduler = OnCueService.system().actorFor(settings.SCHEDULER_PATH);
+		return async(Akka.asPromise(
+				ask(scheduler, SimpleMessage.JOB_SUMMARY, new Timeout(settings.SCHEDULER_TIMEOUT)).recover(
+						new Recover<Object>() {
+							@Override
+							public Object recover(Throwable t) throws Throwable {
+								if (t instanceof AskTimeoutException) {
+									Logger.error("Timeout waiting for scheduler to respond to job summary request", t);
+									return internalServerError("Timeout");
+								} else {
+									Logger.error("Failed to request jobs from scheduler", t);
+									return internalServerError("Failed to request jobs from scheduler");
+								}
+							}
+						}, OnCueService.system().dispatcher())).map(new Function<Object, Result>() {
+			@Override
+			public Result apply(Object response) {
+				if (response instanceof Result) {
+					// Result objects are returned by the recover handler above
+					return (Result) response;
+				} else {
+					JobSummary jobSummary = (JobSummary) response;
+					Job jobToShow = null;
+					for (Job job : jobSummary.getJobs()) {
+						if (job.getId() == id) {
+							jobToShow = job;
+							break;
+						}
+					}
+					if (jobToShow == null)
+						throw new RuntimeException("Failed to find a job with ID " + id);
+
+					ObjectNode rootNode = Json.newObject();
+					rootNode.put("job", mapper.valueToTree(jobToShow));
+					return ok(rootNode);
 				}
 			}
 		}));

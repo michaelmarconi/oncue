@@ -18,8 +18,6 @@ package oncue.backingstore;
 import java.util.List;
 
 import oncue.common.messages.Job;
-import oncue.common.messages.JobFailed;
-import oncue.common.messages.JobProgress;
 
 /**
  * The contract for all persistent data stores.
@@ -40,22 +38,35 @@ public interface BackingStore {
 	public void addUnscheduledJob(Job job);
 
 	/**
+	 * The backing store makes a note of jobs that complete successfully. Get
+	 * the list of these.
+	 * 
+	 * @return a list of complete {@linkplain Job}
+	 */
+	public List<Job> getCompletedJobs();
+
+	/**
+	 * The backing store makes a note of jobs that fail. Get the list of these.
+	 * 
+	 * @return a list of failed {@linkplain Job}
+	 */
+	public List<Job> getFailedJobs();
+
+	/**
 	 * Persist the details of a failed job
 	 * 
-	 * @param jobFailed
-	 *            contains the details of the job that failed and the associated
-	 *            failure
+	 * @param job
+	 *            is the job that has failed
 	 */
-	public void persistJobFailure(JobFailed jobFailed);
+	public void persistJobFailure(Job job);
 
 	/**
 	 * Persist the progress made against a job
 	 * 
-	 * @param jobProgress
-	 *            is a record of the progress a worker has made against this
-	 *            job.
+	 * @param job
+	 *            contains a record of progress made by a worker
 	 */
-	public void persistJobProgress(JobProgress jobProgress);
+	public void persistJobProgress(Job job);
 
 	/**
 	 * Pop the first job off the unscheduled jobs queue

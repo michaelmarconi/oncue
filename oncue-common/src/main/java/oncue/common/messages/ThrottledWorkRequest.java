@@ -15,27 +15,36 @@
  ******************************************************************************/
 package oncue.common.messages;
 
-import java.util.Collection;
+import java.util.Set;
 
 import akka.actor.ActorRef;
 
 public class ThrottledWorkRequest extends AbstractWorkRequest {
 
-	private int jobs;
-
 	private static final long serialVersionUID = -6509063237201496945L;
+
+	private int maxJobs;
 
 	/**
 	 * @param jobs
 	 *            is the number of jobs the agent can cope with
 	 */
-	public ThrottledWorkRequest(ActorRef agent, Collection<String> workerTypes, int jobs) {
+	public ThrottledWorkRequest(ActorRef agent, Set<String> workerTypes, int jobs) {
 		super(agent, workerTypes);
-		this.jobs = jobs;
+		this.maxJobs = jobs;
 	}
 
-	public int getJobs() {
-		return jobs;
+	public int getMaxJobs() {
+		return maxJobs;
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		for (String workerType : getWorkerTypes()) {
+			builder.append("[" + workerType + "]");
+		}
+		return "Throttled work request for " + maxJobs + " jobs for worker types: " + builder.toString();
 	}
 
 }

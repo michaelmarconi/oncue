@@ -4,13 +4,18 @@
 GET     /                           controllers.Application.index()
 GET     /websocket                  controllers.Application.socketHandler()
 
+GET     /agents                     controllers.Agents.index()
+GET     /jobs                       controllers.Jobs.index()
+GET     /jobs/:id                   controllers.Jobs.show(id: Long)
+
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)
 
 
 # API Routes
 # ~~~~
-GET     /api/agents                 controllers.api.Agents.index()
-GET		/api/jobs					controllers.api.Jobs.index()
-POST	/api/jobs					controllers.api.Jobs.create()
+GET   	/api/agents               	controllers.api.Agents.index()
+GET		/api/jobs                   controllers.api.Jobs.index()
+GET		/api/jobs/:id               controllers.api.Jobs.show(id: Long)
+POST	/api/jobs                   controllers.api.Jobs.create()
 

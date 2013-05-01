@@ -15,6 +15,7 @@ package oncue.tests.strategies;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 
 import junit.framework.Assert;
 import oncue.agent.JVMCapacityAgent;
@@ -211,7 +212,8 @@ public class JVMCapacityStrategyTest extends ActorSystemTest {
 
 			@Override
 			public Actor create() throws Exception {
-				JVMCapacityAgent agent = new JVMCapacityAgent(Arrays.asList(TestWorker.class.getName()), capacity);
+				JVMCapacityAgent agent = new JVMCapacityAgent(new HashSet<String>(Arrays.asList(TestWorker.class
+						.getName())), capacity);
 				agent.injectProbe(agentProbe.getRef());
 				return agent;
 			}

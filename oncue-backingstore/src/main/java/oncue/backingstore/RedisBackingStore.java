@@ -15,15 +15,12 @@
  ******************************************************************************/
 package oncue.backingstore;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import oncue.common.messages.Job;
-import oncue.common.messages.JobFailed;
-import oncue.common.messages.JobProgress;
+import oncue.common.messages.Job.State;
 import oncue.common.settings.Settings;
 
 import org.joda.time.DateTime;
@@ -35,14 +32,33 @@ import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.Protocol;
 import redis.clients.jedis.Transaction;
 import akka.actor.ActorSystem;
+import akka.event.Logging;
+import akka.event.LoggingAdapter;
 
 import com.typesafe.config.Config;
 
 public class RedisBackingStore extends AbstractBackingStore {
 
-	// Config keys
-	private static final String REDIS_PORT = "oncue.scheduler.backing-store.redis.port";
+	// Redis host config key
 	private static final String REDIS_HOST = "oncue.scheduler.backing-store.redis.host";
+
+	// Redis port config key
+	private static final String REDIS_PORT = "oncue.scheduler.backing-store.redis.port";
+
+	// Redis port
+	private static int port = Protocol.DEFAULT_PORT;
+
+	// A Redis connection pool
+	private static JedisPool redisPool;
+
+	// The jobs that have completed successfully
+	public static final String COMPLETED_JOBS = "oncue:jobs:complete";
+
+	// The jobs that have failed
+	public static final String FAILED_JOBS = "oncue:jobs:failed";
+
+	// Redis host
+	private static String host = "localhost";
 
 	// The total count of persisted jobs
 	public static final String JOB_COUNT_KEY = "oncue:job_count";
@@ -50,8 +66,8 @@ public class RedisBackingStore extends AbstractBackingStore {
 	// The time the job was enqueued
 	public static final String JOB_ENQUEUED_AT = "job_enqueued_at";
 
-	// The progress against a job
-	public static final String JOB_FAILURE_STACKTRACE = "job_failure_stacktrace";
+	// The message associated with a failed job
+	public static final String JOB_ERROR_MESSAGE = "job_failure_message";
 
 	// The ID of a job
 	public static final String JOB_ID = "job_id";
@@ -71,20 +87,11 @@ public class RedisBackingStore extends AbstractBackingStore {
 	// The worker type assigned to a job
 	public static final String JOB_WORKER_TYPE = "job_worker_type";
 
-	// Redis host
-	private static String host = "localhost";
-
-	// Redis port
-	private static int port = Protocol.DEFAULT_PORT;
-
 	/*
 	 * The queue of jobs that acts as an external interface; the scheduler
 	 * component will watch this queue for new jobs
 	 */
 	public static final String NEW_JOBS = "oncue:jobs:new";
-
-	// A Redis connection pool
-	private static JedisPool redisPool;
 
 	// The scheduled jobs dispatched by the scheduler component
 	public static final String SCHEDULED_JOBS = "oncue:jobs:scheduled";
@@ -98,12 +105,12 @@ public class RedisBackingStore extends AbstractBackingStore {
 	 * @param workerType
 	 *            is the type of worker required to complete this job
 	 * 
-	 * @param jobParams
-	 *            is a map of String-based parameters
+	 * @param params
+	 *            is a map of job parameters
 	 * 
 	 * @return a new {@linkplain Job}
 	 */
-	public static Job createJob(String workerType, Map<String, String> jobParams) {
+	public static Job createJob(String workerType, Map<String, String> params) {
 
 		// Get a connection to Redis
 		Jedis redis = getConnection();
@@ -112,7 +119,9 @@ public class RedisBackingStore extends AbstractBackingStore {
 		Long jobId = redis.incr(RedisBackingStore.JOB_COUNT_KEY);
 
 		// Create a new job
-		Job job = new Job(jobId, workerType, jobParams);
+		Job job = new Job(jobId, workerType);
+		if (params != null)
+			job.setParams(params);
 
 		// Now, persist the job and release the connection
 		persistJob(job, RedisBackingStore.NEW_JOBS, redis);
@@ -149,16 +158,26 @@ public class RedisBackingStore extends AbstractBackingStore {
 		try {
 			DateTime enqueuedAt = DateTime.parse(redis.hget(jobKey, JOB_ENQUEUED_AT));
 			String workerType = redis.hget(jobKey, JOB_WORKER_TYPE);
+			String state = redis.hget(jobKey, JOB_STATE);
 			String progress = redis.hget(jobKey, JOB_PROGRESS);
 			String params = redis.hget(jobKey, JOB_PARAMS);
+			String errorMessage = redis.hget(jobKey, JOB_ERROR_MESSAGE);
 
-			if (params == null)
-				job = new Job(new Long(id), enqueuedAt, workerType);
-			else
-				job = new Job(new Long(id), enqueuedAt, workerType, (Map<String, String>) JSONValue.parse(params));
+			job = new Job(new Long(id), workerType);
+			job.setEnqueuedAt(enqueuedAt);
+
+			if (params != null)
+				job.setParams((Map<String, String>) JSONValue.parse(params));
+
+			if (state != null)
+				job.setState(State.valueOf(state.toUpperCase()));
 
 			if (progress != null)
 				job.setProgress(new Double(progress));
+
+			if (errorMessage != null)
+				job.setErrorMessage(errorMessage);
+
 		} catch (NullPointerException e) {
 			throw new RuntimeException(String.format("Cannot find a job with id %s in Redis", id));
 		}
@@ -186,11 +205,17 @@ public class RedisBackingStore extends AbstractBackingStore {
 		transaction.hset(jobKey, JOB_ENQUEUED_AT, job.getEnqueuedAt().toString());
 		transaction.hset(jobKey, JOB_WORKER_TYPE, job.getWorkerType());
 
+		if (job.getParams() != null)
+			transaction.hset(jobKey, JOB_PARAMS, JSONValue.toJSONString(job.getParams()));
+
+		if (job.getState() != null)
+			transaction.hset(jobKey, JOB_STATE, job.getState().toString());
+
 		if (job.getProgress() != null)
 			transaction.hset(jobKey, JOB_PROGRESS, job.getProgress().toString());
 
-		if (job.getParams() != null)
-			transaction.hset(jobKey, JOB_PARAMS, JSONValue.toJSONString(job.getParams()));
+		if (job.getErrorMessage() != null)
+			transaction.hset(jobKey, JOB_ERROR_MESSAGE, job.getErrorMessage());
 
 		// Add the job to the specified queue
 		transaction.lpush(queueName, new Long(job.getId()).toString());
@@ -209,6 +234,9 @@ public class RedisBackingStore extends AbstractBackingStore {
 		redisPool.returnResource(connection);
 	}
 
+	// Logger
+	private LoggingAdapter log;
+
 	public RedisBackingStore(ActorSystem system, Settings settings) {
 		super(system, settings);
 
@@ -222,7 +250,9 @@ public class RedisBackingStore extends AbstractBackingStore {
 		if (config.hasPath(REDIS_PORT)) {
 			port = config.getInt(REDIS_PORT);
 		}
-		system.log().info("Backing store expects Redis at: host={}, port={}", host, port);
+
+		log = Logging.getLogger(system, this);
+		log.info("Backing store expects Redis at: host={}, port={}", host, port);
 	}
 
 	@Override
@@ -251,34 +281,50 @@ public class RedisBackingStore extends AbstractBackingStore {
 	}
 
 	@Override
-	public void persistJobFailure(JobFailed jobFailed) {
-		Job job = jobFailed.getJob();
-
-		// Flatten the stack trace
-		StringWriter stackTraceWriter = new StringWriter();
-		PrintWriter printWriter = new PrintWriter(stackTraceWriter);
-		jobFailed.getError().printStackTrace(printWriter);
-
+	public List<Job> getCompletedJobs() {
+		List<Job> jobs = new ArrayList<>();
 		Jedis redis = getConnection();
 
-		Transaction transaction = redis.multi();
+		List<String> jobIDs = redis.lrange(COMPLETED_JOBS, 0, -1);
+		for (String jobID : jobIDs) {
+			jobs.add(loadJob(new Long(jobID), redis));
+		}
 
-		String jobKey = String.format(JOB_KEY, job.getId());
-		transaction.hset(jobKey, JOB_STATE, Job.State.FAILED.toString());
-		transaction.hset(jobKey, JOB_FAILURE_STACKTRACE, stackTraceWriter.toString());
+		releaseConnection(redis);
+		return jobs;
+	}
 
-		transaction.exec();
+	@Override
+	public List<Job> getFailedJobs() {
+		List<Job> jobs = new ArrayList<>();
+		Jedis redis = getConnection();
 
+		List<String> jobIDs = redis.lrange(FAILED_JOBS, 0, -1);
+		for (String jobID : jobIDs) {
+			jobs.add(loadJob(new Long(jobID), redis));
+		}
+
+		releaseConnection(redis);
+		return jobs;
+	}
+
+	@Override
+	public void persistJobFailure(Job job) {
+		Jedis redis = getConnection();
+		persistJob(job, FAILED_JOBS, redis);
 		releaseConnection(redis);
 	}
 
 	@Override
-	public void persistJobProgress(JobProgress jobProgress) {
+	public void persistJobProgress(Job job) {
 		Jedis redis = getConnection();
 
-		Job job = jobProgress.getJob();
 		String jobKey = String.format(JOB_KEY, job.getId());
-		redis.hset(jobKey, RedisBackingStore.JOB_PROGRESS, new Double(jobProgress.getProgress()).toString());
+		redis.hset(jobKey, JOB_PROGRESS, job.getProgress().toString());
+		redis.hset(jobKey, JOB_STATE, job.getState().toString());
+
+		if (job.getState() == Job.State.COMPLETE)
+			redis.lpush(COMPLETED_JOBS, new Long(job.getId()).toString());
 
 		releaseConnection(redis);
 	}

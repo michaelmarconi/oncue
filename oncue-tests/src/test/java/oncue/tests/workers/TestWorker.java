@@ -21,18 +21,14 @@ import oncue.worker.AbstractWorker;
 public class TestWorker extends AbstractWorker {
 
 	@Override
-	public Work doWork(Job job) {
+	public void doWork(Job job) throws InterruptedException {
 		double progress = 0.0;
 		for (int i = 0; i < 3; i++) {
 			progress += 0.25;
-			try {
-				Thread.sleep(500);
-				reportProgress(progress);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
+			Thread.sleep(500);
+			reportProgress(progress);
 		}
-		return Work.COMPLETE;
+		Thread.sleep(500);
 	}
 
 }

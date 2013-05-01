@@ -18,6 +18,7 @@ package oncue.tests;
 import static junit.framework.Assert.assertEquals;
 
 import java.util.Arrays;
+import java.util.HashSet;
 
 import oncue.common.messages.AbstractWorkRequest;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
@@ -49,7 +50,7 @@ public class AgentRegistrationTest extends ActorSystemTest {
 
 				// Create an agent with a probe
 				final JavaTestKit agentProbe = new JavaTestKit(system);
-				createAgent(system, Arrays.asList(TestWorker.class.getName()), agentProbe.getRef());
+				createAgent(system, new HashSet<String>(Arrays.asList(TestWorker.class.getName())), agentProbe.getRef());
 
 				// Expect the initial heartbeat from the agent
 				schedulerProbe.expectMsgEquals(SimpleMessage.AGENT_HEARTBEAT);

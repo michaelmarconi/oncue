@@ -1,14 +1,21 @@
 package controllers.api;
 
 import static akka.pattern.Patterns.ask;
+
+import java.text.SimpleDateFormat;
+
 import oncue.OnCueService;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
+
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.PropertyNamingStrategy;
+import org.codehaus.jackson.map.SerializationConfig;
+
 import play.Logger;
 import play.libs.Akka;
 import play.libs.F.Function;
-import play.libs.Json;
 import play.mvc.Controller;
 import play.mvc.Result;
 import akka.actor.ActorRef;
@@ -19,6 +26,13 @@ import akka.util.Timeout;
 public class Agents extends Controller {
 
 	private final static Settings settings = SettingsProvider.SettingsProvider.get(Akka.system());
+	private final static ObjectMapper mapper = new ObjectMapper();
+
+	static {
+		mapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssz"));
+		mapper.configure(SerializationConfig.Feature.WRITE_ENUMS_USING_TO_STRING, true);
+		mapper.setPropertyNamingStrategy(PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES);
+	}
 
 	public static Result index() {
 		ActorRef scheduler = OnCueService.system().actorFor(settings.SCHEDULER_PATH);
@@ -42,7 +56,7 @@ public class Agents extends Controller {
 					// Result objects are returned by the recover handler above
 					return (Result) response;
 				} else {
-					return ok(Json.toJson(response));
+					return ok(mapper.valueToTree(response));
 				}
 			}
 		}));

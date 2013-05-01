@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -88,8 +89,9 @@ public class JVMCapacityScheduler extends AbstractScheduler<JVMCapacityWorkReque
 
 		Map<ActorRef, List<Job>> agentJobs = new HashMap<ActorRef, List<Job>>();
 		List<Job> scheduledJobs = new ArrayList<>();
-
-		for (Job job : unscheduledJobs.getJobs()) {
+		Iterator<Job> iterator = unscheduledJobs.iterator();
+		while (iterator.hasNext()) {
+			Job job = iterator.next();
 			long jobSize = new Long(job.getParams().get(JVMCapacityScheduler.JOB_SIZE));
 			sortWorkRequestsByFreeMemory();
 
@@ -111,11 +113,6 @@ public class JVMCapacityScheduler extends AbstractScheduler<JVMCapacityWorkReque
 					break;
 				}
 			}
-		}
-
-		// Remove the jobs from the scheduled queue
-		for (Job job : scheduledJobs) {
-			unscheduledJobs.removeJob(job);
 		}
 
 		// Create a schedule

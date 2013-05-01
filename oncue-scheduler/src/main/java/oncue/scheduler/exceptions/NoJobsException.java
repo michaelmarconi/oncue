@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package oncue.scheduler;
+package oncue.scheduler.exceptions;
 
 /**
  * Thrown when a client attempts to pop a queue that has no more elements

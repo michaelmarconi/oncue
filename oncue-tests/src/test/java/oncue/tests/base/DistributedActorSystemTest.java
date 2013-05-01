@@ -15,7 +15,7 @@
  ******************************************************************************/
 package oncue.tests.base;
 
-import java.util.Collection;
+import java.util.Set;
 
 import oncue.agent.AbstractAgent;
 import oncue.common.settings.Settings;
@@ -56,12 +56,12 @@ public abstract class DistributedActorSystemTest {
 	 *            can be null
 	 */
 	@SuppressWarnings("serial")
-	public ActorRef createAgent(final Collection<String> workers, final ActorRef probe) {
+	public ActorRef createAgent(final Set<String> workers, final ActorRef probe) {
 		return agentSystem.actorOf(new Props(new UntypedActorFactory() {
 			@Override
 			public Actor create() throws Exception {
 				AbstractAgent agent = (AbstractAgent) Class.forName(agentSettings.AGENT_CLASS)
-						.getConstructor(Collection.class).newInstance(workers);
+						.getConstructor(Set.class).newInstance(workers);
 				if (probe != null)
 					agent.injectProbe(probe);
 				return agent;
@@ -141,7 +141,7 @@ public abstract class DistributedActorSystemTest {
 		serviceSystem.shutdown();
 		agentSystem.shutdown();
 		while (!serviceSystem.isTerminated() || !agentSystem.isTerminated()) {
-			serviceLog.debug("Waiting for systems to shut down...");
+			serviceLog.info("Waiting for systems to shut down...");
 			Thread.sleep(500);
 		}
 		serviceLog.debug("Systems shut down");

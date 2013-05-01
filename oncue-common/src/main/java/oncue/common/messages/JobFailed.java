@@ -24,7 +24,7 @@ public class JobFailed implements Serializable {
 	private final Throwable error;
 
 	public JobFailed(Job job, Throwable error) {
-		this.job = job;
+		this.job = (Job) job.clone();
 		this.error = error;
 	}
 

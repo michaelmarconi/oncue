@@ -13,32 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package oncue.worker;
+package oncue.tests.workers;
 
 import oncue.common.messages.Job;
+import oncue.worker.AbstractWorker;
 
-/**
- * A simple sample worker, for demonstration purposes
- */
-public class SampleWorker extends AbstractWorker {
+public class TestWorker2 extends AbstractWorker {
 
 	@Override
-	protected Work doWork(Job job) {
+	public void doWork(Job job) throws InterruptedException {
 		double progress = 0.0;
-		System.out.print("Sample worker doing work on Job " + job.getId() + ".");
 		for (int i = 0; i < 3; i++) {
 			progress += 0.25;
-			System.out.print(".");
-			try {
-				Thread.sleep(500);
-				reportProgress(progress);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
+			Thread.sleep(500);
+			reportProgress(progress);
 		}
-		System.out.println("Complete!");
-
-		return Work.COMPLETE;
+		Thread.sleep(500);
 	}
 
 }

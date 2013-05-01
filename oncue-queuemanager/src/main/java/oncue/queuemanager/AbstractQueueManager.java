@@ -17,6 +17,7 @@ package oncue.queuemanager;
 
 import java.util.Map;
 
+import oncue.common.events.JobEnqueuedEvent;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.settings.Settings;
@@ -81,6 +82,7 @@ public abstract class AbstractQueueManager extends UntypedActor {
 			EnqueueJob enqueueJob = (EnqueueJob) message;
 			Job job = createJob(enqueueJob.getWorkerType(), enqueueJob.getParams());
 			getSender().tell(job, getSelf());
+			getContext().system().eventStream().publish(new JobEnqueuedEvent(job));
 		} else
 			unhandled(message);
 	}

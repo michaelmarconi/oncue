@@ -1,6 +1,6 @@
 package controllers;
 
-import oncue.actors.EventMachine;
+import oncue.EventMachine;
 
 import org.codehaus.jackson.JsonNode;
 
