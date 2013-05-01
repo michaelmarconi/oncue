@@ -130,6 +130,10 @@ App.Param = DS.Model.extend(
 # VIEWS
 # ----------------------------
 
+App.ApplicationView = Ember.View.extend
+  didInsertElement: ->
+    $('a.brand').tooltip()
+
 App.JobsView = Ember.View.extend
   templateName: 'jobs'
   click: (event) ->
