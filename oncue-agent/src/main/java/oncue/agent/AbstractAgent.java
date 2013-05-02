@@ -17,6 +17,8 @@ package oncue.agent;
 
 import static akka.actor.SupervisorStrategy.stop;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -272,7 +274,7 @@ public abstract class AbstractAgent extends UntypedActor {
 	 */
 	private void sendFailure(Job job, String message) {
 		job.setState(State.FAILED);
-		job.setErrorMessage("Failed to spawn a worker for " + job.toString() + ": " + message);
+		job.setErrorMessage("Failed to spawn a worker due to " + message);
 		getScheduler().tell(new JobFailed(job), getSelf());
 	}
 
@@ -290,14 +292,11 @@ public abstract class AbstractAgent extends UntypedActor {
 				log.error(error, "The worker {} has died a horrible death!", getSender());
 				Job job = jobsInProgress.remove(getSender());
 
+				StringWriter sw = new StringWriter();
+				PrintWriter pw = new PrintWriter(sw);
+				error.printStackTrace(pw);
 
-				String message = null;
-				if (error.getCause() == null)
-					message = error.toString();
-				else
-					message = error.toString() + " (Caused by: " + error.getCause().toString() + ")";
-
-				sendFailure(job, message);
+				sendFailure(job, sw.toString());
 				return stop();
 			}
 		});
