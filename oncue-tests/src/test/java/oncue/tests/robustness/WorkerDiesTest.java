@@ -21,12 +21,15 @@ import static junit.framework.Assert.assertTrue;
 import java.util.Arrays;
 import java.util.HashSet;
 
+import oncue.agent.ThrottledAgent;
 import oncue.agent.UnlimitedCapacityAgent;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobFailed;
+import oncue.common.messages.JobProgress;
 import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.IncompetentTestWorker;
+import oncue.tests.workers.TestWorker;
 
 import org.junit.Test;
 
@@ -56,7 +59,10 @@ public class WorkerDiesTest extends ActorSystemTest {
 
 							@Override
 							protected boolean ignore(Object message) {
-								return !(message instanceof JobFailed);
+								if(message instanceof JobFailed || message instanceof JobProgress)
+									return false;
+
+								return true;
 							}
 						};
 					}
@@ -70,19 +76,23 @@ public class WorkerDiesTest extends ActorSystemTest {
 
 				// Create and expose an agent
 				@SuppressWarnings("serial")
-				TestActorRef<UnlimitedCapacityAgent> agentRef = TestActorRef.create(system, new Props(
+				TestActorRef<ThrottledAgent> agentRef = TestActorRef.create(system, new Props(
 						new UntypedActorFactory() {
 							@Override
 							public Actor create() throws Exception {
-								return new UnlimitedCapacityAgent(new HashSet<String>(Arrays
-										.asList(IncompetentTestWorker.class.getName())));
+								return new ThrottledAgent(new HashSet<String>(Arrays
+										.asList(TestWorker.class.getName(), IncompetentTestWorker.class.getName())));
 							}
 						}), settings.AGENT_NAME);
-				final UnlimitedCapacityAgent agent = agentRef.underlyingActor();
+				final ThrottledAgent agent = agentRef.underlyingActor();
 
 				// Enqueue a job
 				queueManager.tell(new EnqueueJob(IncompetentTestWorker.class.getName()), getRef());
 				Job job = expectMsgClass(Job.class);
+
+				// Expect some initial progress
+				schedulerProbe.expectMsgClass(JobProgress.class); // 0
+				schedulerProbe.expectMsgClass(JobProgress.class); // 0.25
 
 				// Expect a job failure message at the scheduler
 				JobFailed jobFailed = schedulerProbe.expectMsgClass(JobFailed.class);
@@ -99,6 +109,14 @@ public class WorkerDiesTest extends ActorSystemTest {
 						return !agent.getContext().getChildren().iterator().hasNext();
 					}
 				};
+
+				// Enqueue a job
+				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
+				job = expectMsgClass(Job.class);
+
+				// Expect a job progress message at the scheduler
+				schedulerProbe.expectMsgClass(JobProgress.class);
+
 			}
 		};
 	}

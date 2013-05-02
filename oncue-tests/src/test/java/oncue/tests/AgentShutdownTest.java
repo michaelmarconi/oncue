@@ -50,6 +50,7 @@ public class AgentShutdownTest extends ActorSystemTest {
 	/**
 	 * An agent should emit a steady heartbeat while it is alive.
 	 */
+	@SuppressWarnings("unused")
 	@Test
 	public void agentShutsDownGracefully() {
 		new JavaTestKit(system) {

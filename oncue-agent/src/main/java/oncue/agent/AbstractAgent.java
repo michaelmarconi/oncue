@@ -272,8 +272,19 @@ public abstract class AbstractAgent extends UntypedActor {
 	 */
 	private void sendFailure(Job job, String message) {
 		job.setState(State.FAILED);
-		job.setErrorMessage("Failed to spawn a worker for " + job.toString() + ": " + message);
+		job.setErrorMessage("Failed to spawn a worker due to " + message);
 		getScheduler().tell(new JobFailed(job), getSelf());
+	}
+
+	/**
+	 * Allows handling of a worker death. Called when a worker that is owned by this agent
+	 * has thrown an exception.
+	 * 
+	 * @param job	The job that was in progress
+	 * @param error	The Throwable from the worker
+	 */
+	protected void onWorkerDeath(Job job, Throwable error) {
+		// Do nothing
 	}
 
 	/**
@@ -289,15 +300,8 @@ public abstract class AbstractAgent extends UntypedActor {
 			public Directive apply(Throwable error) throws Exception {
 				log.error(error, "The worker {} has died a horrible death!", getSender());
 				Job job = jobsInProgress.remove(getSender());
-
-
-				String message = null;
-				if (error.getCause() == null)
-					message = error.toString();
-				else
-					message = error.toString() + " (Caused by: " + error.getCause().toString() + ")";
-
-				sendFailure(job, message);
+				onWorkerDeath(job, error);
+				sendFailure(job, error.toString());
 				return stop();
 			}
 		});
