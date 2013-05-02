@@ -74,9 +74,6 @@ table#jobs, table#job {
 }
 
 table#job {
-  span.key {
-    .monospace;
-  }
   th {
     width: 20%;
   }
@@ -97,6 +94,19 @@ table#job {
       color: @errorText;
     }
   }
+}
+
+table#params {
+  td.key {
+    .monospace;
+    width: 1%;
+    white-space: nowrap;
+  }
+  th, td {
+    border: none;
+    vertical-align: top;
+  }
+  margin: -5px;
 }
 
 #processing-jobs {

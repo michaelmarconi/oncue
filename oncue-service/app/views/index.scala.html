@@ -32,7 +32,7 @@
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </button>
-                    <a class="brand" data-toggle="tooltip" data-placement="bottom" title="Release candidate 1">
+                    <a class="brand" data-toggle="tooltip" data-placement="bottom" title="Release candidate 2">
                         <i class="icon-off text-info"></i>
                         nCue
                     </a>
@@ -276,7 +276,18 @@
                     </tr>
                     <tr>
                         <th>Parameters</th>
-                        <td>{{ showParams params }}</td>
+                        <td>
+                            <table id="params" class="table table-condensed table-hover">
+                                <tbody>
+                                    {{#each param in params}}
+                                        <tr>
+                                            <td class="key">{{ param.key }} &rarr;</td>
+                                            <td>{{ param.value }}</td>
+                                        </tr>
+                                    {{/each}}
+                                </tbody>
+                            </table>
+                        </td>
                     </tr>
                     <tr {{bindAttr class="state"}}>
                         <th>State</th>
