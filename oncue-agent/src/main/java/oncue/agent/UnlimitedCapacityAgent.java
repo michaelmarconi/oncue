@@ -36,5 +36,4 @@ public class UnlimitedCapacityAgent extends AbstractAgent {
 	protected void requestWork() {
 		getScheduler().tell(new SimpleWorkRequest(getSelf(), getWorkerTypes()), getSelf());
 	}
-
 }

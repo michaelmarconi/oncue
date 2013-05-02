@@ -59,5 +59,4 @@ public class JVMCapacityAgent extends AbstractAgent {
 		getScheduler().tell(
 				new JVMCapacityWorkRequest(getSelf(), getWorkerTypes(), freeMemory, totalMemory, maxMemory), getSelf());
 	}
-
 }
