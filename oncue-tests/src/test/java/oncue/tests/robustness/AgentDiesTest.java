@@ -45,7 +45,7 @@ import akka.testkit.JavaTestKit;
 public class AgentDiesTest extends ActorSystemTest {
 
 	@Test
-	@SuppressWarnings("serial")
+	@SuppressWarnings({ "serial", "unused" })
 	public void testAgentDiesAndAnotherReplacesIt() {
 		new JavaTestKit(system) {
 			{

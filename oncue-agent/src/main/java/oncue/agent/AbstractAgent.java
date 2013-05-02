@@ -17,8 +17,6 @@ package oncue.agent;
 
 import static akka.actor.SupervisorStrategy.stop;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -279,6 +277,17 @@ public abstract class AbstractAgent extends UntypedActor {
 	}
 
 	/**
+	 * Allows handling of a worker death. Called when a worker that is owned by this agent
+	 * has thrown an exception.
+	 * 
+	 * @param job	The job that was in progress
+	 * @param error	The Throwable from the worker
+	 */
+	protected void onWorkerDeath(Job job, Throwable error) {
+		// Do nothing
+	}
+
+	/**
 	 * Supervise all workers for unexpected exceptions. When an exception is
 	 * encountered, tell the scheduler about it, stop the worker and remove it
 	 * from the jobs in progress map.
@@ -291,12 +300,8 @@ public abstract class AbstractAgent extends UntypedActor {
 			public Directive apply(Throwable error) throws Exception {
 				log.error(error, "The worker {} has died a horrible death!", getSender());
 				Job job = jobsInProgress.remove(getSender());
-
-				StringWriter sw = new StringWriter();
-				PrintWriter pw = new PrintWriter(sw);
-				error.printStackTrace(pw);
-
-				sendFailure(job, sw.toString());
+				onWorkerDeath(job, error);
+				sendFailure(job, error.toString());
 				return stop();
 			}
 		});
