@@ -72,11 +72,13 @@ class HttpClient implements Client {
 	private Job parseJob(HttpResponse response) throws ClientException {
 		try {
 			InputStream content = response.getContent();
-			Job job = gson.fromJson(new InputStreamReader(content), Job.class);
-			if (job == null) {
-				throw new ClientException("Invalid response body");
+			try(InputStreamReader json = new InputStreamReader(content)) {
+				Job job = gson.fromJson(json, Job.class);
+				if (job == null) {
+					throw new ClientException("Invalid response body");
+				}
+				return job;
 			}
-			return job;
 		} catch (Exception e) {
 			throw new ClientException("Error reading response body");
 		}

@@ -45,14 +45,8 @@ import akka.testkit.JavaTestKit;
  * backing store. This test ensures that we can bring a scheduler back from the
  * dead so that no jobs are lost.
  */
+@SuppressWarnings("unused")
 public class SchedulerDiesTest extends ActorSystemTest {
-
-	@Before
-	public void cleanRedis() {
-		Jedis redis = RedisBackingStore.getConnection();
-		redis.flushDB();
-		RedisBackingStore.releaseConnection(redis);
-	}
 
 	@Test
 	public void testAgentDiesAndAnotherReplacesIt() throws Exception {

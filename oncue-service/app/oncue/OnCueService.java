@@ -64,5 +64,10 @@ public class OnCueService extends GlobalSettings {
 	@Override
 	public void onStop(Application app) {
 		system.shutdown();
+		while (!system.isTerminated()) {
+			try {
+				Thread.sleep(500);
+			} catch (InterruptedException e) {}
+		}
 	}
 }

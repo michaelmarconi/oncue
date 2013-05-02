@@ -254,11 +254,10 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	 * @param jobFailed
 	 *            contains both the failed job and the cause of failure
 	 */
-	private void handleJobFailure(Job job, Throwable error, String agent) {
+	private void handleJobFailure(Job job, String agent) {
 		if (backingStore != null)
 			backingStore.persistJobFailure(job);
 
-		log.error(error, "{} has failed.", job);
 		cleanupJob(job, agent);
 
 		getContext().system().eventStream().publish(new JobFailedEvent(job));
@@ -367,10 +366,8 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 
 		else if (message instanceof JobFailed) {
 			Job job = ((JobFailed) message).getJob();
-			Throwable error = ((JobFailed) message).getError();
-			log.debug("Agent reported a failed job {} ({})", ((JobFailed) message).getJob(), ((JobFailed) message)
-					.getError().getMessage());
-			handleJobFailure(job, error, getSender().path().toString());
+			log.debug("Agent reported a failed job {} ({})", job, job.getErrorMessage());
+			handleJobFailure(job, getSender().path().toString());
 		}
 
 		else if (message == SimpleMessage.JOB_SUMMARY) {

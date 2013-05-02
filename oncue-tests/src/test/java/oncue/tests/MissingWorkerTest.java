@@ -19,7 +19,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 
 import oncue.tests.base.ActorSystemTest;
-import oncue.worker.AbstractWorker;
 
 import org.junit.Test;
 
