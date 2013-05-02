@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 
 import oncue.common.messages.EnqueueJob;
+import oncue.common.messages.Job;
 import oncue.common.messages.WorkResponse;
 import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.TestWorker;
@@ -40,6 +41,7 @@ public class ThrottledSchedulerTest extends ActorSystemTest {
 	 * A Throttled scheduler should only schedule jobs to agents that have the
 	 * appropriate worker types.
 	 */
+	@SuppressWarnings("unused")
 	@Test
 	public void scheduleJobsToCapableAgents() {
 		new JavaTestKit(system) {
@@ -52,7 +54,9 @@ public class ThrottledSchedulerTest extends ActorSystemTest {
 
 				// Enqueue jobs
 				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
+				expectMsgClass(Job.class);
 				queueManager.tell(new EnqueueJob(TestWorker2.class.getName()), getRef());
+				expectMsgClass(Job.class);
 
 				// ---
 
