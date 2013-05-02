@@ -194,11 +194,11 @@
                     </div>
                     <div class="clearfix"></div>
                 </div>
-                <table id="jobs" class="table table-hover">
+                <table id="jobs" class="table table-hover table-condensed">
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th>Worker type</th>
+                            <th>Worker</th>
                             <th>Enqueued</th>
                             <th>State</th>
                             <th>Progress</th>
@@ -208,7 +208,7 @@
                     {{#each controller}}
                         <tr {{bindAttr class="state"}}>
                             <td class="id">{{#linkTo job this}} Job {{ id }} {{/linkTo}}</td>
-                            <td class="worker-type">{{ workerType }}</td>
+                            <td class="worker-type">{{ showWorkerType workerType }}</td>
                             <td class="enqueued-at">{{ showLocalDateTime enqueuedAt }}</td>
                             <td class="state">{{ state }}</td>
                             <td class="progress-container">

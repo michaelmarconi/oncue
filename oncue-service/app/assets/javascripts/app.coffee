@@ -2,7 +2,7 @@
 # ------ web sockets ---------
 # ----------------------------
 
-websocket = new WebSocket("ws://localhost:9000/websocket")
+websocket = new WebSocket("ws://#{window.location.hostname}:9000/websocket")
 websocket.onopen = -> console.log "Web socket connected."
 websocket.onerror = -> console.log "Failed to create web socket."
 websocket.onmessage = (message) ->
@@ -172,6 +172,13 @@ Ember.Handlebars.registerBoundHelper 'showProgress', (value, options) ->
 Ember.Handlebars.registerBoundHelper 'showLocalDateTime', (value, options) ->
   moment(value).format('LLL');
 
+Ember.Handlebars.registerBoundHelper 'showWorkerType', (value, options) ->
+  maxLength = 30
+  if value.length > maxLength
+    "..." + value.slice(-maxLength)
+  else
+    value
+
 # Display a grid of parameters
 Ember.Handlebars.registerBoundHelper 'showParams', (value, options) ->
   params = value
@@ -202,7 +209,7 @@ App.JobsController = Ember.ArrayController.extend(
       type: 'POST'
       data: JSON.stringify(
         {
-          worker_type: 'oncue.worker.TestWorker'
+          worker_type: 'com.blah.wotsit.bob.oncue.worker.TestWorker'
           params : {
             key1 : "Value 1"
             key2 : "Value 2"
