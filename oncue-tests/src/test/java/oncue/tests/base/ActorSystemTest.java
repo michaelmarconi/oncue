@@ -18,6 +18,7 @@ package oncue.tests.base;
 import java.util.Set;
 
 import oncue.agent.AbstractAgent;
+import oncue.backingstore.RedisBackingStore;
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
 import oncue.queuemanager.AbstractQueueManager;

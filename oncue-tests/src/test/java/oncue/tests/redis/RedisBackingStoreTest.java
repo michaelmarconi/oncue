@@ -175,7 +175,7 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 				JobFailed jobFailed = schedulerProbe.expectMsgClass(JobFailed.class);
 				Job failedJob = jobFailed.getJob();
 				assertEquals("Job IDs don't match", job.getId(), failedJob.getId());
-				assertTrue("Wrong exception type", jobFailed.getError() instanceof ArithmeticException);
+				assertTrue("Wrong exception type", jobFailed.getJob().getErrorMessage().contains(ArithmeticException.class.getName()));
 
 				expectNoMsg();
 
@@ -188,7 +188,7 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 
 				assertNotNull("No job state found", state);
 				assertEquals("The recorded state does not match the expected state", Job.State.FAILED.toString(), state);
-				assertEquals("Incorrect error message", "java.lang.ArithmeticException: / by zero", errorMessage);
+				assertTrue(errorMessage.contains(ArithmeticException.class.getName()));
 			}
 		};
 	}
