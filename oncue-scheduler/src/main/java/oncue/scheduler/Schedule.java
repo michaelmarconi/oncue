@@ -24,7 +24,6 @@ import java.util.Set;
 import oncue.common.messages.Job;
 import oncue.common.messages.Job.State;
 import oncue.common.messages.WorkResponse;
-import sun.management.Agent;
 import akka.actor.ActorRef;
 
 /**

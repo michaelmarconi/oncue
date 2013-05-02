@@ -42,7 +42,7 @@ public class ListAgentsTest extends ActorSystemTest {
 	 * @throws Exception
 	 */
 	@Test
-	public void listAgentsButNoneRegistered() throws Exception {
+	public void listAgentsButNoneRegistered() {
 		new JavaTestKit(system) {
 			{
 				// Ignore everything except agent summaries
@@ -71,7 +71,7 @@ public class ListAgentsTest extends ActorSystemTest {
 	 * @throws Exception
 	 */
 	@Test
-	public void listAgentsWithOneRegistered() throws Exception {
+	public void listAgentsWithOneRegistered() {
 		new JavaTestKit(system) {
 			{
 				// Ignore everything except agent summaries

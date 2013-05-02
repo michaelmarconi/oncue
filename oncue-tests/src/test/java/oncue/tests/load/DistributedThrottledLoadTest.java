@@ -20,17 +20,13 @@ import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
 
 import junit.framework.Assert;
-import oncue.agent.ThrottledAgent;
 import oncue.backingstore.RedisBackingStore;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobProgress;
-import oncue.scheduler.ThrottledScheduler;
 import oncue.tests.base.DistributedActorSystemTest;
 import oncue.tests.load.workers.SimpleLoadTestWorker;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -56,6 +52,7 @@ public class DistributedThrottledLoadTest extends DistributedActorSystemTest {
 	private static final int JOB_COUNT = 20000;
 
 	@Test
+	@SuppressWarnings("unused")
 	@Ignore("Performance issues need to be cured before we get this running again.")
 	public void distributedThrottledLoadTest() {
 
@@ -129,14 +126,6 @@ public class DistributedThrottledLoadTest extends DistributedActorSystemTest {
 
 		serviceLog.info("All jobs were processed!");
 
-		RedisBackingStore.releaseConnection(redis);
-	}
-
-	@Before
-	@After
-	public void cleanRedis() {
-		Jedis redis = RedisBackingStore.getConnection();
-		redis.flushDB();
 		RedisBackingStore.releaseConnection(redis);
 	}
 

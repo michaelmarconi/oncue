@@ -34,13 +34,11 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
-import org.junit.AfterClass;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import play.libs.Json;
 import play.mvc.Result;
 import play.test.FakeApplication;
 
@@ -49,14 +47,14 @@ public class APITest {
 	private final static ObjectMapper mapper = ObjectMapperFactory.getInstance();
 	private DateTime expectedEnqueuedAt;
 
-	@BeforeClass
-	public static void startFakeApplication() {
+	@Before
+	public void startFakeApplication() {
 		start(fakeApplication);
 		DateTimeUtils.setCurrentMillisFixed(new DateTime(2013, 03, 27, 12, 34, 56).getMillis());
 	}
 
-	@AfterClass
-	public static void shutdownFakeApplication() {
+	@After
+	public void shutdownFakeApplication() {
 		stop(fakeApplication);
 		DateTimeUtils.setCurrentMillisSystem();
 	}
@@ -74,7 +72,7 @@ public class APITest {
 		assertThat(contentType(result)).isEqualTo("application/json");
 		assertThat(charset(result)).isEqualTo("utf-8");
 
-		JobSummary jobSummary = mapper.readValue(Json.parse(contentAsString(result)), JobSummary.class);
+		JobSummary jobSummary = mapper.readValue(contentAsString(result), JobSummary.class);
 		assertTrue("There should be no jobs", jobSummary.getJobs().size() == 0);
 	}
 
@@ -87,7 +85,7 @@ public class APITest {
 		assertThat(contentType(result)).isEqualTo("application/json");
 		assertThat(charset(result)).isEqualTo("utf-8");
 
-		JobSummary jobSummary = mapper.readValue(Json.parse(contentAsString(result)), JobSummary.class);
+		JobSummary jobSummary = mapper.readValue(contentAsString(result), JobSummary.class);
 		assertTrue("There should be one job", jobSummary.getJobs().size() == 1);
 	}
 
@@ -110,7 +108,7 @@ public class APITest {
 		assertEquals("application/json", contentType(result));
 		assertEquals("utf-8", charset(result));
 
-		Job job = mapper.readValue(Json.parse(contentAsString(result)), Job.class);
+		Job job = mapper.readValue(contentAsString(result), Job.class);
 
 		assertEquals("oncue.test.TestWorker", job.getWorkerType());
 		assertTrue(expectedEnqueuedAt.isEqual(job.getEnqueuedAt()));
@@ -145,7 +143,7 @@ public class APITest {
 		assertEquals("application/json", contentType(result));
 		assertEquals("utf-8", charset(result));
 
-		Job job = mapper.readValue(Json.parse(contentAsString(result)), Job.class);
+		Job job = mapper.readValue(contentAsString(result), Job.class);
 
 		assertEquals("oncue.test.TestWorker", job.getWorkerType());
 		assertTrue(expectedEnqueuedAt.isEqual(job.getEnqueuedAt()));

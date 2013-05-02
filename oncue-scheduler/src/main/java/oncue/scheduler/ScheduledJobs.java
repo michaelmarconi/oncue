@@ -23,7 +23,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import oncue.backingstore.BackingStore;
 import oncue.common.messages.Job;
 import oncue.scheduler.exceptions.RemoveScheduleJobException;
-import sun.management.Agent;
 import akka.actor.ActorRef;
 
 /**

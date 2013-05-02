@@ -21,15 +21,9 @@ public class JobFailed implements Serializable {
 
 	private static final long serialVersionUID = 8581566254214368256L;
 	private final Job job;
-	private final Throwable error;
 
-	public JobFailed(Job job, Throwable error) {
+	public JobFailed(Job job) {
 		this.job = (Job) job.clone();
-		this.error = error;
-	}
-
-	public Throwable getError() {
-		return error;
 	}
 
 	public Job getJob() {

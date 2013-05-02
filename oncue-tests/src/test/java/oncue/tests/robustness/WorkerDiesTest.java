@@ -44,6 +44,7 @@ import akka.testkit.TestActorRef;
  */
 public class WorkerDiesTest extends ActorSystemTest {
 
+	@SuppressWarnings("unused")
 	@Test
 	public void testWorkerDies() {
 		new JavaTestKit(system) {
@@ -88,7 +89,7 @@ public class WorkerDiesTest extends ActorSystemTest {
 				Job failedJob = jobFailed.getJob();
 
 				assertEquals("Job IDs don't match", job.getId(), failedJob.getId());
-				assertTrue("Wrong exception type", jobFailed.getError() instanceof ArithmeticException);
+				assertTrue("Wrong exception type", jobFailed.getJob().getErrorMessage().contains(ArithmeticException.class.getName()));
 
 				// Check that there are no workers
 				new AwaitCond(duration("5 second"), duration("1 second")) {

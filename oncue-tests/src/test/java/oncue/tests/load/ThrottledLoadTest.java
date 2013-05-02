@@ -19,17 +19,13 @@ import java.util.Arrays;
 import java.util.HashSet;
 
 import junit.framework.Assert;
-import oncue.agent.ThrottledAgent;
 import oncue.backingstore.RedisBackingStore;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobProgress;
-import oncue.scheduler.ThrottledScheduler;
 import oncue.tests.base.ActorSystemTest;
 import oncue.tests.load.workers.SimpleLoadTestWorker;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -42,17 +38,10 @@ import akka.testkit.JavaTestKit;
  * {@linkplain ThrottledScheduler} and {@linkplain ThrottledAgent} to ensure
  * that a limited number of jobs can be processed by the agent at any one time.
  */
+@SuppressWarnings("unused")
 public class ThrottledLoadTest extends ActorSystemTest {
 
 	private static final int JOB_COUNT = 100000;
-
-	@Before
-	@After
-	public void cleanRedis() {
-		Jedis redis = RedisBackingStore.getConnection();
-		redis.flushDB();
-		RedisBackingStore.releaseConnection(redis);
-	}
 
 	@Test
 	@Ignore("Performance issues need to be cured before we get this running again.")

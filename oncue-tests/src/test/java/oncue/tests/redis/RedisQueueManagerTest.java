@@ -16,16 +16,13 @@
 package oncue.tests.redis;
 
 import static junit.framework.Assert.assertEquals;
-import oncue.backingstore.RedisBackingStore;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.TestWorker;
 
-import org.junit.Before;
 import org.junit.Test;
 
-import redis.clients.jedis.Jedis;
 import akka.actor.ActorRef;
 import akka.testkit.JavaTestKit;
 
@@ -34,15 +31,8 @@ import akka.testkit.JavaTestKit;
  * implementation also has a Redis queue monitor, which blocks until new jobs
  * are found.
  */
+@SuppressWarnings("unused")
 public class RedisQueueManagerTest extends ActorSystemTest {
-
-	@Before
-	public void cleanRedis() {
-		Jedis redis = RedisBackingStore.getConnection();
-		redis.flushDB();
-		RedisBackingStore.releaseConnection(redis);
-	}
-
 	@Test
 	public void testEnqueueNewJob() {
 		new JavaTestKit(system) {

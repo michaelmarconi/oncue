@@ -34,16 +34,12 @@ import oncue.common.messages.WorkResponse;
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
 import oncue.worker.AbstractWorker;
-
-import org.jboss.netty.channel.socket.Worker;
-
 import scala.concurrent.duration.Duration;
 import akka.actor.Actor;
 import akka.actor.ActorRef;
 import akka.actor.Cancellable;
 import akka.actor.OneForOneStrategy;
 import akka.actor.Props;
-import akka.actor.Scheduler;
 import akka.actor.SupervisorStrategy;
 import akka.actor.SupervisorStrategy.Directive;
 import akka.actor.UntypedActor;
@@ -87,18 +83,29 @@ public abstract class AbstractAgent extends UntypedActor {
 	public AbstractAgent(Set<String> workerTypes) throws MissingWorkerException {
 		this.workerTypes = workerTypes;
 		for (String workerType : workerTypes) {
-			try {
-				@SuppressWarnings({ "unused", "unchecked" })
-				Class<? extends AbstractWorker> workerClass = (Class<? extends AbstractWorker>) Class
-						.forName(workerType);
-			} catch (ClassNotFoundException e) {
-				throw new MissingWorkerException(String.format("Cannot find a class for the worker type '%s'",
-						workerType.trim()), e);
-			} catch (ClassCastException e) {
-				throw new MissingWorkerException(String.format(
-						"The class for worker type '%s' doesn't extend the AbstractWorker base class",
-						workerType.trim()), e);
-			}
+			fetchWorkerClass(workerType.trim());
+		}
+	}
+
+	/**
+	 * Try to load the Class for the worker of type workerType.
+	 * @param workerType
+	 * @return
+	 * @throws MissingWorkerException	If the class cannot be instantiated or the class does not extend AbstractWorker
+	 */
+	private static Class<? extends AbstractWorker> fetchWorkerClass(String workerType) throws MissingWorkerException {
+		try {
+			Class<? extends AbstractWorker> workerClass = (Class<? extends AbstractWorker>) Class
+					.forName(workerType);
+
+			return workerClass;
+		} catch (ClassNotFoundException e) {
+			throw new MissingWorkerException(String.format("Cannot find a class for the worker type '%s'",
+					workerType), e);
+		} catch (ClassCastException e) {
+			throw new MissingWorkerException(String.format(
+					"The class for worker type '%s' doesn't extend the AbstractWorker base class",
+					workerType), e);
 		}
 	}
 
@@ -239,35 +246,34 @@ public abstract class AbstractAgent extends UntypedActor {
 	 * 
 	 * @param job
 	 *            is the job that a {@linkplain Worker} should complete.
-	 * @throws MissingWorkerException
-	 * @throws ClassNotFoundException
 	 */
 	@SuppressWarnings("serial")
-	private void spawnWorker(Job job) throws InstantiationException, MissingWorkerException {
-		final Class<?> workerClass;
+	private void spawnWorker(Job job) {
 		try {
-			workerClass = Class.forName(job.getWorkerType());
-		} catch (ClassNotFoundException e) {
-			MissingWorkerException missingWorkerException = new MissingWorkerException("Failed to spawn a worker for "
-					+ job.toString(), e);
-			job.setState(State.FAILED);
-			getScheduler().tell(new JobFailed(job, missingWorkerException), getSelf());
-			throw missingWorkerException;
+			final Class<? extends AbstractWorker> workerClass = fetchWorkerClass(job.getWorkerType());
+
+			ActorRef worker = getContext().actorOf(new Props(new UntypedActorFactory() {
+				@Override
+				public Actor create() throws Exception {
+					return workerClass.newInstance();
+				}
+			}), "job-" + job.getId());
+			jobsInProgress.put(worker, job);
+			worker.tell(job, getSelf());
+		} catch (MissingWorkerException e) {
+			log.error(e, e.getMessage());
+			sendFailure(job, e.getMessage());
 		}
+	}
 
-		if (!AbstractWorker.class.isAssignableFrom(workerClass))
-			throw new InstantiationException(
-					String.format("Cannot create a worker from type %s, as it does not extend an AbstractWorker",
-							job.getWorkerType()));
-
-		ActorRef worker = getContext().actorOf(new Props(new UntypedActorFactory() {
-			@Override
-			public Actor create() throws Exception {
-				return (Actor) workerClass.newInstance();
-			}
-		}), "job-" + job.getId());
-		jobsInProgress.put(worker, job);
-		worker.tell(job, getSelf());
+	/**
+	 * Extract the job failure reason and notify the scheduler that the job failed
+	 * @param job
+	 */
+	private void sendFailure(Job job, String message) {
+		job.setState(State.FAILED);
+		job.setErrorMessage("Failed to spawn a worker for " + job.toString() + ": " + message);
+		getScheduler().tell(new JobFailed(job), getSelf());
 	}
 
 	/**
@@ -283,12 +289,15 @@ public abstract class AbstractAgent extends UntypedActor {
 			public Directive apply(Throwable error) throws Exception {
 				log.error(error, "The worker {} has died a horrible death!", getSender());
 				Job job = jobsInProgress.remove(getSender());
-				job.setState(State.FAILED);
+
+
+				String message = null;
 				if (error.getCause() == null)
-					job.setErrorMessage(error.toString());
+					message = error.toString();
 				else
-					job.setErrorMessage(error.toString() + " (Caused by: " + error.getCause().toString() + ")");
-				getScheduler().tell(new JobFailed(job, error), getSelf());
+					message = error.toString() + " (Caused by: " + error.getCause().toString() + ")";
+
+				sendFailure(job, message);
 				return stop();
 			}
 		});
