@@ -44,6 +44,7 @@ import akka.testkit.TestActorRef;
  */
 public class WorkerDiesTest extends ActorSystemTest {
 
+	@SuppressWarnings("unused")
 	@Test
 	public void testWorkerDies() {
 		new JavaTestKit(system) {

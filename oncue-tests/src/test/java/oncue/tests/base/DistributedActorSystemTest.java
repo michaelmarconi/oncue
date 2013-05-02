@@ -18,6 +18,7 @@ package oncue.tests.base;
 import java.util.Set;
 
 import oncue.agent.AbstractAgent;
+import oncue.backingstore.RedisBackingStore;
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
 import oncue.queuemanager.AbstractQueueManager;
@@ -25,6 +26,8 @@ import oncue.scheduler.AbstractScheduler;
 
 import org.junit.After;
 import org.junit.Before;
+
+import redis.clients.jedis.Jedis;
 
 import akka.actor.Actor;
 import akka.actor.ActorRef;
@@ -147,4 +150,11 @@ public abstract class DistributedActorSystemTest {
 		serviceLog.debug("Systems shut down");
 	}
 
+	@Before
+	@After
+	public void cleanRedis() {
+		Jedis redis = RedisBackingStore.getConnection();
+		redis.flushDB();
+		RedisBackingStore.releaseConnection(redis);
+	}
 }

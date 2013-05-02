@@ -11,22 +11,13 @@ import oncue.tests.base.DistributedActorSystemTest;
 import oncue.tests.load.workers.SimpleLoadTestWorker;
 import oncue.timedjobs.TimedJobFactory;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 import redis.clients.jedis.Jedis;
 import akka.testkit.JavaTestKit;
 
+@SuppressWarnings("unused")
 public class DistributedTimedJobTest extends DistributedActorSystemTest {
-
-	@After
-	@Before
-	public void flushRedis() {
-		Jedis redis = RedisBackingStore.getConnection();
-		redis.flushDB();
-		RedisBackingStore.releaseConnection(redis);
-	}
 
 	@Test
 	public void timedJobsWorkWithDistributedAgents() {

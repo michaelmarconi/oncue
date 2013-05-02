@@ -42,6 +42,7 @@ import redis.clients.jedis.Jedis;
 import akka.actor.ActorRef;
 import akka.testkit.JavaTestKit;
 
+@SuppressWarnings("unused")
 public class RedisBackingStoreTest extends ActorSystemTest {
 
 	@Test
@@ -132,14 +133,6 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 						redis.llen(RedisBackingStore.UNSCHEDULED_JOBS).longValue());
 			}
 		};
-	}
-
-	@Before
-	@After
-	public void cleanRedis() {
-		Jedis redis = RedisBackingStore.getConnection();
-		redis.flushDB();
-		RedisBackingStore.releaseConnection(redis);
 	}
 
 	@Test

@@ -27,6 +27,8 @@ import oncue.scheduler.AbstractScheduler;
 import org.junit.After;
 import org.junit.Before;
 
+import redis.clients.jedis.Jedis;
+
 import akka.actor.Actor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -160,4 +162,11 @@ public abstract class ActorSystemTest {
 		log.debug("System shut down");
 	}
 
+	@Before
+	@After
+	public void cleanRedis() {
+		Jedis redis = RedisBackingStore.getConnection();
+		redis.flushDB();
+		RedisBackingStore.releaseConnection(redis);
+	}
 }
