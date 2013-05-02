@@ -209,7 +209,7 @@ App.JobsController = Ember.ArrayController.extend(
       type: 'POST'
       data: JSON.stringify(
         {
-          worker_type: 'com.blah.wotsit.bob.oncue.worker.TestWorker'
+          worker_type: 'oncue.worker.TestWorker'
           params : {
             key1 : "Value 1"
             key2 : "Value 2"
