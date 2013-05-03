@@ -2,15 +2,15 @@ package oncue.client;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.Map;
 
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
+import oncue.common.serializers.ObjectMapperFactory;
 
-import org.joda.time.DateTime;
+import org.codehaus.jackson.map.JsonMappingException;
+import org.codehaus.jackson.map.ObjectMapper;
 
 import com.google.api.client.http.ByteArrayContent;
 import com.google.api.client.http.GenericUrl;
@@ -18,18 +18,13 @@ import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.HttpTransport;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParseException;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
 class HttpClient implements Client {
 
 	private static GenericUrl enqueueJobUrl;
+	private static ObjectMapper mapper;
 
 	static {
 		Config config = ConfigFactory.load();
@@ -38,16 +33,13 @@ class HttpClient implements Client {
 		String basePath = config.getString("oncue.service.base-url-path");
 		String enqueueJobUrlString = String.format("http://%s:%s%s/jobs", hostName, port, basePath);
 		enqueueJobUrl = new GenericUrl(enqueueJobUrlString);
+		mapper = ObjectMapperFactory.getInstance();
 	}
 
 	private HttpRequestFactory requestFactory;
-	private Gson gson;
 
 	HttpClient(HttpTransport transport) {
 		requestFactory = transport.createRequestFactory();
-		GsonBuilder gsonBuilder = new GsonBuilder();
-		gsonBuilder.registerTypeAdapter(DateTime.class, new DateTimeDeserializer());
-		gson = gsonBuilder.create();
 	}
 
 	@Override
@@ -60,7 +52,7 @@ class HttpClient implements Client {
 		EnqueueJob job = new EnqueueJob(workerType, jobParams == null ? Collections.<String, String> emptyMap()
 				: jobParams);
 		try {
-			ByteArrayContent content = new ByteArrayContent("application/json", toJson(job));
+			ByteArrayContent content = new ByteArrayContent("application/json", mapper.writeValueAsBytes(job));
 			HttpRequest request = requestFactory.buildPostRequest(enqueueJobUrl, content);
 			HttpResponse response = request.execute();
 			return parseJob(response);
@@ -70,30 +62,12 @@ class HttpClient implements Client {
 	}
 
 	private Job parseJob(HttpResponse response) throws ClientException {
-		try {
-			InputStream content = response.getContent();
-			try(InputStreamReader json = new InputStreamReader(content)) {
-				Job job = gson.fromJson(json, Job.class);
-				if (job == null) {
-					throw new ClientException("Invalid response body");
-				}
-				return job;
-			}
-		} catch (Exception e) {
-			throw new ClientException("Error reading response body");
-		}
-
-	}
-
-	private byte[] toJson(EnqueueJob job) {
-		return gson.toJson(job).getBytes();
-	}
-
-	private class DateTimeDeserializer implements JsonDeserializer<DateTime> {
-		public DateTime deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
-				throws JsonParseException {
-			return new DateTime(json.getAsJsonPrimitive().getAsString());
+		try(InputStream content = response.getContent()) {
+			return mapper.readValue(content, Job.class);
+		} catch (JsonMappingException e) {
+			throw new ClientException("Invalid response body", e);
+		} catch (IOException e) {
+			throw new ClientException(e);
 		}
 	}
-
 }
