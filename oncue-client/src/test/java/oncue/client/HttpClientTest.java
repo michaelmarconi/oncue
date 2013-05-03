@@ -33,7 +33,7 @@ import com.google.api.client.util.StreamingContent;
 
 public class HttpClientTest {
 
-	private static String sampleResponse = "{\"enqueuedAt\" : \"2013-03-23T12:13:14+00:00\",\"workerType\" : \"com.example.ExampleWorker\",\"id\" : 2,\"params\" : {\"key1\" : \"Value 1\",\"key2\" : \"Value 2\"},\"progress\" : 0.5  }";
+	private static String sampleResponse = "{\"enqueued_at\" : \"2013-03-23T12:13:14+00:00\",\"worker_type\" : \"com.example.ExampleWorker\",\"id\" : 2,\"params\" : {\"key1\" : \"Value 1\",\"key2\" : \"Value 2\"},\"progress\" : 0.5  }";
 
 	@Rule
 	public ExpectedException expectedException = ExpectedException.none();
@@ -54,7 +54,7 @@ public class HttpClientTest {
 		client.enqueueJob("com.example.SubmittedJob");
 		Map<String, Object> requestMap = transport.getRequestContentAsMap();
 
-		Assert.assertEquals("com.example.SubmittedJob", (String) requestMap.get("workerType"));
+		Assert.assertEquals("com.example.SubmittedJob", (String) requestMap.get("worker_type"));
 	}
 
 	@SuppressWarnings("rawtypes")
@@ -90,7 +90,7 @@ public class HttpClientTest {
 	}
 
 	@Test
-	public void clientParsesValidResponseIntoJob() throws ClientException, IOException {
+	public void clientParsesValidResponseIntoJob() throws ClientException {
 		ClientMockTransport transport = new ClientMockTransport(200, sampleResponse);
 		Client client = new HttpClient(transport);
 
@@ -108,7 +108,7 @@ public class HttpClientTest {
 	}
 
 	@Test
-	public void clientThrowsExceptionWhenInvalidResponseBodyReturned() throws ClientException, IOException {
+	public void clientThrowsExceptionWhenInvalidResponseBodyReturned() throws ClientException {
 		ClientMockTransport transport = new ClientMockTransport(200, "nonsense");
 		Client client = new HttpClient(transport);
 
@@ -117,7 +117,7 @@ public class HttpClientTest {
 	}
 
 	@Test
-	public void clientThrowsExceptionWhenNon200ResponseCodeReturned() throws ClientException, IOException {
+	public void clientThrowsExceptionWhenNon200ResponseCodeReturned() throws ClientException {
 		ClientMockTransport transport = new ClientMockTransport(404, sampleResponse);
 		Client client = new HttpClient(transport);
 
