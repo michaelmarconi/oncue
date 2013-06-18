@@ -5,11 +5,11 @@
   <parent>
     <artifactId>oncue</artifactId>
     <groupId>oncue</groupId>
-    <version>0.9.0</version>
+    <version>0.9.1-SNAPSHOT</version>
   </parent>
   <groupId>oncue</groupId>
   <artifactId>oncue-client</artifactId>
-  <version>0.9.0</version>
+  <version>0.9.1-SNAPSHOT</version>
   <name>OnCue Java Client</name>
 
   <dependencies>
@@ -26,7 +26,7 @@
 	<dependency>
 	  <groupId>oncue</groupId>
 	  <artifactId>oncue-common</artifactId>
-	  <version>0.9.0</version>
+	  <version>0.9.1-SNAPSHOT</version>
 	</dependency>
 	<dependency>
   		<groupId>com.fasterxml.jackson.core</groupId>
