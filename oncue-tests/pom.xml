@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>oncue</groupId>
 		<artifactId>oncue</artifactId>
-		<version>1.0-SNAPSHOT</version>
+		<version>0.9.0-SNAPSHOT</version>
 	</parent>
 	<artifactId>oncue-tests</artifactId>
 	<name>onCue Tests</name>
@@ -25,43 +25,43 @@
 		<dependency>
 			<groupId>oncue</groupId>
 			<artifactId>oncue-common</artifactId>
-			<version>1.0-SNAPSHOT</version>
+			<version>0.9.0-SNAPSHOT</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>oncue</groupId>
 			<artifactId>oncue-backingstore</artifactId>
-			<version>1.0-SNAPSHOT</version>
+			<version>0.9.0-SNAPSHOT</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>oncue</groupId>
 			<artifactId>oncue-agent</artifactId>
-			<version>1.0-SNAPSHOT</version>
+			<version>0.9.0-SNAPSHOT</version>
 			<scope>test</scope>
 		</dependency>
 			<dependency>
 			<groupId>oncue</groupId>
 			<artifactId>oncue-worker</artifactId>
-			<version>1.0-SNAPSHOT</version>
+			<version>0.9.0-SNAPSHOT</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>oncue</groupId>
 			<artifactId>oncue-queuemanager</artifactId>
-			<version>1.0-SNAPSHOT</version>
+			<version>0.9.0-SNAPSHOT</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>oncue</groupId>
 			<artifactId>oncue-scheduler</artifactId>
-			<version>1.0-SNAPSHOT</version>
+			<version>0.9.0-SNAPSHOT</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>oncue</groupId>
 			<artifactId>oncue-timedjobs</artifactId>
-			<version>1.0-SNAPSHOT</version>
+			<version>0.9.0-SNAPSHOT</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

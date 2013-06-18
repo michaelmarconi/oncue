@@ -5,12 +5,12 @@
   <parent>
     <groupId>oncue</groupId>
     <artifactId>oncue</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>0.9.0-SNAPSHOT</version>
   </parent>
 
   <groupId>oncue</groupId>
   <artifactId>oncue-worker</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>0.9.0-SNAPSHOT</version>
 
   <name>onCue Worker</name>
 
@@ -19,7 +19,7 @@
 		<dependency>
 			<groupId>oncue</groupId>
 			<artifactId>oncue-common</artifactId>
-			<version>1.0-SNAPSHOT</version>
+			<version>0.9.0-SNAPSHOT</version>
 		</dependency>
   </dependencies>
 </project>
