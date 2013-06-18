@@ -5,10 +5,10 @@
 
     <groupId>oncue</groupId>
     <artifactId>oncue</artifactId>
-    <version>0.9.0-SNAPSHOT</version>
+    <version>0.9.0</version>
     <packaging>pom</packaging>
 
-    <name>onCue</name>
+    <name>OnCue</name>
     <description>An actor-based, distributed job scheduling solution</description>
     <url>https://github.com/michaelmarconi/oncue</url>
 

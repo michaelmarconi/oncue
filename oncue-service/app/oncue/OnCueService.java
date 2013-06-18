@@ -15,7 +15,7 @@ import com.typesafe.config.Config;
 
 public class OnCueService extends GlobalSettings {
 
-	// The onCue actor system
+	// The OnCue actor system
 	private static ActorSystem system;
 
 	public static ActorSystem system() {
@@ -29,7 +29,7 @@ public class OnCueService extends GlobalSettings {
 		final Settings settings = SettingsProvider.SettingsProvider.get(Akka.system());
 
 		/*
-		 * Boot a custom Akka actor system for the onCue service components
+		 * Boot a custom Akka actor system for the OnCue service components
 		 */
 		Config config = Akka.system().settings().config();
 		system = ActorSystem.create("oncue-service", config.getConfig("oncue").withFallback(config));

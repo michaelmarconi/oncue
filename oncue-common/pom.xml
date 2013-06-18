@@ -7,11 +7,11 @@
 	<parent>
 		<groupId>oncue</groupId>
 		<artifactId>oncue</artifactId>
-		<version>0.9.0-SNAPSHOT</version>
+		<version>0.9.0</version>
 	</parent>
 
 	<artifactId>oncue-common</artifactId>
-	<name>onCue Common</name>
+	<name>OnCue Common</name>
 
 	<dependencies>
 		<dependency>
