@@ -11,7 +11,7 @@
   </parent>
 
   <artifactId>oncue-timedjobs</artifactId>
-  <name>onCue Timed Jobs</name>
+  <name>OnCue Timed Jobs</name>
 
   <dependencies>
     <dependency>

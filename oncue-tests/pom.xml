@@ -9,7 +9,7 @@
 		<version>0.9.0-SNAPSHOT</version>
 	</parent>
 	<artifactId>oncue-tests</artifactId>
-	<name>onCue Tests</name>
+	<name>OnCue Tests</name>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

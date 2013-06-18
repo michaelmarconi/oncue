@@ -45,7 +45,7 @@ public class EventMachine extends UntypedActor {
 		eventStream.subscribe(getSelf(), JobEnqueuedEvent.class);
 		eventStream.subscribe(getSelf(), JobProgressEvent.class);
 		eventStream.subscribe(getSelf(), JobFailedEvent.class);
-		log.info("EventMachine is listening for onCue events.");
+		log.info("EventMachine is listening for OnCue events.");
 	}
 
 	public static void addSocket(WebSocket.In<JsonNode> in, final WebSocket.Out<JsonNode> out) {

@@ -11,7 +11,7 @@
 	</parent>
 
 	<artifactId>oncue-common</artifactId>
-	<name>onCue Common</name>
+	<name>OnCue Common</name>
 
 	<dependencies>
 		<dependency>

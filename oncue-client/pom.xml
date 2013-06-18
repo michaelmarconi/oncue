@@ -10,7 +10,7 @@
   <groupId>oncue</groupId>
   <artifactId>oncue-client</artifactId>
   <version>0.9.0-SNAPSHOT</version>
-  <name>onCue Java Client</name>
+  <name>OnCue Java Client</name>
 
   <dependencies>
     <dependency>

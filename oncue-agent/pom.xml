@@ -11,7 +11,7 @@
 	</parent>
 
 	<artifactId>oncue-agent</artifactId>
-	<name>onCue Agent</name>
+	<name>OnCue Agent</name>
 
 	<dependencies>
 		<dependency>

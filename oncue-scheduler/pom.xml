@@ -11,7 +11,7 @@
   </parent>
 
   <artifactId>oncue-scheduler</artifactId>
-  <name>onCue Scheduler</name>
+  <name>OnCue Scheduler</name>
 
   <dependencies>
     <dependency>

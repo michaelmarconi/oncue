@@ -11,7 +11,7 @@
   </parent>
 
   <artifactId>oncue-backingstore</artifactId>
-  <name>onCue Backing Store</name>
+  <name>OnCue Backing Store</name>
 
   <dependencies>
     <dependency>

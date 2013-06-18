@@ -11,7 +11,7 @@
   </parent>
 
   <artifactId>oncue-queuemanager</artifactId>
-  <name>onCue Queue Manager</name>
+  <name>OnCue Queue Manager</name>
 
   <dependencies>
     <dependency>
