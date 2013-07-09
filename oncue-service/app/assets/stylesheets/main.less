@@ -1,9 +1,26 @@
 @import "bootstrap/variables";
 @import "bootstrap/mixins";
 
-.monospace {
-    font-family: monospace;
+#loading {
+  width: 200px;
+  margin: 100px auto 0 auto;
+  .progress {
+    height: 14px;
+    margin-top: 5px;
+  }
 }
+
+.monospace {
+  font-family: monospace;
+}
+
+.capitalised {
+  &:first-letter {
+    text-transform: capitalize;
+  }
+}
+
+// Old is below here...
 
 .navbar {
     a.brand {
@@ -19,12 +36,6 @@
 
 .progress {
   margin-bottom: 0;
-}
-
-.capitalised {
-  &:first-letter {
-    text-transform: capitalize;
-  }
 }
 
 button#run-first-job {

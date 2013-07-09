@@ -15,12 +15,10 @@ import oncue.common.settings.SettingsProvider;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.PropertyNamingStrategy;
 import org.codehaus.jackson.map.SerializationConfig;
-import org.codehaus.jackson.node.ObjectNode;
 
 import play.Logger;
 import play.libs.Akka;
 import play.libs.F.Function;
-import play.libs.Json;
 import play.mvc.Controller;
 import play.mvc.Result;
 import akka.actor.ActorRef;
@@ -67,9 +65,7 @@ public class Jobs extends Controller {
 					return (Result) response;
 				} else {
 					JobSummary jobSummary = (JobSummary) response;
-					ObjectNode rootNode = Json.newObject();
-					rootNode.put("jobs", mapper.valueToTree(jobSummary.getJobs()));
-					return ok(rootNode);
+					return ok(mapper.valueToTree(jobSummary.getJobs()));
 				}
 			}
 		}));
@@ -113,9 +109,7 @@ public class Jobs extends Controller {
 					if (jobToShow == null)
 						throw new RuntimeException("Failed to find a job with ID " + id);
 
-					ObjectNode rootNode = Json.newObject();
-					rootNode.put("job", mapper.valueToTree(jobToShow));
-					return ok(rootNode);
+					return ok(mapper.valueToTree(jobToShow));
 				}
 			}
 		}));
