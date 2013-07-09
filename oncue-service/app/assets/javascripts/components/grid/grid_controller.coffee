@@ -38,7 +38,7 @@ App.module "Components.Grid", (Grid, App, Backbone, Marionette, $, _) ->
     #
     # Returns App.Components.Grid.Layout
     #
-    showGrid: (model) ->
+    createGrid: (model) ->
 
       @EmptyView = model.get('emptyView')
       @collection = model.get('items')

@@ -1,9 +1,9 @@
-App.module "Toolbar.List", (List, App, Backbone, Marionette, $, _) ->
+App.module "Components.Toolbar", (Toolbar, App, Backbone, Marionette, $, _) ->
 
-  class List.Controller extends Marionette.Controller
+  class Toolbar.Controller extends Marionette.Controller
 
-    @createToolbar: (toolbarItems) ->
-      toolbarView = new List.ToolbarView(
+    createToolbar: (toolbarItems) ->
+      toolbarView = new Toolbar.View(
         collection: toolbarItems
       )
       toolbarView.on('toolbar:button:clicked', (buttonView) ->

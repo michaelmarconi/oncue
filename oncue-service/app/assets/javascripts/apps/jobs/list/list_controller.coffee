@@ -8,40 +8,41 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
 
     _buildToolbar: (jobs) =>
 
-      runTestJobButton = new App.Entities.ToolbarButton(
+      runTestJobButton = new App.Components.Toolbar.ButtonModel(
         title: 'Run test job'
         iconClass: 'icon-play'
         cssClasses: 'btn-info pull-right'
         event: 'run:test:job'
       )
 
-      stateFilter = new App.Entities.ToolbarFilter(
+      stateFilter = new App.Components.Toolbar.FilterModel(
         title: 'State'
         event: 'state:filter:changed'
-        menuItems: new App.Entities.ToolbarFilterItems([
-          new App.Entities.ToolbarFilterItem(title: 'Queued')
-          new App.Entities.ToolbarFilterItem(title: 'Running')
-          new App.Entities.ToolbarFilterItem(title: 'Complete')
-          new App.Entities.ToolbarFilterItem(title: 'Failed')
+        menuItems: new App.Components.Toolbar.FilterItemsCollection([
+          new App.Components.Toolbar.FilterItemModel(title: 'Queued')
+          new App.Components.Toolbar.FilterItemModel(title: 'Running')
+          new App.Components.Toolbar.FilterItemModel(title: 'Complete')
+          new App.Components.Toolbar.FilterItemModel(title: 'Failed')
         ])
       )
 
       workers = _.unique(_.map(jobs.models, (job) -> job.get('worker_type')))
-      workerFilter = new App.Entities.ToolbarFilter(
+      workerFilter = new App.Components.Toolbar.FilterModel(
         title: 'Worker'
         event: 'workers:filter:changed'
-        menuItems: new App.Entities.ToolbarFilterItems(
+        menuItems: new App.Components.Toolbar.FilterItemsCollection(
           _.map(workers, (worker) ->
-            new App.Entities.ToolbarFilterItem(title: worker)
+            new App.Components.Toolbar.FilterItemModel(title: worker)
           )
         )
       )
 
-      toolbarItems = new App.Entities.ToolbarItems()
+      toolbarItems = new App.Components.Toolbar.ItemsCollection()
       toolbarItems.add(runTestJobButton)
       toolbarItems.add(stateFilter)
       toolbarItems.add(workerFilter)
-      return App.Toolbar.List.Controller.createToolbar(toolbarItems)
+      toolbarController = new App.Components.Toolbar.Controller()
+      return toolbarController.createToolbar(toolbarItems)
 
 
     _buildGrid: (jobs) ->
@@ -81,10 +82,7 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
           ]
       )
       gridController = new App.Components.Grid.Controller()
-      return gridController.showGrid(gridModel)
-
-    _buildGridPaginator: (jobs) ->
-      return new List.JobGridPaginatorView(collection: jobs)
+      return gridController.createGrid(gridModel)
 
     _updateJob: (jobData, jobs) ->
       updatedJob = new App.Entities.Job(jobData)

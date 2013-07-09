@@ -1,19 +1,19 @@
-App.module "Toolbar.List", (List, App, Backbone, Marionette, $, _) ->
+App.module "Components.Toolbar", (Toolbar, App, Backbone, Marionette, $, _) ->
 
   #
   # A toolbar capable of displaying filter dropdowns and buttons
   #
-  class List.ToolbarView extends Marionette.CompositeView
+  class Toolbar.View extends Marionette.CompositeView
     template: '#toolbar_view'
     className: 'well well-small'
     itemViewContainer: '.toolbar-items'
     itemViewEventPrefix: 'toolbar'
 
     getItemView: (item) ->
-      if item instanceof App.Entities.ToolbarButton
-        return List.ToolbarButtonView
-      else if item instanceof App.Entities.ToolbarFilter
-        return List.ToolbarFilterView
+      if item instanceof Toolbar.ButtonModel
+        return Toolbar.ButtonView
+      else if item instanceof Toolbar.FilterModel
+        return Toolbar.FilterView
       else
         throw "Cannot determine a view for #{item}"
 
@@ -21,14 +21,14 @@ App.module "Toolbar.List", (List, App, Backbone, Marionette, $, _) ->
     # a ToolbarFilterView as a collection on view creation
     itemViewOptions: (model, index) ->
       options = {}
-      if model instanceof App.Entities.ToolbarFilter
+      if model instanceof Toolbar.FilterModel
         options['collection'] = model.get('menuItems')
       return options
 
   #
   # Display a toolbar button
   #
-  class List.ToolbarButtonView extends Marionette.ItemView
+  class Toolbar.ButtonView extends Marionette.ItemView
     template: '#toolbar_button_view'
     tagName: 'button'
     className: -> "btn #{@model.get('cssClasses')}"
@@ -38,7 +38,7 @@ App.module "Toolbar.List", (List, App, Backbone, Marionette, $, _) ->
   #
   # Display a toolbar filter dropdown menu item
   #
-  class List.ToolbarFilterItemView extends Marionette.ItemView
+  class Toolbar.FilterItemView extends Marionette.ItemView
     template: '#toolbar_filter_item_view'
     tagName: 'li'
     events:
@@ -63,10 +63,10 @@ App.module "Toolbar.List", (List, App, Backbone, Marionette, $, _) ->
   # Display a toolbar filter dropdown menu, with a collection of
   # dropdown items
   #
-  class List.ToolbarFilterView extends Marionette.CompositeView
+  class Toolbar.FilterView extends Marionette.CompositeView
     template: '#toolbar_filter_view'
     className: 'btn-group'
-    itemView: List.ToolbarFilterItemView
+    itemView: Toolbar.FilterItemView
     itemViewContainer: 'ul.dropdown-menu'
     itemViewEventPrefix: 'filter'
     modelEvents:

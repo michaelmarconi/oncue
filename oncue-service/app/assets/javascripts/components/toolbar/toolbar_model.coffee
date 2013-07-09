@@ -1,4 +1,4 @@
-App.module "Entities", (Entities, App, Backbone, Marionette, $, _) ->
+App.module "Components.Toolbar", (Toolbar, App, Backbone, Marionette, $, _) ->
 
   #
   # A model for a button
@@ -8,7 +8,7 @@ App.module "Entities", (Entities, App, Backbone, Marionette, $, _) ->
   # cssClasses: A list of extra classes to apply to the button (optional)
   #      event: The name of the event to fire when the button is clicked (mandatory)
   #
-  class Entities.ToolbarButton extends Backbone.Model
+  class Toolbar.ButtonModel extends Backbone.Model
     initialize: (options) ->
       super(options)
       if not @isValid() then throw @validationError
@@ -24,7 +24,7 @@ App.module "Entities", (Entities, App, Backbone, Marionette, $, _) ->
   #  className: A list of extra classes to apply to the dropdown button (optional)
   #      event: The name of the event to fire when the filter changes (mandatory)
   #
-  class Entities.ToolbarFilter extends Backbone.Model
+  class Toolbar.FilterModel extends Backbone.Model
     defaults:
       filtered: false
 
@@ -42,7 +42,7 @@ App.module "Entities", (Entities, App, Backbone, Marionette, $, _) ->
   #
   #   title: The display title of this menu item
   #
-  class Entities.ToolbarFilterItem extends Backbone.Model
+  class Toolbar.FilterItemModel extends Backbone.Model
     defaults:
       selected: true
 
@@ -56,12 +56,12 @@ App.module "Entities", (Entities, App, Backbone, Marionette, $, _) ->
   #
   # A collection of filter dropdown menu items
   #
-  class Entities.ToolbarFilterItems extends Backbone.Collection
-    model: Entities.ToolbarFilterItem
+  class Toolbar.FilterItemsCollection extends Backbone.Collection
+    model: Toolbar.FilterItemModel
 
   #
   # A collection of ToolbarButton and ToolbarFilter items
   #
-  class Entities.ToolbarItems extends Backbone.Collection
+  class Toolbar.ItemsCollection extends Backbone.Collection
 
 
