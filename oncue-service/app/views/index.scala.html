@@ -29,9 +29,26 @@
     </div>
   </div>
 
-  <!------------------>
-  <!-- Navbar Views -->
-  <!------------------>
+  @*--------------------
+   *--- Common Views ---
+   *------------------*@
+
+  <script type="text/template" id="loading_view">
+    <div class="well well-small">
+      <span class="text-info"><%= message %></span>
+      <div class="progress progress-striped active">
+        <div class="bar" style="width: 100%;"></div>
+      </div>
+    </div>
+  </script>
+
+  <script type="text/template" id="error_view">
+    <strong>Error!</strong> <%= message %>
+  </script>
+
+  @*--------------------
+   *--- Navbar Views ---
+   *------------------*@
 
   <script type="text/template" id="navbar_list_view">
     <div class="navbar-inner">
@@ -55,41 +72,9 @@
     <a href="<%= url %>"><%= name %></a>
   </script>
 
-  <!---------------->
-  <!-- Jobs Views -->
-  <!---------------->
-
-  <!-- TODO Nuke this -->
-  <script type="text/template" id="job-list">
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Worker</th>
-        <th>Enqueued</th>
-        <th>State</th>
-        <th>Progress</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-    </tbody>
-  </script>
-
-  <!-- TODO Nuke this -->
-  <script type="text/template" id="job-list-item">
-    <td>
-      <%= id %>
-    </td>
-    <td class="monospace"><%= worker_type %></td>
-    <td><%= enqueuedAt() %></td>
-    <td class="capitalised"><%= state %></td>
-    <td><%= progress %></td>
-    <td>
-      <a href="jobs/<%= id %>" class="btn btn-small js-show">
-        <i class="icon-eye-open"></i> Show
-      </a>
-    </td>
-  </script>
+  @*------------------
+   *--- Jobs Views ---
+   *----------------*@
 
   <script id="job_view" type="text/template">
     <h1>Job <%= id %> </h1>
@@ -105,28 +90,10 @@
     No jobs have been run yet.  You could try <a href='#'>running a test job</a> to check everything is working properly.
   </script>
 
-  <script type="text/template" id="loading_view">
-    <div class="well well-small">
-      <span class="text-info"><%= message %></span>
-      <div class="progress progress-striped active">
-        <div class="bar" style="width: 100%;"></div>
-      </div>
-    </div>
-  </script>
-
   <script type="text/template" id="jobs_list_layout">
     <div id="toolbar_region"></div>
     <div id="error_region"></div>
     <div id="jobs_region"></div>
-  </script>
-
-  <script type="text/template" id="jobs_grid_layout">
-    <div id="grid_region"></div>
-    <div id="paginator_region"></div>
-  </script>
-
-  <script type="text/template" id="error_view">
-    <strong>Error!</strong> <%= message %>
   </script>
 
   <script type="text/template" id="job_list_progress">
@@ -136,24 +103,21 @@
   </script>
 
   <script type="text/template" id="job_list_id">
-   <a href='jobs/<%= id %>' id='<%= id %>' class='js-show'>Job <%= id %></a>
+   <a href='jobs/<%= id %>' id='<%= id %>'>Job <%= id %></a>
   </script>
 
-  <!-- TODO Nuke this -->
-  <script type="text/template" id="jobs_list_toolbar">
-    <div class="pull-left"></div>
-    <div class="pull-right">
-      <button class="btn btn-small btn-info js-run-test-job">
-        <i class="icon-play"></i>
-        Run test job
-      </button>
-    </div>
-    <div class="clearfix"></div>
+  @*------------------
+   *--- Grid Views ---
+   *----------------*@
+
+  <script type="text/template" id="grid_layout">
+    <div id="grid_region"></div>
+    <div id="paginator_region"></div>
   </script>
 
-  <!------------------->
-  <!-- Toolbar Views -->
-  <!------------------->
+  @*---------------------
+   *--- Toolbar Views ---
+   *-------------------*@
 
   <script type="text/template" id="toolbar_view">
     <div class="toolbar-items"></div>
@@ -221,9 +185,12 @@
   <script src="@routes.Assets.at("javascripts/apps/navbar/list/list_controller.js")" type="text/javascript"></script>
   <script src="@routes.Assets.at("javascripts/apps/navbar/list/list_view.js")" type="text/javascript"></script>
 
-  <script src="@routes.Assets.at("javascripts/apps/toolbar/toolbar_app.js")" type="text/javascript"></script>
   <script src="@routes.Assets.at("javascripts/apps/toolbar/list/list_controller.js")" type="text/javascript"></script>
   <script src="@routes.Assets.at("javascripts/apps/toolbar/list/list_view.js")" type="text/javascript"></script>
+
+  <script src="@routes.Assets.at("javascripts/components/grid/grid_model.js")" type="text/javascript"></script>
+  <script src="@routes.Assets.at("javascripts/components/grid/grid_controller.js")" type="text/javascript"></script>
+  <script src="@routes.Assets.at("javascripts/components/grid/grid_view.js")" type="text/javascript"></script>
 
   <script src="@routes.Assets.at("javascripts/apps/jobs/jobs_app.js")" type="text/javascript"></script>
   <script src="@routes.Assets.at("javascripts/apps/jobs/list/list_controller.js")" type="text/javascript"></script>

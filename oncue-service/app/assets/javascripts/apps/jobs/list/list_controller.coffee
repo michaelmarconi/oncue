@@ -2,11 +2,11 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
 
   class List.Controller extends Marionette.Controller
 
-    @_showLoadingView: ->
+    _showLoadingView: ->
       loadingView = new App.Common.Views.LoadingView(message: 'Loading jobs...')
       App.contentRegion.show(loadingView)
 
-    @_buildToolbar: (jobs) =>
+    _buildToolbar: (jobs) =>
 
       runTestJobButton = new App.Entities.ToolbarButton(
         title: 'Run test job'
@@ -44,19 +44,53 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
       return App.Toolbar.List.Controller.createToolbar(toolbarItems)
 
 
-    @_buildGrid: (jobs) ->
-      grid = new List.JobGridView(collection: jobs)
-      grid.on('job:show', (id) -> App.trigger('job:show', id))
-      return grid
+    _buildGrid: (jobs) ->
+      gridModel = new App.Components.Grid.Model(
+        items: jobs
+        paginated: true
+        emptyView: App.Jobs.List.NoJobsView
+        backgrid:
+          row: App.Jobs.List.FlashingRow
+          columns: [
+            name: 'id'
+            label: '#'
+            editable: false
+            cell: List.JobIDCell
+          ,
+            name: 'worker_type'
+            label: 'Worker'
+            editable: false
+            cell: Backgrid.StringCell.extend(className: 'monospace')
+          ,
+            name: 'enqueued_at'
+            label: 'Enqueued'
+            editable: false
+            cell: Backgrid.Extension.MomentCell.extend(
+              displayFormat: 'MMMM Do YYYY, h:mm:ss a'
+            )
+          ,
+            name: 'state'
+            label: 'State'
+            editable: false
+            cell: Backgrid.StringCell.extend(className: 'capitalised')
+          ,
+            name: 'progress'
+            label: 'Progress'
+            editable: false
+            cell: App.Jobs.List.ProgressCell
+          ]
+      )
+      gridController = new App.Components.Grid.Controller()
+      return gridController.showGrid(gridModel)
 
-    @_buildGridPaginator: (jobs) ->
+    _buildGridPaginator: (jobs) ->
       return new List.JobGridPaginatorView(collection: jobs)
 
-    @_updateJob: (jobData, jobs) ->
+    _updateJob: (jobData, jobs) ->
       updatedJob = new App.Entities.Job(jobData)
       jobs.get(updatedJob.id).set(updatedJob.attributes)
 
-    @_runTestJob: (jobs, layout) ->
+    _runTestJob: (jobs, layout) ->
       testJob = new App.Entities.Job(
         worker_type: 'oncue.worker.TestWorker'
       )
@@ -73,35 +107,26 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
         layout.errorRegion.show(errorView)
       )
 
-    # -----------
-    # --- API ---
-    # -----------
-
-    @listJobs: ->
+    listJobs: ->
       @_showLoadingView()
       layout = new List.Layout()
-      gridLayout = new List.GridLayout()
       fetchingJobs = App.request('job:entities')
-      noJobsView = new List.NoJobsView()
-      noJobsView.on('run:test:job', =>
-#        layout.jobsRegion.show(gridLayout) TODO restructure this!
-        @_runTestJob(jobs, layout)
-      )
       $.when(fetchingJobs).done( (jobs) =>
         grid = @_buildGrid(jobs)
-        paginator = @_buildGridPaginator(jobs)
-        toolbar = @_buildToolbar(jobs)
 
+        toolbar = @_buildToolbar(jobs)
         toolbar.on('run:test:job', =>
           @_runTestJob(jobs, layout)
         )
-
         toolbar.on('state:filter:changed', (filterItems) ->
           # TODO Filtering logic!
         )
-
         toolbar.on('worker:filter:changed', (filterItems) ->
           # TODO Filtering logic!
+        )
+
+        App.vent.on('run:test:job', =>
+          @_runTestJob(jobs, layout)
         )
 
         App.vent.on('job:progressed', (jobData) =>
@@ -110,15 +135,7 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
 
         layout.on('show', ->
           layout.toolbarRegion.show(toolbar)
-          if jobs.length > 0
-            layout.jobsRegion.show(gridLayout)
-          else
-            layout.jobsRegion.show(noJobsView)
-        )
-
-        gridLayout.on('show', ->
-          gridLayout.gridRegion.show(grid)
-          gridLayout.paginatorRegion.show(paginator)
+          layout.jobsRegion.show(grid)
         )
 
         App.contentRegion.show(layout)

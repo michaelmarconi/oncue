@@ -7,7 +7,9 @@ App.module 'Jobs', (Jobs, App, Backbone, Marionette, $, _) ->
 
   API =
     listJobs: ->
-      Jobs.List.Controller.listJobs()
+      if not Jobs.List.controller
+        Jobs.List.controller = new Jobs.List.Controller()
+      Jobs.List.controller.listJobs()
       App.Navbar.List.Controller.setActiveNavbarItem('jobs')
 
     showJob: (id) ->
