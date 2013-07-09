@@ -1,6 +1,7 @@
 App.module "Jobs.Show", (Show, App, Backbone, Marionette, $, _) ->
 
-  Show.Controller =
+  class Show.Controller extends Marionette.Controller
+
     showJob: (id) ->
       loadingView = new App.Common.Views.LoadingView(
         message: "Loading job #{id}..."
@@ -16,3 +17,6 @@ App.module "Jobs.Show", (Show, App, Backbone, Marionette, $, _) ->
           jobView = new Show.MissingJobView()
         App.contentRegion.show(jobView)
       )
+
+  Show.addInitializer ->
+    Show.controller = new Show.Controller()

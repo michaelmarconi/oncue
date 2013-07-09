@@ -140,3 +140,6 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
 
         App.contentRegion.show(layout)
       )
+
+  List.addInitializer ->
+    List.controller = new List.Controller()

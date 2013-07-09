@@ -5,27 +5,28 @@ App.module 'Jobs', (Jobs, App, Backbone, Marionette, $, _) ->
       'jobs'      : 'listJobs'
       'jobs/:id'  : 'showJob'
 
-  API =
+  class Jobs.Controller extends Marionette.Controller
+
     listJobs: ->
-      if not Jobs.List.controller
-        Jobs.List.controller = new Jobs.List.Controller()
       Jobs.List.controller.listJobs()
       App.Navbar.List.Controller.setActiveNavbarItem('jobs')
 
     showJob: (id) ->
-      Jobs.Show.Controller.showJob(id)
+      Jobs.Show.controller.showJob(id)
 
-  #------------------------------------------
-
-  App.on('jobs:list', ->
-    App.navigate('jobs')
-    API.listJobs()
-  )
-
-  App.on('job:show', (id) ->
-    App.navigate("jobs/#{id}")
-    API.showJob(id)
-  )
-
+  #
+  # Jobs App initializer
+  #
   Jobs.addInitializer ->
-    new Jobs.Router(controller: API)
+    Jobs.controller = new Jobs.Controller()
+    new Jobs.Router(
+      controller: Jobs.controller
+    )
+    App.on('jobs:list', ->
+      App.navigate('jobs')
+      Jobs.controller.listJobs()
+    )
+    App.on('job:show', (id) ->
+      App.navigate("jobs/#{id}")
+      Jobs.controller.showJob(id)
+    )
