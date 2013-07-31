@@ -9,7 +9,7 @@ App.module "Components.Grid", (Grid, App, Backbone, Marionette, $, _) ->
       if @emptyView
         @emptyView.close()
 
-    _itemAdded: (item) =>
+    _collectionChanged: (item) =>
       @_closeEmptyView()
       if not @gridView
         @_buildGrid()
@@ -17,13 +17,13 @@ App.module "Components.Grid", (Grid, App, Backbone, Marionette, $, _) ->
 
     _initialEvents: ->
       if @collection
-        @listenTo(@collection, 'add', @_itemAdded, this)
+        @listenTo(@collection, 'add', @_collectionChanged, this)
+        @listenTo(@collection, 'reset', @_collectionChanged, this)
 
     _layoutGrid: ->
       @layout.gridRegion.show(@gridView)
       if @paginatorView
         @layout.paginatorRegion.show(@paginatorView)
-
 
     _buildGrid: =>
       @backgridOptions['collection'] = @collection

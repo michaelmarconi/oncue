@@ -14,9 +14,7 @@ App.module 'Jobs', (Jobs, App, Backbone, Marionette, $, _) ->
     showJob: (id) ->
       Jobs.Show.controller.showJob(id)
 
-  #
-  # Jobs App initializer
-  #
+
   Jobs.addInitializer ->
     Jobs.controller = new Jobs.Controller()
     new Jobs.Router(

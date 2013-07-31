@@ -52,6 +52,7 @@ App.module "Components.Toolbar", (Toolbar, App, Backbone, Marionette, $, _) ->
 
     validate: (attrs, options) ->
       if not attrs.title then return 'A title attribute is required'
+      if not attrs.value then return 'A value attribute is required'
 
   #
   # A collection of filter dropdown menu items

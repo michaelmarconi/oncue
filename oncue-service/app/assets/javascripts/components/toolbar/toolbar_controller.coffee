@@ -25,6 +25,15 @@ App.module "Components.Toolbar", (Toolbar, App, Backbone, Marionette, $, _) ->
           filter.set('filtered', false)
         else
           filter.set('filtered', true)
-        @trigger(filter.get('event'), filterItems)
+
+        # Emit all filter models as part of the event, to allow
+        # the consumer to perform filtering based on the state of
+        # ALL filters, not just this one!
+        filterModels = []
+        for toolbarItem in toolbarItems.models
+          if toolbarItem instanceof Toolbar.FilterModel
+            filterModels.push(toolbarItem)
+
+        @trigger(filter.get('event'), filterModels)
         )
       return toolbarView

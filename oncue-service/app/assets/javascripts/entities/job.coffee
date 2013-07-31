@@ -1,20 +1,16 @@
-App.module 'Entities', (Entities, App, Backbone, Marionette, $, _) ->
+App.module 'Entities.Job', (Job, App, Backbone, Marionette, $, _) ->
 
-  class Entities.Job extends Backbone.Model
+  class Job.Model extends Backbone.Model
     urlRoot: '/api/jobs'
 
-  class Entities.JobCollection extends Backbone.PageableCollection
+  class Job.Collection extends App.Entities.Common.FilteredCollection
     url: '/api/jobs'
-    model: Entities.Job
-    mode: 'client'
-    state:
-      pageSize: 15
-      sortKey: 'id'
-      order: 1
+    model: Job.Model
 
-  API =
+  class Job.Controller extends Marionette.Controller
+
     getJobEntities: ->
-      jobs = new Entities.JobCollection()
+      jobs = new Job.Collection()
       defer = $.Deferred()
       jobs.fetch(
         success: (model) ->
@@ -25,7 +21,7 @@ App.module 'Entities', (Entities, App, Backbone, Marionette, $, _) ->
       return defer.promise()
 
     getJobEntity: (id) ->
-      job = new Entities.Job(id: id)
+      job = new Job.Model(id: id)
       defer = $.Deferred()
       job.fetch(
         success: (model) ->
@@ -46,16 +42,17 @@ App.module 'Entities', (Entities, App, Backbone, Marionette, $, _) ->
       return defer.promise()
 
 
-  App.reqres.setHandler('job:entities', ->
-    API.getJobEntities()
-  )
+  Job.addInitializer ->
 
-  App.reqres.setHandler('job:entity', (id) ->
-    API.getJobEntity(id)
-  )
+    Job.controller = new Job.Controller()
 
-  App.reqres.setHandler('job:entity:save', (job) ->
-    API.saveJobEntity(job)
-  )
+    App.reqres.setHandler('job:entities', ->
+      Job.controller.getJobEntities()
+    )
+    App.reqres.setHandler('job:entity', (id) ->
+      Job.controller.getJobEntity(id)
+    )
+    App.reqres.setHandler('job:entity:save', (job) ->
+      Job.controller.saveJobEntity(job)
+    )
 
-  return Entities
