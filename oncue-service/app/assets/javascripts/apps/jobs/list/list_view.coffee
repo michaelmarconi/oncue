@@ -4,6 +4,7 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
   # This is the top-level layout for the jobs list page
   #
   class List.Layout extends Marionette.Layout
+    id: 'jobs_list'
     template: '#jobs_list_layout'
     regions:
       toolbarRegion: '#toolbar_region'
@@ -52,6 +53,22 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
 
     render: ->
       @$el.html(@template(@model.attributes))
+      return this
+
+  #
+  # A custom Backgrid cell that displays truncated worker types
+  #
+  class List.WorkerCell extends Backgrid.StringCell
+    className: 'bold'
+    render: ->
+      workerType = @model.get('worker_type')
+      lastPackagePos = workerType.lastIndexOf('.')
+      if lastPackagePos > -1
+        # Strip Java package details
+        workerType = workerType.substring(lastPackagePos + 1, workerType.length)
+        # Remove camel case
+        workerType = workerType.replace(/([A-Z])/g, " $1").replace /^./, (str) -> str.toUpperCase()
+      @$el.html(workerType)
       return this
 
   #

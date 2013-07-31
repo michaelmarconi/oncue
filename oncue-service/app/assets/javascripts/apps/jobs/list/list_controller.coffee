@@ -61,7 +61,7 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
             name: 'worker_type'
             label: 'Worker'
             editable: false
-            cell: Backgrid.StringCell.extend(className: 'monospace')
+            cell:  App.Jobs.List.WorkerCell
           ,
             name: 'enqueued_at'
             label: 'Enqueued'

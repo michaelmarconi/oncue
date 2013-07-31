@@ -14,24 +14,56 @@
   font-family: monospace;
 }
 
+.bold {
+  font-weight: bold;
+}
+
 .capitalised {
   &:first-letter {
     text-transform: capitalize;
   }
 }
 
+#jobs_list {
+  #toolbar_region {
+    margin-top: -21px;
+  }
+  .well {
+    padding: 15px;
+  }
+}
+
+#jobs_show {
+  .breadcrumb {
+    margin-top: -20px;
+  }
+  .page-header {
+    margin-top: 30px;
+    margin-bottom: 20px;
+  }
+  table {
+    margin-left: 30px;
+    th {
+      text-align: right;
+    }
+    th, td {
+      padding: 10px;
+    }
+  }
+}
+
 // Old is below here...
 
 .navbar {
-    a.brand {
-      cursor: help;
-      i {
-        margin-right: -5px;
-      }
+  a.brand {
+    cursor: help;
+    i {
+      margin-right: -5px;
     }
-    .nav a {
-      cursor: pointer;
-    }
+  }
+  .nav a {
+    cursor: pointer;
+  }
 }
 
 .progress {

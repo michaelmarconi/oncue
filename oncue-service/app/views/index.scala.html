@@ -77,8 +77,53 @@
    *----------------*@
 
   <script id="job_view" type="text/template">
-    <h1>Job <%= id %> </h1>
-    <p>Worker is <strong><%= worker_type %></strong></p>
+    <ul class="breadcrumb">
+      <li><i class="icon-arrow-left muted"></i> <a href="/jobs">Jobs</a> <span class="divider">/</span></li>
+      <li class="active">Job <%= id %></li>
+    </ul>
+    <div class="page-header">
+      <h1>
+        Job <%= id %>
+        <small><%= showWorker() %></small>
+      </h1>
+    </div>
+
+    <legend>Details</legend>
+    <table>
+      <tbody>
+        <tr>
+          <th>Worker Type</th>
+          <td class="monospace"><%= worker_type %></td>
+        </tr>
+        <tr>
+          <th>Enqueued</th>
+          <td><%= showEnqueuedAt() %></td>
+        </tr>
+        <tr>
+          <th>State</th>
+          <td class="capitalised"><%= state %></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <legend>Parameters</legend>
+    <!--TODO-->
+    <!--<table>-->
+      <!--<tbody>-->
+      <!--<tr>-->
+        <!--<th>Worker Type</th>-->
+        <!--<td class="monospace"><%= worker_type %></td>-->
+      <!--</tr>-->
+      <!--<tr>-->
+        <!--<th>Enqueued</th>-->
+        <!--<td><%= enqueued_at %></td>-->
+      <!--</tr>-->
+      <!--<tr>-->
+        <!--<th>State</th>-->
+        <!--<td class="capitalised"><%= state %></td>-->
+      <!--</tr>-->
+      <!--</tbody>-->
+    <!--</table>-->
   </script>
 
   <script type="text/template"id="missing_job_view">
