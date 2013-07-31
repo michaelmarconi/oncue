@@ -31,6 +31,21 @@
   .well {
     padding: 15px;
   }
+  .progress {
+    margin-bottom: 0;
+  }
+  table {
+    th:first-child, td:first-child {
+      border-right: 1px solid @grayLighter;
+      text-align: right;
+      width: 1%;
+      white-space: nowrap;
+      padding-right: 20px;
+    }
+    th:nth-child(2), td:nth-child(2) {
+      padding-left: 20px;
+    }
+  }
 }
 
 #jobs_show {
@@ -54,110 +69,110 @@
 
 // Old is below here...
 
-.navbar {
-  a.brand {
-    cursor: help;
-    i {
-      margin-right: -5px;
-    }
-  }
-  .nav a {
-    cursor: pointer;
-  }
-}
-
-.progress {
-  margin-bottom: 0;
-}
-
-button#run-first-job {
-  margin-top: -35px;
-}
-
-#job-tools a {
-  cursor: pointer;
-}
-
-table#jobs, table#job {
-  td {
-    &.id {
-      white-space: nowrap;
-    }
-    &.enqueued-at {
-      white-space: nowrap;
-    }
-    &.worker-type {
-      .monospace;
-    }
-    &.progress-container {
-      width: 25%;
-    }
-    &.state {
-      .capitalised;
-    }
-  }
-  tr.complete {
-    background-color: @successBackground;
-    td.id a {
-      color: @successText;
-      &:hover, focus {
-        color: darken(@successText, 10%);
-      }
-    }
-  }
-  tr.failed {
-    background-color: @errorBackground;
-    td.id a {
-      color: @errorText;
-      &:hover, focus {
-        color: darken(@errorText, 10%);
-      }
-    }
-  }
-}
-
-table#job {
-  th {
-    width: 20%;
-  }
-  tr:first-child {
-    th, td {
-      border-top: none;
-    }
-  }
-  tr.complete {
-    background-color: transparent;
-    td.state {
-      color: @successText;
-    }
-  }
-  tr.failed {
-    background-color: transparent;
-    td.state {
-      color: @errorText;
-    }
-  }
-}
-
-table#params {
-  td.key {
-    .monospace;
-    width: 1%;
-    white-space: nowrap;
-    text-align: right;
-  }
-  th, td {
-    border: none;
-    vertical-align: top;
-  }
-  margin: -5px;
-}
-
-#processing-jobs {
-  i.icon-time {
-    color: blue;
-  }
-  i.icon-play {
-    color: green;
-  }
-}
+//.navbar {
+//  a.brand {
+//    cursor: help;
+//    i {
+//      margin-right: -5px;
+//    }
+//  }
+//  .nav a {
+//    cursor: pointer;
+//  }
+//}
+//
+//.progress {
+//  margin-bottom: 0;
+//}
+//
+//button#run-first-job {
+//  margin-top: -35px;
+//}
+//
+//#job-tools a {
+//  cursor: pointer;
+//}
+//
+//table#jobs, table#job {
+//  td {
+//    &.id {
+//      white-space: nowrap;
+//    }
+//    &.enqueued-at {
+//      white-space: nowrap;
+//    }
+//    &.worker-type {
+//      .monospace;
+//    }
+//    &.progress-container {
+//      width: 25%;
+//    }
+//    &.state {
+//      .capitalised;
+//    }
+//  }
+//  tr.complete {
+//    background-color: @successBackground;
+//    td.id a {
+//      color: @successText;
+//      &:hover, focus {
+//        color: darken(@successText, 10%);
+//      }
+//    }
+//  }
+//  tr.failed {
+//    background-color: @errorBackground;
+//    td.id a {
+//      color: @errorText;
+//      &:hover, focus {
+//        color: darken(@errorText, 10%);
+//      }
+//    }
+//  }
+//}
+//
+//table#job {
+//  th {
+//    width: 20%;
+//  }
+//  tr:first-child {
+//    th, td {
+//      border-top: none;
+//    }
+//  }
+//  tr.complete {
+//    background-color: transparent;
+//    td.state {
+//      color: @successText;
+//    }
+//  }
+//  tr.failed {
+//    background-color: transparent;
+//    td.state {
+//      color: @errorText;
+//    }
+//  }
+//}
+//
+//table#params {
+//  td.key {
+//    .monospace;
+//    width: 1%;
+//    white-space: nowrap;
+//    text-align: right;
+//  }
+//  th, td {
+//    border: none;
+//    vertical-align: top;
+//  }
+//  margin: -5px;
+//}
+//
+//#processing-jobs {
+//  i.icon-time {
+//    color: blue;
+//  }
+//  i.icon-play {
+//    color: green;
+//  }
+//}
