@@ -15,6 +15,12 @@ App.module "Jobs.Show", (Show, App, Backbone, Marionette, $, _) ->
           jobView = new Show.JobView(model: job)
         else
           jobView = new Show.MissingJobView()
+
+        App.vent.on('job:progressed', (jobData) =>
+          if jobData.id == job.id
+            job.set(jobData)
+        )
+
         App.contentRegion.show(jobView)
       )
 

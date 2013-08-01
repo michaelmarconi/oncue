@@ -31,7 +31,6 @@ App.module "Components.Toolbar", (Toolbar, App, Backbone, Marionette, $, _) ->
       if model instanceof Toolbar.FilterModel
         options['collection'] = model.get('menuItems')
       if model instanceof Toolbar.ButtonStripModel
-        debugger;
         options['collection'] = model.get('buttons')
       return options
 

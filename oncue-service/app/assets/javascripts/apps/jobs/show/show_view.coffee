@@ -5,8 +5,9 @@ App.module "Jobs.Show", (Show, App, Backbone, Marionette, $, _) ->
     template: '#job_view'
     events:
       'click a' : '_listJobs'
+    modelEvents:
+      'change' : 'render'
     templateHelpers:
-
       showWorker: ->
         workerType = @worker_type
         lastPackagePos = workerType.lastIndexOf('.')
