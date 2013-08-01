@@ -6,22 +6,26 @@ window.App = new Marionette.Application()
 
 connectWebsocket = ->
 
-  console.log "Connecting web socket..."
-
+  App.vent.trigger('websocket:connecting')
   websocket = new WebSocket("ws://#{window.location.hostname}:9000/websocket")
 
   websocket.onopen = ->
-    console.log "Web socket was opened."
     App.vent.trigger('websocket:connected')
 
   websocket.onclose = ->
-    console.log "Web socket was closed."
     App.vent.trigger('websocket:closed')
+    delete websocket.onopen
+    delete websocket.onclose
+    delete websocket.onerror
+    delete websocket.onmessage
     _.delay(connectWebsocket, 1000)
 
   websocket.onerror = (error) ->
-    console.log "Web socket experienced an error: #{error}"
     App.vent.trigger('websocket:error')
+    delete websocket.onopen
+    delete websocket.onclose
+    delete websocket.onerror
+    delete websocket.onmessage
     _.delay(connectWebsocket, 1000)
 
   websocket.onmessage = (message) ->

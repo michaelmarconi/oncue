@@ -1,33 +1,33 @@
-App.module 'Entities', (Entities, App, Backbone, Marionette, $, _) ->
+App.module 'Entities.Navbar', (Navbar, App, Backbone, Marionette, $, _) ->
 
-  class Entities.NavbarItem extends Backbone.Model
+  class Navbar.Item extends Backbone.Model
     initialize: ->
       selectable = new Backbone.Picky.Selectable(this)
       _.extend(this, selectable)
 
-  class Entities.NavbarItems extends Backbone.Collection
-    model: Entities.NavbarItem
+  class Navbar.ItemCollection extends Backbone.Collection
+    model: Navbar.Item
 
     initialize: ->
       singleSelect = new Backbone.Picky.SingleSelect(this)
       _.extend(this, singleSelect)
 
-  API =
-    getNavbarItems: ->
-      Entities.navbarItems
+  class Navbar.Controller extends Marionette.Controller
+    getNavbarEntities: ->
+      return Navbar.itemCollection
 
-  Entities.addInitializer ->
-    Entities.navbarItems = new Entities.NavbarItems([
-      new Entities.NavbarItem(
+  Navbar.addInitializer ->
+    Navbar.itemCollection = new Navbar.ItemCollection([
+      new Navbar.Item(
         name: 'Jobs'
         url: 'jobs'
       )
-      new Entities.NavbarItem(
+      new Navbar.Item(
         name: 'Agents'
         url: 'agents'
       )
     ])
-
-  App.reqres.setHandler('navbar:entities', ->
-    API.getNavbarItems()
-  )
+    Navbar.controller = new Navbar.Controller()
+    App.reqres.setHandler('navbar:entities', ->
+      Navbar.controller.getNavbarEntities()
+    )

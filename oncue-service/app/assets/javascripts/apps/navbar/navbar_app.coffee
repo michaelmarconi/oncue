@@ -1,11 +1,18 @@
 App.module 'Navbar', (Navbar, App, Backbone, Marionette, $, _) ->
 
-  API =
+  class Navbar.Controller extends Marionette.Controller
+
     listNavbar: ->
       Navbar.List.Controller.listNavbar()
 
-  #------------------------------------------
-
-  Navbar.on('start', ->
-    API.listNavbar()
-  )
+  Navbar.addInitializer ->
+    Navbar.controller = new Navbar.Controller()
+    Navbar.on('start', ->
+      Navbar.controller.listNavbar()
+    )
+    App.vent.on('websocket:connecting', ->
+      console.log "WeSocket connecting..."
+    )
+    App.vent.on('websocket:connected', ->
+      console.log "WeSocket connected :-)"
+    )
