@@ -7,6 +7,7 @@
   .progress {
     height: 14px;
     margin-top: 5px;
+    margin-bottom: 0;
   }
 }
 
@@ -24,6 +25,15 @@
   }
 }
 
+.navbar {
+  a.brand {
+    cursor: default;
+    i {
+      margin-right: -5px;
+    }
+  }
+}
+
 #jobs_list {
   #toolbar_region {
     margin-top: -21px;
@@ -35,14 +45,17 @@
     margin-bottom: 0;
   }
   table {
-    th:first-child, td:first-child {
+    th:nth-child(1), td:nth-child(1) {
+      width: 1%;
+    }
+    th:nth-child(2), td:nth-child(2) {
       border-right: 1px solid @grayLighter;
       text-align: right;
       width: 1%;
       white-space: nowrap;
       padding-right: 20px;
     }
-    th:nth-child(2), td:nth-child(2) {
+    th:nth-child(3), td:nth-child(3) {
       padding-left: 20px;
     }
   }

@@ -4,6 +4,7 @@ App.module "Components.Toolbar", (Toolbar, App, Backbone, Marionette, $, _) ->
   # A model for a button
   #
   #      title: The text that appears on the button (mandatory)
+  #    tooltip: Tooltip text on hover (optional)
   #       icon: The class name of the icon that appears on the button (optional)
   # cssClasses: A list of extra classes to apply to the button (optional)
   #      event: The name of the event to fire when the button is clicked (mandatory)
@@ -16,6 +17,23 @@ App.module "Components.Toolbar", (Toolbar, App, Backbone, Marionette, $, _) ->
     validate: (attrs, options) ->
       if not attrs.title then return 'A title attribute is required'
       if not attrs.event then return 'An event attribute is required'
+
+  #
+  # A collection of toolbar buttons
+  #
+  class Toolbar.ButtonCollection extends Backbone.Collection
+    model: Toolbar.ButtonModel
+
+  #
+  # A model for a strip of buttons
+  #
+  class Toolbar.ButtonStripModel extends Backbone.Model
+    initialize: (options) ->
+      super(options)
+      if not @isValid() then throw @validationError
+
+    validate: (attrs, options) ->
+      if not attrs.buttons then return 'A collection of buttons is required'
 
   #
   # Model a toolbar filter dropdown menu

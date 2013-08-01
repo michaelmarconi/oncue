@@ -9,10 +9,33 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
     _buildToolbar: (jobs) =>
 
       runTestJobButton = new App.Components.Toolbar.ButtonModel(
-        title: 'Run test job'
+        title: 'Run test'
+        tooltip: 'Run a test job'
         iconClass: 'icon-play'
-        cssClasses: 'btn-info pull-right'
         event: 'run:test:job'
+      )
+
+      rerunJobButton = new App.Components.Toolbar.ButtonModel(
+        title: 'Re-run'
+        tooltip: 'Re-run a complete or failed job'
+        iconClass: 'icon-repeat'
+        cssClasses: 'disabled'
+        event: 'rerun:job'
+      )
+
+      deleteJobButton = new App.Components.Toolbar.ButtonModel(
+        title: 'Delete'
+        tooltip: 'Delete a job permanently'
+        iconClass: 'icon-trash'
+        cssClasses: 'disabled'
+        event: 'delete:job'
+      )
+
+      actionButtons = new App.Components.Toolbar.ButtonStripModel(
+        cssClasses: 'pull-right'
+        buttons: new App.Components.Toolbar.ButtonCollection([
+          runTestJobButton, rerunJobButton, deleteJobButton
+        ])
       )
 
       stateFilter = new App.Components.Toolbar.FilterModel(
@@ -38,9 +61,11 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
       )
 
       toolbarItems = new App.Components.Toolbar.ItemsCollection()
-      toolbarItems.add(runTestJobButton)
+#      toolbarItems.add(runTestJobButton)
+#      toolbarItems.add(rerunJobButton)
       toolbarItems.add(stateFilter)
       toolbarItems.add(workerFilter)
+      toolbarItems.add(actionButtons)
       toolbarController = new App.Components.Toolbar.Controller()
       return toolbarController.createToolbar(toolbarItems)
 
@@ -51,10 +76,14 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
         paginated: true
         emptyView: App.Jobs.List.NoJobsView
         backgrid:
-          row: App.Jobs.List.FlashingRow
+          row: App.Jobs.List.JobStateRow
           columns: [
+            name: 'selector'
+            cell: 'select-row'
+            headerCell: 'select-all'
+          ,
             name: 'id'
-            label: '#'
+            label: 'ID'
             editable: false
             cell: List.JobIDCell
           ,
@@ -144,7 +173,8 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
 
         grid = @_buildGrid(pageableJobs)
         toolbar = @_buildToolbar(jobs)
-        toolbar.on('run:test:job', =>
+
+        toolbar.on('toolbar:buttonStrip:run:test:job', =>
           @_runTestJob(jobs, layout)
         )
         toolbar.on('state:filter:changed', (filterModels) =>

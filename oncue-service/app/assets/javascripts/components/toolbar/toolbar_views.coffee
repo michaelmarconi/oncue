@@ -1,6 +1,12 @@
 App.module "Components.Toolbar", (Toolbar, App, Backbone, Marionette, $, _) ->
 
   #
+  # A layout for presenting filter drop-downs on the left and buttons on
+  # the right of a toolbar
+  #
+  class Toolbar.View extends Marionette.CompositeView
+
+  #
   # A toolbar capable of displaying filter dropdowns and buttons
   #
   class Toolbar.View extends Marionette.CompositeView
@@ -12,17 +18,21 @@ App.module "Components.Toolbar", (Toolbar, App, Backbone, Marionette, $, _) ->
     getItemView: (item) ->
       if item instanceof Toolbar.ButtonModel
         return Toolbar.ButtonView
+      else if item instanceof Toolbar.ButtonStripModel
+        return Toolbar.ButtonStripView
       else if item instanceof Toolbar.FilterModel
         return Toolbar.FilterView
       else
         throw "Cannot determine a view for #{item}"
 
-    # Inject the toolbar filter menu items into
-    # a ToolbarFilterView as a collection on view creation
+    # Map model items to collections for some views
     itemViewOptions: (model, index) ->
       options = {}
       if model instanceof Toolbar.FilterModel
         options['collection'] = model.get('menuItems')
+      if model instanceof Toolbar.ButtonStripModel
+        debugger;
+        options['collection'] = model.get('buttons')
       return options
 
   #
@@ -32,8 +42,27 @@ App.module "Components.Toolbar", (Toolbar, App, Backbone, Marionette, $, _) ->
     template: '#toolbar_button_view'
     tagName: 'button'
     className: -> "btn #{@model.get('cssClasses')}"
-    triggers:
-      'click' : 'button:clicked'
+    events:
+      'click' : '_handleClick'
+    _handleClick: (event) ->
+      @trigger(@model.get('event'))
+
+    onRender: ->
+      tooltip = @model.get('tooltip')
+      if tooltip
+        @$el.tooltip(
+          title: tooltip
+          container: 'body'
+          delay: { show: 500, hide: 100 }
+        )
+
+  #
+  # Display a toolbar button strip
+  #
+  class Toolbar.ButtonStripView extends Marionette.CollectionView
+    className: -> "btn-group #{@model.get('cssClasses')}"
+    itemView: Toolbar.ButtonView
+    itemViewEventPrefix: 'buttonStrip'
 
   #
   # Display a toolbar filter dropdown menu item

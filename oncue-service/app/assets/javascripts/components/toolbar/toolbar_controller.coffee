@@ -6,10 +6,6 @@ App.module "Components.Toolbar", (Toolbar, App, Backbone, Marionette, $, _) ->
       toolbarView = new Toolbar.View(
         collection: toolbarItems
       )
-      toolbarView.on('toolbar:button:clicked', (buttonView) ->
-        button = buttonView.model
-        @trigger(button.get('event'))
-      )
 
       # Listen to toolbar filter item selection changes and update the filter (filtered state)
       # and filter item (checked/unchecked) views

@@ -24,18 +24,22 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
       App.vent.trigger('run:test:job')
 
   #
-  # A custom Backgrid row that flashes when a new item is added
+  # A custom Backgrid row that changes the row
+  # background colour depending on job state
   #
-  class List.FlashingRow extends Backgrid.Row
-    cssClass: 'info'
+  class List.JobStateRow extends Backgrid.Row
+    className: =>
+      if @model.get('state') == 'complete' then 'muted success'
+      else if @model.get('state') == 'failed' then 'error'
+
     render: ->
       super
       if @model.get('is_new')
-        @$el.hide().toggleClass(@cssClass).fadeIn 500, =>
+        @$el.hide().toggleClass('info').fadeIn 500, =>
           setTimeout ( =>
-            @$el.toggleClass(@cssClass)
+            @$el.toggleClass('info')
             @model.unset('is_new')
-          ), 500
+          ), 250
       return this
 
   #
