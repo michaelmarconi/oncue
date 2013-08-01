@@ -10,18 +10,25 @@ App.module "Jobs.Show", (Show, App, Backbone, Marionette, $, _) ->
 
       fetching_job = App.request('job:entity', id)
       $.when(fetching_job).done( (job) ->
-        jobView = undefined
         if job isnt undefined
-          jobView = new Show.JobView(model: job)
+          detailsView = new Show.JobDetailsView(model: job)
+          layout = new Show.Layout(model: job)
+          layout.on('show', ->
+            layout.detailsRegion.show(detailsView)
+          )
         else
-          jobView = new Show.MissingJobView()
+          missingJobView = new Show.MissingJobView()
 
         App.vent.on('job:progressed', (jobData) =>
           if jobData.id == job.id
             job.set(jobData)
         )
 
-        App.contentRegion.show(jobView)
+        if missingJobView
+          App.contentRegion.show(missingJobView)
+        else if layout
+          App.contentRegion.show(layout)
+        else
       )
 
   Show.addInitializer ->

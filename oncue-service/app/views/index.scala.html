@@ -76,7 +76,7 @@
    *--- Jobs Views ---
    *----------------*@
 
-  <script id="job_view" type="text/template">
+  <script type="text/template" id="jobs_show_layout">
     <ul class="breadcrumb">
       <li><i class="icon-arrow-left muted"></i> <a href="/jobs">Jobs</a> <span class="divider">/</span></li>
       <li class="active">Job <%= id %></li>
@@ -87,7 +87,11 @@
         <small><%= showWorker() %></small>
       </h1>
     </div>
+    <div id="details_region"></div>
+    <div id="params_region"></div>
+  </script>
 
+  <script id="job_details_view" type="text/template">
     <legend>Details</legend>
     <table>
       <tbody>
@@ -105,23 +109,24 @@
         </tr>
       </tbody>
     </table>
+  </script>
 
+  <script id="job_params_view" type="text/template">
     <legend>Parameters</legend>
-    <!--TODO-->
     <!--<table>-->
       <!--<tbody>-->
-      <!--<tr>-->
-        <!--<th>Worker Type</th>-->
-        <!--<td class="monospace"><%= worker_type %></td>-->
-      <!--</tr>-->
-      <!--<tr>-->
-        <!--<th>Enqueued</th>-->
-        <!--<td><%= enqueued_at %></td>-->
-      <!--</tr>-->
-      <!--<tr>-->
-        <!--<th>State</th>-->
-        <!--<td class="capitalised"><%= state %></td>-->
-      <!--</tr>-->
+        <!--<tr>-->
+          <!--<th>Worker Type</th>-->
+          <!--<td class="monospace"><%= worker_type %></td>-->
+        <!--</tr>-->
+        <!--<tr>-->
+          <!--<th>Enqueued</th>-->
+          <!--<td><%= showEnqueuedAt() %></td>-->
+        <!--</tr>-->
+        <!--<tr>-->
+          <!--<th>State</th>-->
+          <!--<td class="capitalised"><%= state %></td>-->
+        <!--</tr>-->
       <!--</tbody>-->
     <!--</table>-->
   </script>
