@@ -51,6 +51,14 @@ App.module "Jobs.Show", (Show, App, Backbone, Marionette, $, _) ->
     initialize: ->
       _.extend(this, new TemplateHelpers())
 
+  class Show.JobParamView extends Marionette.ItemView
+    template: '#job_param_view'
+
+  class Show.JobParamsView extends Marionette.CompositeView
+    template: '#job_params_view'
+    itemViewContainer: 'table tbody'
+    itemView: Show.JobParamView
+
   #
   # Display a notice when a lookup of a job ID fails
   #

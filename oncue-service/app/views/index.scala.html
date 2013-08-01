@@ -111,24 +111,18 @@
     </table>
   </script>
 
+  <script id="job_param_view" type="text/template">
+    <tr>
+      <th><%= key %></th>
+      <td><%= value %></td>
+    </tr>
+  </script>
+
   <script id="job_params_view" type="text/template">
     <legend>Parameters</legend>
-    <!--<table>-->
-      <!--<tbody>-->
-        <!--<tr>-->
-          <!--<th>Worker Type</th>-->
-          <!--<td class="monospace"><%= worker_type %></td>-->
-        <!--</tr>-->
-        <!--<tr>-->
-          <!--<th>Enqueued</th>-->
-          <!--<td><%= showEnqueuedAt() %></td>-->
-        <!--</tr>-->
-        <!--<tr>-->
-          <!--<th>State</th>-->
-          <!--<td class="capitalised"><%= state %></td>-->
-        <!--</tr>-->
-      <!--</tbody>-->
-    <!--</table>-->
+    <table>
+      <tbody></tbody>
+    </table>
   </script>
 
   <script type="text/template"id="missing_job_view">

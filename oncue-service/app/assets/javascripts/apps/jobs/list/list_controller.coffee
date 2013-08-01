@@ -61,8 +61,6 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
       )
 
       toolbarItems = new App.Components.Toolbar.ItemsCollection()
-#      toolbarItems.add(runTestJobButton)
-#      toolbarItems.add(rerunJobButton)
       toolbarItems.add(stateFilter)
       toolbarItems.add(workerFilter)
       toolbarItems.add(actionButtons)

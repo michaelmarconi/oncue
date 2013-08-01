@@ -12,9 +12,15 @@ App.module "Jobs.Show", (Show, App, Backbone, Marionette, $, _) ->
       $.when(fetching_job).done( (job) ->
         if job isnt undefined
           detailsView = new Show.JobDetailsView(model: job)
+          if job.get('params').length > 0
+            paramsView = new Show.JobParamsView(
+              collection: job.get('params')
+            )
           layout = new Show.Layout(model: job)
           layout.on('show', ->
             layout.detailsRegion.show(detailsView)
+            if job.get('params').length > 0
+              layout.paramsRegion.show(paramsView)
           )
         else
           missingJobView = new Show.MissingJobView()
