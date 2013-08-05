@@ -22,7 +22,7 @@ App.module 'Entities.Websocket', (Websocket, App, Backbone, Marionette, $, _) ->
         delete @websocket.onclose
         delete @websocket.onerror
         delete @websocket.onmessage
-      @websocket = new WebSocket("ws://#{window.location.hostname}:9000/websocket")
+      @websocket = new WebSocket("ws://#{window.location.hostname}:#{window.location.port}/websocket")
       @websocket.onopen = @onOpen
       @websocket.onclose = @onClose
       @websocket.onerror = @onError
