@@ -31,6 +31,7 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
     className: =>
       if @model.get('state') == 'complete' then 'muted success'
       else if @model.get('state') == 'failed' then 'error'
+      else if @model.get('state') == 'running' then 'info'
 
     render: ->
       super
