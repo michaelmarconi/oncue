@@ -3,18 +3,29 @@ App.module "Navbar.List", (List, App, Backbone, Marionette, $, _) ->
   class List.Controller extends Marionette.Controller
 
     @listNavbar: ->
+      connection = App.reqres.request('websocket:connection')
+      connectionView = new List.ConnectionView(
+        model: connection
+      )
+
       navbarItems = App.reqres.request('navbar:entities')
-      navbarView = new List.NavbarView(
+      navbarItemsView = new List.NavbarItemCollectionView(
         collection: navbarItems
       )
-      navbarView.on('itemview:navigate', (navbarItemView, navbarItem) ->
+      navbarItemsView.on('itemview:navigate', (navbarItemView, navbarItem) ->
         url = navbarItem.get('url')
         if url is 'jobs'
           App.trigger('jobs:list')
         else
           throw 'No such module: ' + url
       )
-      App.navbarRegion.show(navbarView)
+
+      layout = new List.Layout()
+      layout.on('show', ->
+        layout.connectionRegion.show(connectionView)
+        layout.navbarItemsRegion.show(navbarItemsView)
+      )
+      App.navbarRegion.show(layout)
 
     @setActiveNavbarItem: (navbarUrl) ->
       navbarItems = App.reqres.request('navbar:entities')
