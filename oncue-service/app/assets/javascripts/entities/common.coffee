@@ -1,8 +1,7 @@
 App.module "Entities.Common", (Common, App, Backbone, Marionette, $, _) ->
 
   #
-  # A collection decorator that allows a filter funtion to be applied.  This decorator can
-  # cope with a Backbone.PageableCollection, in which case it will reset the underlying collection.
+  # A collection decorator that allows a filter funtion to be applied.
   #
   class Common.FilteredCollection extends Backbone.Collection
 
@@ -29,8 +28,3 @@ App.module "Entities.Common", (Common, App, Backbone, Marionette, $, _) ->
 
     setFilter: (@filterFunction) ->
       @_applyFilter()
-
-    clearFilter: =>
-      if filterFunction
-        delete filterFunction
-        @filtered.reset(@models)

@@ -157,7 +157,7 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
       $.when(fetchingJobs).done( (jobs) =>
 
         # Create a pageable collection for the grid
-        pageableJobs = new Backbone.PageableCollection(jobs.models,
+        pageableJobs = new Backbone.PageableCollection(jobs.clone().models,
           mode: 'client'
           state:
             pageSize: 15

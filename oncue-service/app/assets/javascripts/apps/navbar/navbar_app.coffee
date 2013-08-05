@@ -10,9 +10,3 @@ App.module 'Navbar', (Navbar, App, Backbone, Marionette, $, _) ->
     Navbar.on('start', ->
       Navbar.controller.listNavbar()
     )
-    App.vent.on('websocket:connecting', ->
-      console.log "WeSocket connecting..."
-    )
-    App.vent.on('websocket:connected', ->
-      console.log "WeSocket connected :-)"
-    )
