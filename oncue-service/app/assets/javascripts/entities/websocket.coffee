@@ -55,9 +55,9 @@ App.module 'Entities.Websocket', (Websocket, App, Backbone, Marionette, $, _) ->
       return Websocket.connection
 
   Websocket.addInitializer ->
-    Websocket.connection = new Websocket.Connection()
     Websocket.controller = new Websocket.Controller()
 
+    Websocket.connection = new Websocket.Connection()
     App.reqres.setHandler('websocket:connection', ->
       Websocket.controller.getConnection()
     )

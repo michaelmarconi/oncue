@@ -30,6 +30,8 @@ App.module 'Entities.Job', (Job, App, Backbone, Marionette, $, _) ->
   #
   class Job.ParamsCollection extends Backbone.Collection
 
+  # ~~~~~~~~~~~
+
   class Job.Controller extends Marionette.Controller
 
     # Create a collection of params from a hash

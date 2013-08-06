@@ -16,6 +16,8 @@ App.module "Navbar.List", (List, App, Backbone, Marionette, $, _) ->
         url = navbarItem.get('url')
         if url is 'jobs'
           App.trigger('jobs:list')
+        else if url is 'agents'
+          App.trigger('agents:list')
         else
           throw 'No such module: ' + url
       )

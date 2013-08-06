@@ -202,6 +202,33 @@
     </a>
   </script>
 
+  @*--------------------
+   *--- Agents Views ---
+   *------------------*@
+
+  <script type="text/template"id="no_agents_view">
+    <h4>No Agents</h4>
+    No agents are currently registered with the service.
+  </script>
+
+  <script type="text/template"id="agents_list_view">
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th>URL</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>
+  </script>
+
+  <script type="text/template"id="agents_item_view">
+    <td><%= id %></td>
+    <td>&mdash;</td>
+  </script>
+
   <script src="@routes.Assets.at("javascripts/jquery-1.9.0.min.js")" type="text/javascript"></script>
   <script src="@routes.Assets.at("javascripts/underscore-1.4.4.js")" type="text/javascript"></script>
   <script src="@routes.Assets.at("javascripts/moment-2.0.0.min.js")" type="text/javascript"></script>
@@ -219,11 +246,10 @@
   <script src="@routes.Assets.at("javascripts/app.js")" type="text/javascript"></script>
   <script src="@routes.Assets.at("javascripts/common/views.js")" type="text/javascript"></script>
 
-  <!-- TODO Nuke this ? -->
   <script src="@routes.Assets.at("javascripts/entities/common.js")" type="text/javascript"></script>
-
   <script src="@routes.Assets.at("javascripts/entities/websocket.js")" type="text/javascript"></script>
   <script src="@routes.Assets.at("javascripts/entities/navbar.js")" type="text/javascript"></script>
+  <script src="@routes.Assets.at("javascripts/entities/agent.js")" type="text/javascript"></script>
   <script src="@routes.Assets.at("javascripts/entities/job.js")" type="text/javascript"></script>
 
   <script src="@routes.Assets.at("javascripts/apps/navbar/navbar_app.js")" type="text/javascript"></script>
@@ -243,6 +269,10 @@
   <script src="@routes.Assets.at("javascripts/apps/jobs/list/list_view.js")" type="text/javascript"></script>
   <script src="@routes.Assets.at("javascripts/apps/jobs/show/show_controller.js")" type="text/javascript"></script>
   <script src="@routes.Assets.at("javascripts/apps/jobs/show/show_view.js")" type="text/javascript"></script>
+
+  <script src="@routes.Assets.at("javascripts/apps/agents/agents_app.js")" type="text/javascript"></script>
+  <script src="@routes.Assets.at("javascripts/apps/agents/list/list_controller.js")" type="text/javascript"></script>
+  <script src="@routes.Assets.at("javascripts/apps/agents/list/list_view.js")" type="text/javascript"></script>
 
   <script type="text/javascript">
       App.start();
