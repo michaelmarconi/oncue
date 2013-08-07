@@ -2,7 +2,7 @@ App.module "Navbar.List", (List, App, Backbone, Marionette, $, _) ->
 
   class List.Controller extends Marionette.Controller
 
-    @listNavbar: ->
+    listNavbar: ->
       connection = App.reqres.request('websocket:connection')
       connectionView = new List.ConnectionView(
         model: connection
@@ -29,7 +29,7 @@ App.module "Navbar.List", (List, App, Backbone, Marionette, $, _) ->
       )
       App.navbarRegion.show(layout)
 
-    @setActiveNavbarItem: (navbarUrl) ->
+    setActiveNavbarItem: (navbarUrl) ->
       navbarItems = App.reqres.request('navbar:entities')
       navbarItemToSelect = navbarItems.find( (navbarItem) ->
         navbarItem.get('url') is navbarUrl

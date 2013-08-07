@@ -6,6 +6,10 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
       loadingView = new App.Common.Views.LoadingView(message: 'Loading jobs...')
       App.contentRegion.show(loadingView)
 
+    _showErrorView: ->
+      errorView = new App.Common.Views.ErrorView(message: 'Failed to load jobs')
+      App.contentRegion.show(errorView)
+
     _buildToolbar: (jobs) =>
 
       runTestJobButton = new App.Components.Toolbar.ButtonModel(
@@ -196,6 +200,9 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
         )
 
         App.contentRegion.show(layout)
+      )
+      $.when(fetchingJobs).fail( =>
+        @_showErrorView()
       )
 
   List.addInitializer ->

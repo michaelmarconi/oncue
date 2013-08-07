@@ -6,14 +6,9 @@ App.module "Agents.List", (List, App, Backbone, Marionette, $, _) ->
       loadingView = new App.Common.Views.LoadingView(message: 'Loading agents...')
       App.contentRegion.show(loadingView)
 
-#    _renderAgents: (agents) ->
-#      if agents.length == 0
-#        App.contentRegion.show(new List.NoAgentsView())
-#      else
-#        agentsView = new List.AgentsView(
-#          collection: agents
-#        )
-#        App.contentRegion.show(agentsView)
+    _showErrorView: ->
+      errorView = new App.Common.Views.ErrorView(message: 'Failed to load registered agents')
+      App.contentRegion.show(errorView)
 
     listAgents: ->
       @_showLoadingView()
@@ -23,11 +18,9 @@ App.module "Agents.List", (List, App, Backbone, Marionette, $, _) ->
           collection: agents
         )
         App.contentRegion.show(agentsView)
-#        @stopListening(agents)
-#        @listenTo(agents, 'add remove', (event) =>
-#          @_renderAgents(agents)
-#        )
-#        @_renderAgents(agents)
+      )
+      $.when(fetchingAgents).fail( =>
+        @_showErrorView()
       )
 
   List.addInitializer ->

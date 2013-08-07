@@ -8,7 +8,7 @@ App.module 'Agents', (Agents, App, Backbone, Marionette, $, _) ->
 
     listAgents: ->
       Agents.List.controller.listAgents()
-      App.Navbar.List.Controller.setActiveNavbarItem('agents')
+      App.Navbar.List.controller.setActiveNavbarItem('agents')
 
   # ~~~~~~~~~~~~
 

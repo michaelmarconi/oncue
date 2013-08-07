@@ -9,7 +9,7 @@ App.module 'Jobs', (Jobs, App, Backbone, Marionette, $, _) ->
 
     listJobs: ->
       Jobs.List.controller.listJobs()
-      App.Navbar.List.Controller.setActiveNavbarItem('jobs')
+      App.Navbar.List.controller.setActiveNavbarItem('jobs')
 
     showJob: (id) ->
       Jobs.Show.controller.showJob(id)

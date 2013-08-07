@@ -17,11 +17,8 @@ App.module 'Entities.Websocket', (Websocket, App, Backbone, Marionette, $, _) ->
 
     _connect: =>
       @set('state', 'connecting')
-      if @websocket
-        delete @websocket.onopen
-        delete @websocket.onclose
-        delete @websocket.onerror
-        delete @websocket.onmessage
+      App.vent.trigger('websocket:connecting')
+      if @websocket then delete @websocket
       @websocket = new WebSocket("ws://#{window.location.hostname}:#{window.location.port}/websocket")
       @websocket.onopen = @onOpen
       @websocket.onclose = @onClose
@@ -30,14 +27,16 @@ App.module 'Entities.Websocket', (Websocket, App, Backbone, Marionette, $, _) ->
 
     onOpen: =>
       @set('state', 'connected')
+      App.vent.trigger('websocket:connected')
 
     onClose: =>
       @set('state', 'connecting')
+      App.vent.trigger('websocket:closed')
       _.delay(@_connect, 1000)
 
     onError: (error) =>
       @set('state', 'connecting')
-      _.delay(@_connect, 1000)
+      App.vent.trigger('websocket:error', error)
 
     onMessage: (message) =>
       messageData = JSON.parse(message.data)
@@ -45,7 +44,7 @@ App.module 'Entities.Websocket', (Websocket, App, Backbone, Marionette, $, _) ->
       subject = _.first(eventKey.split(':'))
       event = _.last(eventKey.split(':'))
       payload = messageData[eventKey][subject]
-#      console.log "Subject: #{subject} , Event: #{event}, Payload: #{payload}" #TODO whack this
+      console.log "Subject: #{subject} , Event: #{event}, Payload: #{payload}" #TODO whack this
       App.vent.trigger("#{subject}:#{event}", payload)
 
   # ~~~~~~~~~~~

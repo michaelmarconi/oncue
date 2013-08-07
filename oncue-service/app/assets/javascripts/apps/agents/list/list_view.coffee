@@ -22,9 +22,14 @@ App.module "Agents.List", (List, App, Backbone, Marionette, $, _) ->
     emptyView: List.NoAgentsView
     itemView: List.AgentView
 
+    # We want to replace the table with a 'no agents' view
+    # when there are no registered agents, rather than rendering the
+    # 'emptyView' into the table.
     appendHtml: (collectionView, itemView, index) ->
-      if @collection.length > 0
-        collectionView.$('tbody').append(itemView.el)
-      else
-        # TODO fix this! (note the itemView)
+      if itemView instanceof List.NoAgentsView
+        @originalCollectionView = collectionView.$el.clone()
         collectionView.$el.html(itemView.el)
+      else
+        if index == 0
+          collectionView.$el.html(@originalCollectionView)
+        collectionView.$el.find('tbody').append(itemView.el)

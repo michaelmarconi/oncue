@@ -56,7 +56,7 @@ App.module 'Entities.Job', (Job, App, Backbone, Marionette, $, _) ->
         success: (model) ->
           defer.resolve(model)
         error: ->
-          defer.resolve(undefined)
+          defer.reject()
       )
       return defer.promise()
 
@@ -68,7 +68,7 @@ App.module 'Entities.Job', (Job, App, Backbone, Marionette, $, _) ->
           @_extractParams(model)
           defer.resolve(model)
         error: ->
-          defer.resolve(undefined)
+          defer.reject()
       )
       return defer.promise()
 

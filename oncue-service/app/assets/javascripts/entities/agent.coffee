@@ -23,7 +23,7 @@ App.module 'Entities.Agent', (Agent, App, Backbone, Marionette, $, _) ->
         success: (collection) ->
           defer.resolve(collection)
         error: ->
-          defer.resolve(undefined)
+          defer.reject()
       )
       return defer.promise()
 
@@ -35,6 +35,7 @@ App.module 'Entities.Agent', (Agent, App, Backbone, Marionette, $, _) ->
 
     # Listen for agents being started and update the collection
     App.vent.on('agent:started', (agentData) ->
+      console.log "Agent started!"
       agent = new Agent.Model(agentData)
       Agent.collection.add(agent)
     )
@@ -43,6 +44,12 @@ App.module 'Entities.Agent', (Agent, App, Backbone, Marionette, $, _) ->
     App.vent.on('agent:stopped', (agentData) ->
       agent = new Agent.Model(agentData)
       Agent.collection.remove(agent)
+    )
+
+    # When the websocket connects, update the collection
+    App.vent.on('websocket:connected', ->
+      console.log "Fetching agents!"
+      Agent.collection.fetch()
     )
 
     App.reqres.setHandler('agent:entities', ->
