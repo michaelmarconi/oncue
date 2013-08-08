@@ -50,27 +50,33 @@ App.module 'Entities.Job', (Job, App, Backbone, Marionette, $, _) ->
         return job
 
     getJobEntities: ->
-      jobs = new Job.Collection()
-      defer = $.Deferred()
-      jobs.fetch(
-        success: (model) ->
-          defer.resolve(model)
-        error: ->
-          defer.reject()
-      )
-      return defer.promise()
+      if Job.collection
+        return Job.collection
+      else
+        Job.collection = new Job.Collection()
+        defer = $.Deferred()
+        Job.collection.fetch(
+          success: (collection) ->
+            defer.resolve(collection)
+          error: ->
+            defer.reject()
+        )
+        return defer.promise()
 
     getJobEntity: (id) ->
-      job = new Job.Model(id: id)
-      defer = $.Deferred()
-      job.fetch(
-        success: (model) =>
-          @_extractParams(model)
-          defer.resolve(model)
-        error: ->
-          defer.reject()
-      )
-      return defer.promise()
+      if Job.collection and Job.collection.get(id)
+        return Job.collection.get(id)
+      else
+        job = new Job.Model(id: id)
+        defer = $.Deferred()
+        job.fetch(
+          success: (model) =>
+            @_extractParams(model)
+            defer.resolve(model)
+          error: ->
+            defer.reject()
+        )
+        return defer.promise()
 
     saveJobEntity: (job) ->
       defer = $.Deferred()
@@ -95,5 +101,21 @@ App.module 'Entities.Job', (Job, App, Backbone, Marionette, $, _) ->
     )
     App.reqres.setHandler('job:entity:save', (job) ->
       Job.controller.saveJobEntity(job)
+    )
+
+    # If the websocket reconnects, update the collection
+    App.vent.on('websocket:reconnected', ->
+      if Job.collection
+        Job.collection.fetch()
+    )
+
+    # Update the collection if a job is updated
+    App.vent.on('job:progressed', (jobData) ->
+      if Job.collection
+        job = Job.collection.get(jobData.id)
+        if job
+          job.set(jobData)
+        else
+          throw "Cannot update unrecognised job #{jobData.id}"
     )
 

@@ -18,38 +18,41 @@ App.module 'Entities.Agent', (Agent, App, Backbone, Marionette, $, _) ->
   class Agent.Controller extends Marionette.Controller
 
     getAgentEntities: ->
-      defer = $.Deferred()
-      Agent.collection.fetch(
-        success: (collection) ->
-          defer.resolve(collection)
-        error: ->
-          defer.reject()
-      )
-      return defer.promise()
+      if Agent.collection
+        return Agent.collection
+      else
+        Agent.collection = new Agent.Collection()
+        defer = $.Deferred()
+        Agent.collection.fetch(
+          success: (collection) ->
+            defer.resolve(collection)
+          error: ->
+            defer.reject()
+        )
+        return defer.promise()
 
 
   Agent.addInitializer ->
     Agent.controller = new Agent.Controller()
 
-    Agent.collection = new Agent.Collection()
-
     # Listen for agents being started and update the collection
     App.vent.on('agent:started', (agentData) ->
-      console.log "Agent started!"
-      agent = new Agent.Model(agentData)
-      Agent.collection.add(agent)
+      if Agent.collection
+        agent = new Agent.Model(agentData)
+        Agent.collection.add(agent)
     )
 
     # Listen for agents being stopped and update the collection
     App.vent.on('agent:stopped', (agentData) ->
-      agent = new Agent.Model(agentData)
-      Agent.collection.remove(agent)
+      if Agent.collection
+        agent = new Agent.Model(agentData)
+        Agent.collection.remove(agent)
     )
 
-    # When the websocket connects, update the collection
-    App.vent.on('websocket:connected', ->
-      console.log "Fetching agents!"
-      Agent.collection.fetch()
+    # If the websocket reconnects, update the collection
+    App.vent.on('websocket:reconnected', ->
+      if Agent.collection
+        Agent.collection.fetch()
     )
 
     App.reqres.setHandler('agent:entities', ->

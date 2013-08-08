@@ -6,6 +6,7 @@ App.module 'Entities.Websocket', (Websocket, App, Backbone, Marionette, $, _) ->
   class Websocket.Connection extends Backbone.Model
     defaults:
       state: 'connecting'
+      attempts: 0  # Number of connection attempts
 
     initialize: (options) ->
       super(options)
@@ -27,7 +28,10 @@ App.module 'Entities.Websocket', (Websocket, App, Backbone, Marionette, $, _) ->
 
     onOpen: =>
       @set('state', 'connected')
+      @set('attempts', @get('attempts') + 1 )
       App.vent.trigger('websocket:connected')
+      if @get('attempts') > 1
+        App.vent.trigger('websocket:reconnected')
 
     onClose: =>
       @set('state', 'connecting')
@@ -51,12 +55,13 @@ App.module 'Entities.Websocket', (Websocket, App, Backbone, Marionette, $, _) ->
 
   class Websocket.Controller extends Marionette.Controller
     getConnection: ->
+      if not Websocket.connection
+        Websocket.connection = new Websocket.Connection()
       return Websocket.connection
 
   Websocket.addInitializer ->
     Websocket.controller = new Websocket.Controller()
 
-    Websocket.connection = new Websocket.Connection()
     App.reqres.setHandler('websocket:connection', ->
       Websocket.controller.getConnection()
     )

@@ -115,10 +115,6 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
       gridController = new App.Components.Grid.Controller()
       return gridController.createGrid(gridModel)
 
-    _updateJob: (jobData, jobs) ->
-      job = jobs.get(jobData.id)
-      job.set(jobData)
-
     _runTestJob: (jobs, layout) ->
       testJob = new App.Entities.Job.Model(
         worker_type: 'oncue.worker.TestWorker'
@@ -188,10 +184,6 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
 
         App.vent.on('run:test:job', =>
           @_runTestJob(jobs, layout)
-        )
-
-        App.vent.on('job:progressed', (jobData) =>
-          @_updateJob(jobData, jobs)
         )
 
         layout.on('show', ->
