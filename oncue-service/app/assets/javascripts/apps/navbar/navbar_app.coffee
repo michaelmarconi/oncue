@@ -1,12 +1,15 @@
 App.module 'Navbar', (Navbar, App, Backbone, Marionette, $, _) ->
 
-  class Navbar.Controller extends Marionette.Controller
-
-    listNavbar: ->
-      Navbar.List.Controller.listNavbar()
+#  class Navbar.Controller extends Marionette.Controller
+#
+#    listNavbar: ->
+#      Navbar.List.controller.listNavbar()
+#
+#  # ~~~~~~~~~~~~
 
   Navbar.addInitializer ->
-    Navbar.controller = new Navbar.Controller()
+#    Navbar.controller = new Navbar.Controller()
+    Navbar.List.controller = new Navbar.List.Controller()
     Navbar.on('start', ->
-      Navbar.controller.listNavbar()
+      Navbar.List.controller.listNavbar()
     )
