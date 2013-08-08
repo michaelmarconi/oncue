@@ -13,7 +13,9 @@ App.module 'Jobs', (Jobs, App, Backbone, Marionette, $, _) ->
 
     showJob: (id) ->
       Jobs.Show.controller.showJob(id)
+      App.Navbar.List.controller.setActiveNavbarItem('jobs')
 
+  # ~~~~~~~~~~~~~
 
   Jobs.addInitializer ->
     Jobs.controller = new Jobs.Controller()
