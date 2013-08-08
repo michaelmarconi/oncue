@@ -33,6 +33,13 @@ public class OnCueService extends GlobalSettings {
 		 */
 		Config config = Akka.system().settings().config();
 		system = ActorSystem.create("oncue-service", config.getConfig("oncue").withFallback(config));
+		system.registerOnTermination(new Runnable() {
+			public void run() {
+				System.err
+						.println("The embedded OnCue actor system has shut down unexpectedly, so terminating service.");
+				System.exit(-1);
+			}
+		});
 
 		// Start the queue manager
 		system.actorOf(new Props(new UntypedActorFactory() {
@@ -67,7 +74,8 @@ public class OnCueService extends GlobalSettings {
 		while (!system.isTerminated()) {
 			try {
 				Thread.sleep(500);
-			} catch (InterruptedException e) {}
+			} catch (InterruptedException e) {
+			}
 		}
 	}
 }
