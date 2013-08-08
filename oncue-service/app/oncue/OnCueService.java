@@ -19,8 +19,15 @@ public class OnCueService extends GlobalSettings {
 	private static ActorSystem system;
 
 	public static ActorSystem system() {
-		if (system.isTerminated())
+		if (system.isTerminated()) {
 			bootSystem();
+			while (system.isTerminated()) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+				}
+			}
+		}
 		return system;
 	}
 
@@ -36,13 +43,6 @@ public class OnCueService extends GlobalSettings {
 		 */
 		Config config = Akka.system().settings().config();
 		system = ActorSystem.create("oncue-service", config.getConfig("oncue").withFallback(config));
-		// system.registerOnTermination(new Runnable() {
-		// public void run() {
-		// System.err
-		// .println("The embedded OnCue actor system has shut down unexpectedly, so terminating service.");
-		// System.exit(-1);
-		// }
-		// });
 
 		// Start the queue manager
 		system.actorOf(new Props(new UntypedActorFactory() {
@@ -69,12 +69,6 @@ public class OnCueService extends GlobalSettings {
 
 		// Start the event stream listener
 		system.actorOf(new Props(EventMachine.class), "event-stream-listener");
-	}
-
-	@Override
-	@SuppressWarnings("serial")
-	public void onStart(Application app) {
-		bootSystem();
 	}
 
 	@Override
