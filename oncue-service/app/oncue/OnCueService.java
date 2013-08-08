@@ -19,13 +19,23 @@ public class OnCueService extends GlobalSettings {
 	private static ActorSystem system;
 
 	public static ActorSystem system() {
+		if (system.isTerminated()) {
+			bootSystem();
+			while (system.isTerminated()) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+				}
+			}
+		}
 		return system;
 	}
 
-	@Override
+	/**
+	 * Boot up the embedded OnCue actor system
+	 */
 	@SuppressWarnings("serial")
-	public void onStart(Application app) {
-
+	private static void bootSystem() {
 		final Settings settings = SettingsProvider.SettingsProvider.get(Akka.system());
 
 		/*
@@ -67,7 +77,8 @@ public class OnCueService extends GlobalSettings {
 		while (!system.isTerminated()) {
 			try {
 				Thread.sleep(500);
-			} catch (InterruptedException e) {}
+			} catch (InterruptedException e) {
+			}
 		}
 	}
 }
