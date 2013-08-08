@@ -18,19 +18,6 @@ public class OnCueService extends GlobalSettings {
 	// The OnCue actor system
 	private static ActorSystem system;
 
-	public static ActorSystem system() {
-		if (system.isTerminated()) {
-			bootSystem();
-			while (system.isTerminated()) {
-				try {
-					Thread.sleep(100);
-				} catch (InterruptedException e) {
-				}
-			}
-		}
-		return system;
-	}
-
 	/**
 	 * Boot up the embedded OnCue actor system
 	 */
@@ -69,6 +56,27 @@ public class OnCueService extends GlobalSettings {
 
 		// Start the event stream listener
 		system.actorOf(new Props(EventMachine.class), "event-stream-listener");
+	}
+
+	/**
+	 * @return the embedded OnCue actor system
+	 */
+	public static ActorSystem system() {
+		if (system.isTerminated()) {
+			bootSystem();
+			while (system.isTerminated()) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+				}
+			}
+		}
+		return system;
+	}
+
+	@Override
+	public void onStart(Application app) {
+		bootSystem();
 	}
 
 	@Override
