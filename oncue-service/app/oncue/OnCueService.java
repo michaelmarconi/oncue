@@ -18,14 +18,11 @@ public class OnCueService extends GlobalSettings {
 	// The OnCue actor system
 	private static ActorSystem system;
 
-	public static ActorSystem system() {
-		return system;
-	}
-
-	@Override
+	/**
+	 * Boot up the embedded OnCue actor system
+	 */
 	@SuppressWarnings("serial")
-	public void onStart(Application app) {
-
+	private static void bootSystem() {
 		final Settings settings = SettingsProvider.SettingsProvider.get(Akka.system());
 
 		/*
@@ -61,13 +58,32 @@ public class OnCueService extends GlobalSettings {
 		system.actorOf(new Props(EventMachine.class), "event-stream-listener");
 	}
 
+	public static ActorSystem system() {
+		if (system.isTerminated()) {
+			bootSystem();
+			while (system.isTerminated()) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+				}
+			}
+		}
+		return system;
+	}
+
+	@Override
+	public void onStart(Application app) {
+		bootSystem();
+	}
+
 	@Override
 	public void onStop(Application app) {
 		system.shutdown();
 		while (!system.isTerminated()) {
 			try {
 				Thread.sleep(500);
-			} catch (InterruptedException e) {}
+			} catch (InterruptedException e) {
+			}
 		}
 	}
 }

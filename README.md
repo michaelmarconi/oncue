@@ -1,4 +1,4 @@
-onCue job scheduling framework
+OnCue job scheduling framework
 ==============================
 
 [![Build Status](https://travis-ci.org/michaelmarconi/oncue.png)](https://travis-ci.org/michaelmarconi/oncue)

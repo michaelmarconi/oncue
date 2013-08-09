@@ -5,7 +5,7 @@
 
     <groupId>oncue</groupId>
     <artifactId>oncue</artifactId>
-    <version>0.9.1</version>
+    <version>0.9.2</version>
     <packaging>pom</packaging>
 
     <name>OnCue</name>
