@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 
 import oncue.agent.ThrottledAgent;
-import oncue.agent.UnlimitedCapacityAgent;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobFailed;
@@ -47,7 +46,6 @@ import akka.testkit.TestActorRef;
  */
 public class WorkerDiesTest extends ActorSystemTest {
 
-	@SuppressWarnings("unused")
 	@Test
 	public void testWorkerDies() {
 		new JavaTestKit(system) {
@@ -68,11 +66,8 @@ public class WorkerDiesTest extends ActorSystemTest {
 					}
 				};
 
-				// Create a queue manager
-				ActorRef queueManager = createQueueManager(system, null);
-
 				// Create a scheduler with a probe
-				createScheduler(system, schedulerProbe.getRef());
+				ActorRef scheduler = createScheduler(system, schedulerProbe.getRef());
 
 				// Create and expose an agent
 				@SuppressWarnings("serial")
@@ -87,7 +82,7 @@ public class WorkerDiesTest extends ActorSystemTest {
 				final ThrottledAgent agent = agentRef.underlyingActor();
 
 				// Enqueue a job
-				queueManager.tell(new EnqueueJob(IncompetentTestWorker.class.getName()), getRef());
+				scheduler.tell(new EnqueueJob(IncompetentTestWorker.class.getName()), getRef());
 				Job job = expectMsgClass(Job.class);
 
 				// Expect some initial progress
@@ -111,7 +106,7 @@ public class WorkerDiesTest extends ActorSystemTest {
 				};
 
 				// Enqueue a job
-				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
+				scheduler.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
 				job = expectMsgClass(Job.class);
 
 				// Expect a job progress message at the scheduler

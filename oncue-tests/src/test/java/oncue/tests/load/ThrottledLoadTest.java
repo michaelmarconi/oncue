@@ -19,10 +19,12 @@ import java.util.Arrays;
 import java.util.HashSet;
 
 import junit.framework.Assert;
+import oncue.agent.ThrottledAgent;
 import oncue.backingstore.RedisBackingStore;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobProgress;
+import oncue.scheduler.ThrottledScheduler;
 import oncue.tests.base.ActorSystemTest;
 import oncue.tests.load.workers.SimpleLoadTestWorker;
 
@@ -38,7 +40,6 @@ import akka.testkit.JavaTestKit;
  * {@linkplain ThrottledScheduler} and {@linkplain ThrottledAgent} to ensure
  * that a limited number of jobs can be processed by the agent at any one time.
  */
-@SuppressWarnings("unused")
 public class ThrottledLoadTest extends ActorSystemTest {
 
 	private static final int JOB_COUNT = 100000;
@@ -48,9 +49,6 @@ public class ThrottledLoadTest extends ActorSystemTest {
 	public void throttledLoadTest() {
 		new JavaTestKit(system) {
 			{
-				// Create an in-memory queue manager
-				ActorRef queueManager = createQueueManager(system, null);
-
 				// Create a scheduler probe
 				final JavaTestKit schedulerProbe = new JavaTestKit(system) {
 					{
@@ -65,13 +63,13 @@ public class ThrottledLoadTest extends ActorSystemTest {
 				};
 
 				// Create a throttled, Redis-backed scheduler with a probe
-				createScheduler(system, schedulerProbe.getRef());
+				ActorRef scheduler = createScheduler(system, schedulerProbe.getRef());
 
 				log.info("Enqueing {} jobs...", JOB_COUNT);
 
 				// Enqueue a stack of jobs
 				for (int i = 0; i < JOB_COUNT; i++) {
-					queueManager.tell(new EnqueueJob(SimpleLoadTestWorker.class.getName()), null);
+					scheduler.tell(new EnqueueJob(SimpleLoadTestWorker.class.getName()), null);
 				}
 
 				// Wait for all jobs to be enqueued

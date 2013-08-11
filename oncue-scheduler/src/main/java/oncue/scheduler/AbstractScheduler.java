@@ -26,11 +26,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import oncue.backingstore.BackingStore;
 import oncue.common.events.AgentStartedEvent;
 import oncue.common.events.AgentStoppedEvent;
+import oncue.common.events.JobEnqueuedEvent;
 import oncue.common.events.JobFailedEvent;
 import oncue.common.events.JobProgressEvent;
 import oncue.common.messages.AbstractWorkRequest;
 import oncue.common.messages.Agent;
 import oncue.common.messages.AgentSummary;
+import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.Job.State;
 import oncue.common.messages.JobFailed;
@@ -68,7 +70,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	// Map an agent to a the set of worker types it can process
 	private Map<String, Set<String>> agentWorkers = new ConcurrentHashMap<>();
 
-	// The optional persistent backing store
+	// The persistent backing store
 	protected BackingStore backingStore;
 
 	// A scheduled check for jobs to broadcast
@@ -92,18 +94,12 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 
 	/**
 	 * @param backingStore
-	 *            is either an implementation of {@linkplain BackingStore} or
-	 *            null
-	 * @throws NoSuchJobException
+	 *            is an implementation of {@linkplain BackingStore}
 	 */
 	public AbstractScheduler(Class<? extends BackingStore> backingStore) {
-
-		if (backingStore == null) {
-			unscheduledJobs = new UnscheduledJobs(null, log);
-			scheduledJobs = new ScheduledJobs(null);
-			log.info("{} is running without a backing store", getClass().getSimpleName());
-			return;
-		}
+		
+		if (backingStore == null)
+			throw new RuntimeException("A backing store implementation must be specified!");
 
 		try {
 			this.backingStore = backingStore.getConstructor(ActorSystem.class, Settings.class).newInstance(
@@ -235,6 +231,19 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	}
 
 	/**
+	 * Enqueue a new job
+	 */
+	private Job enqueueJob(EnqueueJob enqueueJob) {
+		Job job = new Job(backingStore.getNextJobID(), enqueueJob.getWorkerType());
+		if (enqueueJob.getParams() != null)
+			job.setParams(enqueueJob.getParams());
+		unscheduledJobs.addJob(job);
+		getContext().system().eventStream().publish(new JobEnqueuedEvent(job));
+		startJobsBroadcast();
+		return job;
+	}
+
+	/**
 	 * @return the set of all registered agents
 	 */
 	protected Set<String> getAgents() {
@@ -340,10 +349,10 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 			checkAgents();
 		}
 
-		else if (message instanceof Job) {
-			log.debug("Got a new job to schedule: {}", message);
-			unscheduledJobs.addJob((Job) message);
-			startJobsBroadcast();
+		else if (message instanceof EnqueueJob) {
+			log.debug("Got a new job to enqueue: {}", message);
+			Job job = enqueueJob((EnqueueJob) message);
+			getSender().tell(job, getSelf());
 		}
 
 		else if (message instanceof AbstractWorkRequest) {

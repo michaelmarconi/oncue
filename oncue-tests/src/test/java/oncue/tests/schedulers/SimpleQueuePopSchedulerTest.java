@@ -41,21 +41,17 @@ public class SimpleQueuePopSchedulerTest extends ActorSystemTest {
 	 * A simple queue-pop scheduler should only schedule jobs to agents that
 	 * have the appropriate worker types.
 	 */
-	@SuppressWarnings("unused")
 	@Test
 	public void scheduleJobsToCapableAgents() {
 		new JavaTestKit(system) {
 			{
-				// Create a queue manager
-				ActorRef queueManager = createQueueManager(system);
-
 				// Create a scheduler
-				createScheduler(system);
+				ActorRef scheduler = createScheduler(system);
 
 				// Enqueue jobs
-				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
+				scheduler.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
 				expectMsgClass(Job.class);
-				queueManager.tell(new EnqueueJob(TestWorker2.class.getName()), getRef());
+				scheduler.tell(new EnqueueJob(TestWorker2.class.getName()), getRef());
 				expectMsgClass(Job.class);
 
 				// ---

@@ -52,22 +52,22 @@ public abstract class AbstractWorker extends UntypedActor {
 	protected abstract void doWork(Job job) throws Exception;
 
 	/**
-	 * Submit the job to the specified queue manager.
+	 * Submit the job to the scheduler.
 	 * 
 	 * @param workerType
 	 *            The qualified class name of the worker to instantiate
 	 * @param jobParameters
 	 *            The user-defined parameters map to pass to the job
 	 * @throws EnqueueJobException
-	 *             If the queue manager does not exist or the job is not
-	 *             accepted within the timeout
+	 *             If the scheduler does not exist or the job is not accepted
+	 *             within the timeout
 	 */
 	protected void enqueueJob(String workerType, Map<String, String> jobParameters) throws EnqueueJobException {
 
 		try {
 			Await.result(
-					ask(getContext().actorFor(settings.QUEUE_MANAGER_PATH), new EnqueueJob(workerType, jobParameters),
-							new Timeout(settings.QUEUE_MANAGER_TIMEOUT)), settings.QUEUE_MANAGER_TIMEOUT);
+					ask(getContext().actorFor(settings.SCHEDULER_PATH), new EnqueueJob(workerType, jobParameters),
+							new Timeout(settings.SCHEDULER_TIMEOUT)), settings.SCHEDULER_TIMEOUT);
 		} catch (Exception e) {
 			if (e instanceof AskTimeoutException) {
 				log.error(e, "Timeout waiting for queue manager to enqueue job");

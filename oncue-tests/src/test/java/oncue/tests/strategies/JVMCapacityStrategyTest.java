@@ -26,6 +26,7 @@ import oncue.scheduler.JVMCapacityScheduler;
 import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.TestWorker;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import akka.actor.Actor;
@@ -68,16 +69,13 @@ public class JVMCapacityStrategyTest extends ActorSystemTest {
 
 	@Test
 	@SuppressWarnings("serial")
+	@Ignore("Ignore this test until this strategy becomes necessary")
 	public void jvmCapacityStrategyTest() {
 		new JavaTestKit(system) {
 
 			{
-				// Create a queue manager
-				ActorRef queueManager = createQueueManager(system, null);
-
 				// Create a scheduler probe
 				final JavaTestKit schedulerProbe = new JavaTestKit(system) {
-
 					{
 						new IgnoreMsg() {
 
@@ -94,7 +92,6 @@ public class JVMCapacityStrategyTest extends ActorSystemTest {
 
 				// Create a naked JVM capacity-aware scheduler
 				final Props schedulerProps = new Props(new UntypedActorFactory() {
-
 					@Override
 					public Actor create() throws Exception {
 						JVMCapacityScheduler scheduler = new JVMCapacityScheduler(null);
@@ -133,19 +130,19 @@ public class JVMCapacityStrategyTest extends ActorSystemTest {
 				/*
 				 * Enqueue jobs with various sizes
 				 */
-				enqueueJob(queueManager, getRef(), 100);
+				enqueueJob(schedulerRef, getRef(), 100);
 				Job job1 = expectMsgClass(Job.class);
 
-				enqueueJob(queueManager, getRef(), 200);
+				enqueueJob(schedulerRef, getRef(), 200);
 				Job job2 = expectMsgClass(Job.class);
 
-				enqueueJob(queueManager, getRef(), 50);
+				enqueueJob(schedulerRef, getRef(), 50);
 				Job job3 = expectMsgClass(Job.class);
 
-				enqueueJob(queueManager, getRef(), 200);
+				enqueueJob(schedulerRef, getRef(), 200);
 				Job job4 = expectMsgClass(Job.class);
 
-				enqueueJob(queueManager, getRef(), 500);
+				enqueueJob(schedulerRef, getRef(), 500);
 				Job job5 = expectMsgClass(Job.class);
 
 				// Unpause the scheduler
@@ -221,8 +218,8 @@ public class JVMCapacityStrategyTest extends ActorSystemTest {
 	}
 
 	@SuppressWarnings("serial")
-	private void enqueueJob(ActorRef queueManager, ActorRef testKit, final int jobSize) {
-		queueManager.tell(new EnqueueJob(TestWorker.class.getName(), new HashMap<String, String>() {
+	private void enqueueJob(ActorRef scheduler, ActorRef testKit, final int jobSize) {
+		scheduler.tell(new EnqueueJob(TestWorker.class.getName(), new HashMap<String, String>() {
 
 			{
 				put(JVMCapacityScheduler.JOB_SIZE, new Integer(jobSize).toString());

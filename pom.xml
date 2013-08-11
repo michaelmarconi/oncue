@@ -28,7 +28,6 @@
     <modules>
         <module>oncue-common</module>
         <module>oncue-agent</module>
-        <module>oncue-queuemanager</module>
         <module>oncue-scheduler</module>
         <module>oncue-backingstore</module>
         <module>oncue-timedjobs</module>

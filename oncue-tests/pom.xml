@@ -48,12 +48,6 @@
 		</dependency>
 		<dependency>
 			<groupId>oncue</groupId>
-			<artifactId>oncue-queuemanager</artifactId>
-			<version>0.9.3-SNAPSHOT</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>oncue</groupId>
 			<artifactId>oncue-scheduler</artifactId>
 			<version>0.9.3-SNAPSHOT</version>
 			<scope>test</scope>

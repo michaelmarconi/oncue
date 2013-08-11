@@ -52,7 +52,6 @@ public class DistributedThrottledLoadTest extends DistributedActorSystemTest {
 	private static final int JOB_COUNT = 20000;
 
 	@Test
-	@SuppressWarnings("unused")
 	@Ignore("Performance issues need to be cured before we get this running again.")
 	public void distributedThrottledLoadTest() {
 
@@ -66,29 +65,26 @@ public class DistributedThrottledLoadTest extends DistributedActorSystemTest {
 
 					@Override
 					protected boolean ignore(Object message) {
-						return !(message instanceof JobProgress || message instanceof Job);
+						return !(message instanceof JobProgress || message instanceof EnqueueJob);
 					}
 				};
 			}
 		};
 
-		// Create a queue manager
-		ActorRef queueManager = createQueueManager(null);
-
 		// Create a throttled, Redis-backed scheduler with a probe
-		createScheduler(schedulerProbe.getRef());
+		ActorRef scheduler = createScheduler(schedulerProbe.getRef());
 
 		serviceLog.info("Enqueing {} jobs...", JOB_COUNT);
 
 		// Enqueue a stack of jobs
 		for (int i = 0; i < JOB_COUNT; i++) {
-			queueManager.tell(new EnqueueJob(SimpleLoadTestWorker.class.getName()), queueManagerProbe.getRef());
+			scheduler.tell(new EnqueueJob(SimpleLoadTestWorker.class.getName()), queueManagerProbe.getRef());
 			queueManagerProbe.expectMsgClass(Job.class);
 		}
 
 		// Wait for all jobs to be enqueued
 		for (int i = 0; i < JOB_COUNT; i++) {
-			schedulerProbe.expectMsgClass(Job.class);
+			schedulerProbe.expectMsgClass(EnqueueJob.class);
 		}
 
 		serviceLog.info("Jobs enqueued.");

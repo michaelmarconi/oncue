@@ -46,9 +46,6 @@ public class SpecialisedAgentsTest extends ActorSystemTest {
 	public void agentsOnlyRespondToWorkTheyCanHandle() {
 		new JavaTestKit(system) {
 			{
-				// Create a queue manager
-				ActorRef queueManager = createQueueManager(system);
-
 				// Create a scheduler with a probe
 				final JavaTestKit schedulerProbe = new JavaTestKit(system) {
 					{
@@ -62,7 +59,7 @@ public class SpecialisedAgentsTest extends ActorSystemTest {
 						};
 					}
 				};
-				createScheduler(system, schedulerProbe.getRef());
+				ActorRef scheduler = createScheduler(system, schedulerProbe.getRef());
 
 				// Create an agent that can run "TestWorker" workers
 				ActorRef agent1 = createAgent(system, new HashSet<String>(Arrays.asList(TestWorker.class.getName())));
@@ -78,7 +75,7 @@ public class SpecialisedAgentsTest extends ActorSystemTest {
 				// ---
 
 				// Enqueue a job for TestWorker
-				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
+				scheduler.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
 
 				// Expect work request from agent 1
 				AbstractWorkRequest workRequest = schedulerProbe.expectMsgClass(AbstractWorkRequest.class);
@@ -94,7 +91,7 @@ public class SpecialisedAgentsTest extends ActorSystemTest {
 				// ---
 
 				// Enqueue a job for TestWorker2
-				queueManager.tell(new EnqueueJob(TestWorker2.class.getName()), getRef());
+				scheduler.tell(new EnqueueJob(TestWorker2.class.getName()), getRef());
 
 				// Expect work request from agent 2
 				workRequest = schedulerProbe.expectMsgClass(AbstractWorkRequest.class);

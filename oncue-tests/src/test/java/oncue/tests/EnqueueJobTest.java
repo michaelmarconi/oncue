@@ -32,26 +32,18 @@ public class EnqueueJobTest extends ActorSystemTest {
 	public void testEnqueuingJob() {
 		new JavaTestKit(system) {
 			{
-				// Create a queue manager
-				ActorRef queueManager = createQueueManager(system, null);
-
-				// Create a scheduler with a probe
-				final JavaTestKit schedulerProbe = new JavaTestKit(system);
-				createScheduler(system, schedulerProbe.getRef());
+				// Create a scheduler
+				ActorRef scheduler = createScheduler(system, null);
 
 				for (int i = 0; i < 2; i++) {
-					// Enqueue a job
-					queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
-					Job job = expectMsgClass(Job.class);
 
+					// Enqueue a job
+					scheduler.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
+
+					// Expect a response from the scheduler
+					Job job = expectMsgClass(Job.class);
 					assertEquals("The job has the wrong ID", i + 1, job.getId());
 					assertEquals("The job has the worker type", TestWorker.class.getName(), job.getWorkerType());
-
-					// Expect the job at the scheduler
-					Job schedulerJob = schedulerProbe.expectMsgClass(Job.class);
-
-					// Compare the jobs to ensure they are the same
-					assertEquals("Didn't find the expected job", job, schedulerJob);
 				}
 			}
 		};

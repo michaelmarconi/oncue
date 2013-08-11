@@ -31,14 +31,6 @@ public class OnCueService extends GlobalSettings {
 		Config config = Akka.system().settings().config();
 		system = ActorSystem.create("oncue-service", config.getConfig("oncue").withFallback(config));
 
-		// Start the queue manager
-		system.actorOf(new Props(new UntypedActorFactory() {
-			@Override
-			public Actor create() throws Exception {
-				return (Actor) Class.forName(settings.QUEUE_MANAGER_CLASS).newInstance();
-			}
-		}), settings.QUEUE_MANAGER_NAME);
-
 		// Start the scheduler
 		system.actorOf(new Props(new UntypedActorFactory() {
 			@Override

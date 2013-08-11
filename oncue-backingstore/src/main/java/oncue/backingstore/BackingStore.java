@@ -53,6 +53,13 @@ public interface BackingStore {
 	public List<Job> getFailedJobs();
 
 	/**
+	 * Fetch the next monotonically-increasing job identifier. NOTE: This action
+	 * *must* increment the job identifier in the persistent store, as well as
+	 * return it!
+	 */
+	public long getNextJobID();
+
+	/**
 	 * Persist the details of a failed job
 	 * 
 	 * @param job
@@ -68,12 +75,6 @@ public interface BackingStore {
 	 */
 	public void persistJobProgress(Job job);
 
-	/**
-	 * Pop the first job off the unscheduled jobs queue
-	 * 
-	 * @return the id of the popped job
-	 */
-	public long popUnscheduledJob();
 
 	/**
 	 * Remove a job from the list of scheduled jobs

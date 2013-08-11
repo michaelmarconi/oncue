@@ -330,17 +330,6 @@ public class RedisBackingStore extends AbstractBackingStore {
 	}
 
 	@Override
-	public long popUnscheduledJob() {
-		Jedis redis = RedisBackingStore.getConnection();
-
-		String jobID = redis.rpop(UNSCHEDULED_JOBS);
-
-		RedisBackingStore.releaseConnection(redis);
-
-		return new Long(jobID);
-	}
-
-	@Override
 	public void removeScheduledJob(Job job) {
 		Jedis redis = RedisBackingStore.getConnection();
 
@@ -384,5 +373,19 @@ public class RedisBackingStore extends AbstractBackingStore {
 		RedisBackingStore.releaseConnection(redis);
 
 		return jobs;
+	}
+
+	@Override
+	public long getNextJobID() {
+
+		// Get a connection to Redis
+		Jedis redis = getConnection();
+
+		// Increment and return the latest job ID
+		Long jobId = redis.incr(RedisBackingStore.JOB_COUNT_KEY);
+
+		releaseConnection(redis);
+
+		return jobId;
 	}
 }

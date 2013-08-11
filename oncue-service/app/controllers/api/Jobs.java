@@ -129,13 +129,13 @@ public class Jobs extends Controller {
 			return badRequest(request().body().asJson());
 		}
 
-		ActorRef queueManager = OnCueService.system().actorFor(settings.QUEUE_MANAGER_PATH);
+		ActorRef scheduler = OnCueService.system().actorFor(settings.SCHEDULER_PATH);
 		return async(Akka.asPromise(
-				ask(queueManager, enqueueJob, new Timeout(settings.SCHEDULER_TIMEOUT)).recover(new Recover<Object>() {
+				ask(scheduler, enqueueJob, new Timeout(settings.SCHEDULER_TIMEOUT)).recover(new Recover<Object>() {
 					@Override
 					public Object recover(Throwable t) throws Throwable {
 						if (t instanceof AskTimeoutException) {
-							Logger.error("Timeout waiting for queue manager to enqueue job", t);
+							Logger.error("Timeout waiting for scheduler to enqueue job", t);
 							return internalServerError("Timeout");
 						} else {
 							Logger.error("Failed to enqueue job", t);

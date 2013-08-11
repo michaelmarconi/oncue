@@ -84,9 +84,6 @@ public class SchedulerDiesTest extends ActorSystemTest {
 					}
 				};
 
-				// Create a queue manager
-				ActorRef queueManager = createQueueManager(system, null);
-
 				// Create a Redis-backed scheduler with a probe
 				final ActorRef scheduler = createScheduler(system, schedulerProbe.getRef());
 
@@ -95,7 +92,7 @@ public class SchedulerDiesTest extends ActorSystemTest {
 						agentProbe.getRef());
 
 				// Enqueue a job
-				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
+				scheduler.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
 				Job job = expectMsgClass(Job.class);
 
 				// Wait for some initial progress
