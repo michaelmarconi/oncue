@@ -34,6 +34,7 @@ import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.IncompetentTestWorker;
 import oncue.tests.workers.TestWorker;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import redis.clients.jedis.Jedis;
@@ -367,6 +368,7 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 		Job job = new Job(0, TestWorker.class.getName());
 		job.setParams(params);
 		job.setProgress(0.8);
+		job.setRerun(true);
 		Jedis redis = RedisBackingStore.getConnection();
 		RedisBackingStore.persistJob(job, "test_queue", redis);
 		Job loadedJob = RedisBackingStore.loadJob(0, redis);
@@ -376,8 +378,21 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 		assertEquals(job.getEnqueuedAt().toString(), loadedJob.getEnqueuedAt().toString());
 		assertEquals(job.getWorkerType(), loadedJob.getWorkerType());
 		assertEquals(job.getProgress(), loadedJob.getProgress());
+		assertEquals(job.isRerun(), loadedJob.isRerun());
 		assertEquals("Wrong number of parameters", 2, loadedJob.getParams().size());
 		assertEquals(job.getParams().get("month"), loadedJob.getParams().get("month"));
 		assertEquals(job.getParams().get("size"), loadedJob.getParams().get("size"));
+	}
+
+	@Test
+	@Ignore("Not implemented yet") // TODO
+	public void removeCompletedJob() {
+
+	}
+
+	@Test
+	@Ignore("Not implemented yet") // TODO
+	public void removeFailedJob() {
+
 	}
 }

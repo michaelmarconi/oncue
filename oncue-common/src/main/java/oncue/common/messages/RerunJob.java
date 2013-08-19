@@ -13,38 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package oncue.worker;
+package oncue.common.messages;
 
-import oncue.common.messages.Job;
+import java.io.Serializable;
 
 /**
- * A simple test worker, useful for checking that everything is working at
- * runtime.
+ * This message is sent to the queue manager (a concrete implementation of
+ * AbstractQueueManager) in order to enqueue another run of an existing job.
  */
-public class TestWorker extends AbstractWorker {
+public class RerunJob implements Serializable {
 
-	@Override
-	public void doWork(Job job) throws InterruptedException {
-		processJob();
+	private static final long serialVersionUID = -5312109301345363059L;
+	private long id;
+
+	public RerunJob() {
 	}
 
-	/**
-	 * Simply increment progress while waiting for a second between increments.
-	 * 
-	 * @throws InterruptedException
-	 */
-	private void processJob() throws InterruptedException {
-		double progress = 0.0;
-		for (int i = 0; i < 3; i++) {
-			progress += 0.25;
-			Thread.sleep(1000);
-			reportProgress(progress);
-		}
-		Thread.sleep(1000);
+	public RerunJob(long id) {
+		this.setId(id);
+	}
+
+	public long getId() {
+		return id;
+	}
+
+	public void setId(long id) {
+		this.id = id;
 	}
 
 	@Override
-	protected void redoWork(Job job) throws Exception {
-		processJob();
+	public String toString() {
+		return String.format("Re-run job %s", id);
 	}
+
 }

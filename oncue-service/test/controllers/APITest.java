@@ -7,6 +7,7 @@ import static org.fest.assertions.Assertions.assertThat;
 import static play.mvc.Http.Status.OK;
 import static play.test.Helpers.GET;
 import static play.test.Helpers.POST;
+import static play.test.Helpers.PUT;
 import static play.test.Helpers.charset;
 import static play.test.Helpers.contentAsString;
 import static play.test.Helpers.contentType;
@@ -158,6 +159,37 @@ public class APITest {
 		assertEquals(0.0, job.getProgress());
 		assertEquals("Value 1", job.getParams().get("key1"));
 		assertEquals("Value 2", job.getParams().get("key2"));
+	}
+
+	@Test
+	public void rerunJob() throws JsonParseException, JsonMappingException, IOException {
+		EnqueueJob enqueueJob = new EnqueueJob("oncue.test.TestWorker");
+
+		/*
+		 * TODO: migrate to the 'route' method when we move to Play 2.1.1, which
+		 * fixes a bug in the Json payload delivery that causes this test to
+		 * fail!
+		 * 
+		 * Result result = route(fakeRequest(POST, "/api/jobs").withJsonBody(
+		 * Json.toJson(enqueueJob)));
+		 */
+
+		Result result = routeAndCall(fakeRequest(POST, "/api/jobs").withJsonBody(mapper.valueToTree(enqueueJob)));
+		Job job = mapper.readValue(contentAsString(result), Job.class);
+
+//		result = routeAndCall(fakeRequest(PUT, "/api/jobs/" + job.getId()));
+//		Job rerunJob = mapper.readValue(contentAsString(result), Job.class);
+//
+//		assertEquals(OK, status(result));
+//		assertEquals("application/json", contentType(result));
+//		assertEquals("utf-8", charset(result));
+//
+//		assertEquals("oncue.test.TestWorker", rerunJob.getWorkerType());
+//		assertTrue(expectedEnqueuedAt.isEqual(rerunJob.getEnqueuedAt()));
+//		assertEquals(job.getId(), rerunJob.getId());
+//		assertEquals(0.0, rerunJob.getProgress());
+//		assertTrue(job.getParams().isEmpty());
+//		assertTrue(rerunJob.isRerun() == true);
 	}
 
 }

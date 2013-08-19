@@ -18,4 +18,5 @@ GET   	/api/agents               	controllers.api.Agents.index()
 GET		/api/jobs                   controllers.api.Jobs.index()
 GET		/api/jobs/:id               controllers.api.Jobs.show(id: Long)
 POST	/api/jobs                   controllers.api.Jobs.create()
+PUT		/api/jobs/:id               controllers.api.Jobs.rerun(id: Long)
 

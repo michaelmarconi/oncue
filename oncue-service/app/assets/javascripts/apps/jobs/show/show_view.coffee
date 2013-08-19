@@ -28,20 +28,14 @@ App.module "Jobs.Show", (Show, App, Backbone, Marionette, $, _) ->
   class Show.Layout extends Marionette.Layout
     id: 'jobs_show'
     template: '#jobs_show_layout'
-    events:
-      'click a' : '_listJobs'
     regions:
+      toolbarRegion: '#toolbar_region'
+      errorRegion: '#error_region'
       detailsRegion: '#details_region'
       paramsRegion: '#params_region'
 
     initialize: ->
       _.extend(this, new TemplateHelpers())
-
-    _listJobs: (event) ->
-      event.preventDefault()
-      event.stopPropagation()
-      App.trigger('jobs:list')
-
 
   class Show.JobDetailsView extends Marionette.ItemView
     template: '#job_details_view'

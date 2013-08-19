@@ -17,6 +17,7 @@ package oncue.scheduler;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -38,11 +39,13 @@ import oncue.common.messages.Job.State;
 import oncue.common.messages.JobFailed;
 import oncue.common.messages.JobProgress;
 import oncue.common.messages.JobSummary;
+import oncue.common.messages.RerunJob;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
 import oncue.common.messages.WorkAvailable;
 import oncue.common.messages.WorkResponse;
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
+import oncue.scheduler.exceptions.JobNotFoundException;
 import oncue.scheduler.exceptions.ScheduleException;
 import scala.concurrent.duration.Deadline;
 import akka.actor.ActorInitializationException;
@@ -97,7 +100,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	 *            is an implementation of {@linkplain BackingStore}
 	 */
 	public AbstractScheduler(Class<? extends BackingStore> backingStore) {
-		
+
 		if (backingStore == null)
 			throw new RuntimeException("A backing store implementation must be specified!");
 
@@ -244,6 +247,23 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	}
 
 	/**
+	 * Look through all jobs to find an existing job
+	 * 
+	 * @param id
+	 *            is the unique job identifier
+	 * @return the matching job
+	 * @throws JobNotFoundException
+	 */
+	private Job findExistingJob(long id) throws JobNotFoundException {
+		Set<Job> jobs = getAllJobs();
+		for (Job job : jobs) {
+			if (job.getId() == id)
+				return job;
+		}
+		throw new JobNotFoundException("Failed to find an existing job with ID " + id);
+	}
+
+	/**
 	 * @return the set of all registered agents
 	 */
 	protected Set<String> getAgents() {
@@ -255,6 +275,21 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	 */
 	protected Map<String, Set<String>> getAgentWorkers() {
 		return agentWorkers;
+	}
+
+	/**
+	 * @return the full set of unscheduled, scheduled, complete and failed jobs
+	 */
+	private Set<Job> getAllJobs() {
+		Set<Job> jobs = new HashSet<>();
+		for (Iterator<Job> iterator = unscheduledJobs.iterator(); iterator.hasNext();) {
+			jobs.add(iterator.next());
+		}
+		jobs.addAll(scheduledJobs.getJobs());
+		jobs.addAll(backingStore.getCompletedJobs());
+		jobs.addAll(backingStore.getFailedJobs());
+
+		return jobs;
 	}
 
 	/**
@@ -353,6 +388,13 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 			log.debug("Got a new job to enqueue: {}", message);
 			Job job = enqueueJob((EnqueueJob) message);
 			getSender().tell(job, getSelf());
+		}
+
+		else if (message instanceof RerunJob) {
+			log.debug("Got an existing job to re-run: {}", message);
+			Job job = findExistingJob(((RerunJob) message).getId());
+			Job rerunJob = rerunJob(job);
+			getSender().tell(rerunJob, getSelf());
 		}
 
 		else if (message instanceof AbstractWorkRequest) {
@@ -491,14 +533,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	 */
 	private void replyWithJobSummary() {
 		List<Job> jobs = new ArrayList<>();
-		for (Iterator<Job> iterator = unscheduledJobs.iterator(); iterator.hasNext();) {
-			jobs.add(iterator.next());
-		}
-		jobs.addAll(scheduledJobs.getJobs());
-		if (backingStore != null) {
-			jobs.addAll(backingStore.getCompletedJobs());
-			jobs.addAll(backingStore.getFailedJobs());
-		}
+		jobs.addAll(getAllJobs());
 		JobSummary response = new JobSummary(jobs);
 		getSender().tell(response, getSelf());
 	}
@@ -509,6 +544,30 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	 */
 	private void replyWithNoWork(ActorRef agent) {
 		agent.tell(new WorkResponse(), getSelf());
+	}
+
+	/**
+	 * Re-run an existing job
+	 * 
+	 * @param job
+	 *            is the job to re-run
+	 */
+	private Job rerunJob(Job job) {
+		Job rerunJob = new Job(job.getId(), job.getWorkerType());
+		if (job.getParams() != null)
+			rerunJob.setParams(job.getParams());
+		rerunJob.setRerun(true);
+		
+		// TODO Find a way to make this transactional
+		unscheduledJobs.addJob(rerunJob);
+		if (job.getState() == Job.State.COMPLETE)
+			backingStore.removeCompletedJob(job);
+		else if (job.getState() == Job.State.FAILED)
+			backingStore.removeFailedJob(job);
+		
+		getContext().system().eventStream().publish(new JobEnqueuedEvent(job));
+		startJobsBroadcast();
+		return rerunJob;
 	}
 
 	/**

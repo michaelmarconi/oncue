@@ -34,12 +34,9 @@ App.module "Components.Grid", (Grid, App, Backbone, Marionette, $, _) ->
         )
 
     #
-    # Show a grid, with optional pagination and empty view.
-    #
-    # Returns App.Components.Grid.Layout
+    # Create a grid from a model, with optional pagination and empty view.
     #
     createGrid: (model) ->
-
       @EmptyView = model.get('emptyView')
       @collection = model.get('items')
       @paginated = model.get('paginated')
@@ -61,4 +58,17 @@ App.module "Components.Grid", (Grid, App, Backbone, Marionette, $, _) ->
         else if @EmptyView
           @layout.gridRegion.show(@emptyView)
       )
+
+    #
+    # Access the layout for this grid, once it has been created.
+    #
+    getGridLayout: =>
+      if not @layout then throw 'The grid must be created first'
       return @layout
+
+    #
+    # Get the list of models that are currently selected
+    #
+    getSelectedModels: =>
+      if not @gridView then throw 'The grid must be created first'
+      return @gridView.getSelectedModels()

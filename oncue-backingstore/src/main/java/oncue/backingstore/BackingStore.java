@@ -75,7 +75,16 @@ public interface BackingStore {
 	 */
 	public void persistJobProgress(Job job);
 
+	/**
+	 * Remove a job from the list of completed jobs
+	 */
+	public void removeCompletedJob(Job job);
 
+	/**
+	 * Remove a job from the list of failed jobs
+	 */
+	public void removeFailedJob(Job job);
+	
 	/**
 	 * Remove a job from the list of scheduled jobs
 	 * 
@@ -83,11 +92,11 @@ public interface BackingStore {
 	 *            is the {@linkplain Job} to remove
 	 */
 	public void removeScheduledJob(Job job);
-
+	
 	/**
 	 * Remove a job from the unscheduled jobs queue
 	 */
-	public void removeUnscheduledJob(Job job);
+	public void removeUnscheduledJob(Job job);	
 
 	/**
 	 * Restore the unscheduled jobs queue from both scheduled and unscheduled

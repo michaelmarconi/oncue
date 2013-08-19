@@ -43,10 +43,17 @@ App.module "Components.Toolbar", (Toolbar, App, Backbone, Marionette, $, _) ->
     className: -> "btn #{@model.get('cssClasses')}"
     events:
       'click' : '_handleClick'
+    modelEvents:
+      'change' : 'render'
     _handleClick: (event) ->
-      @trigger(@model.get('event'))
+      if @model.get('enabled')
+        @trigger(@model.get('event'))
 
     onRender: ->
+      if @model.get('enabled')
+        @$el.removeClass('disabled')
+      else
+        @$el.addClass('disabled')
       tooltip = @model.get('tooltip')
       if tooltip
         @$el.tooltip(
@@ -54,6 +61,9 @@ App.module "Components.Toolbar", (Toolbar, App, Backbone, Marionette, $, _) ->
           container: 'body'
           delay: { show: 500, hide: 100 }
         )
+
+    onClose: ->
+      @$el.tooltip('destroy')
 
   #
   # Display a toolbar button strip

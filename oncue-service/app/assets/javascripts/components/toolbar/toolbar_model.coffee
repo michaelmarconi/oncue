@@ -7,9 +7,13 @@ App.module "Components.Toolbar", (Toolbar, App, Backbone, Marionette, $, _) ->
   #    tooltip: Tooltip text on hover (optional)
   #       icon: The class name of the icon that appears on the button (optional)
   # cssClasses: A list of extra classes to apply to the button (optional)
+  #    enabled: Whether or not the button is enabled (optional, boolean)
   #      event: The name of the event to fire when the button is clicked (mandatory)
   #
   class Toolbar.ButtonModel extends Backbone.Model
+    defaults:
+      enabled: true
+
     initialize: (options) ->
       super(options)
       if not @isValid() then throw @validationError

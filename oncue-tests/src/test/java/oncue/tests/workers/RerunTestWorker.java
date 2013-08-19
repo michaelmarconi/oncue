@@ -13,38 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package oncue.worker;
+package oncue.tests.workers;
 
 import oncue.common.messages.Job;
+import oncue.worker.AbstractWorker;
+import redis.clients.jedis.Jedis;
 
 /**
- * A simple test worker, useful for checking that everything is working at
- * runtime.
+ * A test worker that leaves external evidence in Redis that it has been
+ * re-run.
  */
-public class TestWorker extends AbstractWorker {
+public class RerunTestWorker extends AbstractWorker {
 
 	@Override
 	public void doWork(Job job) throws InterruptedException {
-		processJob();
-	}
-
-	/**
-	 * Simply increment progress while waiting for a second between increments.
-	 * 
-	 * @throws InterruptedException
-	 */
-	private void processJob() throws InterruptedException {
-		double progress = 0.0;
-		for (int i = 0; i < 3; i++) {
-			progress += 0.25;
-			Thread.sleep(1000);
-			reportProgress(progress);
-		}
-		Thread.sleep(1000);
+		Thread.sleep(500);
+		log.info("Test job ran normally");
 	}
 
 	@Override
 	protected void redoWork(Job job) throws Exception {
-		processJob();
+		Thread.sleep(500);
+		log.info("Test job was re-run!");
+		Jedis jedis = new Jedis("localhost");
+		jedis.set("oncue.tests.workers.RerunTestworker", "re-run");
 	}
+
 }

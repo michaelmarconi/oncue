@@ -12,20 +12,24 @@
   <link rel="stylesheet" media="screen" href="@routes.Assets.at("stylesheets/bootstrap/bootstrap.css")">
   <link rel="stylesheet" media="screen" href="@routes.Assets.at("stylesheets/font-awesome.min.css")">
   <link rel="stylesheet" media="screen" href="@routes.Assets.at("stylesheets/main.css")">
-  <style>
-      body {
-          padding-top: 60px;
-      }
-  </style>
   <link rel="stylesheet" href="@routes.Assets.at("stylesheets/bootstrap/responsive"+ minified + ".css")">
 </head>
 
 <body>
-  <div id="navbar"></div>
 
-  <div class="container">
-    <div class="row">
-      <div id="content"></div>
+  <div id="wrap">
+    <div id="navbar"></div>
+    <div class="container">
+      <div class="row">
+        <div id="content"></div>
+        <div id="push"></div>
+      </div>
+    </div>
+    <div id="push"></div>
+  </div>
+  <div id="footer">
+    <div class="container">
+      <p class="muted centered">Release <code>0.9.3-SNAPSHOT</code> </p>
     </div>
   </div>
 
@@ -53,11 +57,6 @@
   <script type="text/template" id="navbar_list_layout">
     <div class="navbar-inner">
       <div class="container">
-        <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-        </button>
         <div id="connection_region"></div>
         <div id="navbar_items_region"></div>
       </div>
@@ -78,22 +77,25 @@
    *----------------*@
 
   <script type="text/template" id="jobs_show_layout">
-    <ul class="breadcrumb">
-      <li><i class="icon-arrow-left muted"></i> <a href="/jobs">Jobs</a> <span class="divider">/</span></li>
-      <li class="active">Job <%= id %></li>
-    </ul>
+    <div id="toolbar_region"></div>
+    <div id="error_region"></div>
+    <div id="details_region"></div>
+    <div id="params_region"></div>
+  </script>
+
+  <script id="job_details_view" type="text/template">
     <div class="page-header">
       <h1>
         Job <%= id %>
         <small><%= showWorker() %></small>
       </h1>
     </div>
-    <div id="details_region"></div>
-    <div id="params_region"></div>
-  </script>
-
-  <script id="job_details_view" type="text/template">
-    <legend>Details</legend>
+    <% if (rerun) { %>
+      <div class="alert alert-info">
+        <i class="icon-repeat bold"></i>
+        This job has been re-run
+      </div>
+    <% } %>
     <table>
       <tbody>
         <tr>
@@ -106,7 +108,7 @@
         </tr>
         <tr>
           <th>State</th>
-          <td class="capitalised"><%= state %></td>
+          <td class="capitalised <%= state %>"><%= state %></td>
         </tr>
       </tbody>
     </table>

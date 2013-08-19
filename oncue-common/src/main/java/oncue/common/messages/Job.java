@@ -59,6 +59,7 @@ public class Job implements Serializable, Cloneable {
 	private long id;
 	private Map<String, String> params;
 	private Double progress;
+	private boolean rerun;
 	private State state;
 	private String workerType;
 
@@ -69,6 +70,7 @@ public class Job implements Serializable, Cloneable {
 		this.setEnqueuedAt(new DateTime(DateTimeUtils.currentTimeMillis()));
 		this.state = State.QUEUED;
 		this.progress = 0.0;
+		this.setRerun(false);
 	}
 
 	/**
@@ -87,7 +89,6 @@ public class Job implements Serializable, Cloneable {
 		this();
 		this.id = id;
 		this.workerType = workerType;
-
 	}
 
 	/*
@@ -101,6 +102,7 @@ public class Job implements Serializable, Cloneable {
 		clone.setErrorMessage(this.getErrorMessage());
 		clone.setProgress(this.getProgress());
 		clone.setState(this.getState());
+		clone.setRerun(this.isRerun());
 
 		if (this.getParams() != null) {
 			Map<String, String> paramsClone = new HashMap<>();
@@ -109,7 +111,7 @@ public class Job implements Serializable, Cloneable {
 			}
 			clone.setParams(paramsClone);
 		}
-		
+
 		return clone;
 	}
 
@@ -141,6 +143,10 @@ public class Job implements Serializable, Cloneable {
 		return workerType;
 	}
 
+	public boolean isRerun() {
+		return rerun;
+	}
+
 	public void setEnqueuedAt(DateTime enqueuedAt) {
 		this.enqueuedAt = enqueuedAt;
 	}
@@ -157,14 +163,18 @@ public class Job implements Serializable, Cloneable {
 		this.progress = progress;
 	}
 
+	public void setRerun(boolean rerun) {
+		this.rerun = rerun;
+	}
+
 	public void setState(State state) {
 		this.state = state;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("Job %s (state=%s, enqueuedAt=%s, workerType=%s, progress=%s)", id, state,
-				getEnqueuedAt(), workerType, progress);
+		return String.format("Job %s (state=%s, enqueuedAt=%s, workerType=%s, re-run=%s, progress=%s)", id, state,
+				getEnqueuedAt(), workerType, rerun, progress);
 	}
 
 }

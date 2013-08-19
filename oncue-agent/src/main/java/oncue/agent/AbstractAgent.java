@@ -285,7 +285,7 @@ public abstract class AbstractAgent extends UntypedActor {
 	 * @param error	The Throwable from the worker
 	 */
 	protected void onWorkerDeath(Job job, Throwable error) {
-		// Do nothing
+		// Do nothing by default
 	}
 
 	/**

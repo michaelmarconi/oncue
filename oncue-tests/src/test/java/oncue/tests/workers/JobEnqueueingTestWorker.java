@@ -20,6 +20,10 @@ public class JobEnqueueingTestWorker extends AbstractWorker {
 
 	@Override
 	public void doWork(Job job) {
+		processJob(job);
+	}
+
+	private void processJob(Job job) {
 		try {
 			// Give this job to a test worker
 			Thread.sleep(500);
@@ -27,5 +31,10 @@ public class JobEnqueueingTestWorker extends AbstractWorker {
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	@Override
+	protected void redoWork(Job job) throws Exception {
+		processJob(job);
 	}
 }

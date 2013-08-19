@@ -19,26 +19,26 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
         event: 'run:test:job'
       )
 
-      rerunJobButton = new App.Components.Toolbar.ButtonModel(
+      @rerunJobButton = new App.Components.Toolbar.ButtonModel(
         title: 'Re-run'
-        tooltip: 'Re-run a complete or failed job'
+        tooltip: 'Re-run complete or failed jobs'
         iconClass: 'icon-repeat'
-        cssClasses: 'disabled'
+        enabled: false
         event: 'rerun:job'
       )
 
       deleteJobButton = new App.Components.Toolbar.ButtonModel(
         title: 'Delete'
-        tooltip: 'Delete a job permanently'
+        tooltip: 'Delete jobs permanently'
         iconClass: 'icon-trash'
-        cssClasses: 'disabled'
+        enabled: false
         event: 'delete:job'
       )
 
       actionButtons = new App.Components.Toolbar.ButtonStripModel(
         cssClasses: 'pull-right'
         buttons: new App.Components.Toolbar.ButtonCollection([
-          runTestJobButton, rerunJobButton, deleteJobButton
+          runTestJobButton, @rerunJobButton, deleteJobButton
         ])
       )
 
@@ -104,7 +104,12 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
             name: 'state'
             label: 'State'
             editable: false
-            cell: Backgrid.StringCell.extend(className: 'capitalised')
+            cell: Backgrid.StringCell.extend(className: 'capitalised min-width')
+          ,
+            name: 'rerun'
+            label: ''
+            editable: false
+            cell: App.Jobs.List.RerunCell
           ,
             name: 'progress'
             label: 'Progress'
@@ -113,7 +118,8 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
           ]
       )
       gridController = new App.Components.Grid.Controller()
-      return gridController.createGrid(gridModel)
+      gridController.createGrid(gridModel)
+      return gridController
 
     _runTestJob: (jobs, layout) ->
       testJob = new App.Entities.Job.Model(
@@ -150,6 +156,33 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
         return showJob
       )
 
+    _rerunJobs: (jobs, layout) =>
+      for job in jobs
+        # Saving an existing job will cause an HTTP UPDATE
+        savingJob = App.request('job:entity:save', job)
+        $.when(savingJob).done( (job) =>
+          @_updateRerunButton(jobs)
+        )
+        $.when(savingJob).fail( (job, xhr) ->
+          errorView = new App.Common.Views.ErrorView(
+            message: "Failed to re-run job (#{xhr.statusText})"
+          )
+          layout.errorRegion.show(errorView)
+        )
+
+    # Determine whether the re-run button should be enabled
+    _updateRerunButton: (selectedJobs) =>
+      if not @rerunJobButton then throw 'Re-run job button undefined'
+      if selectedJobs.length == 0
+        @rerunJobButton.set('enabled', false)
+        return
+      rerunnable = true
+      for job in selectedJobs
+        state = job.get('state')
+        unless state is 'complete' or state is 'failed'
+          rerunnable = false
+      @rerunJobButton.set('enabled', rerunnable)
+
     listJobs: ->
       @_showLoadingView()
       layout = new List.Layout()
@@ -169,26 +202,36 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
           pageableJobs.fullCollection.sort()
         )
 
-        grid = @_buildGrid(pageableJobs)
+        gridController = @_buildGrid(pageableJobs)
         toolbar = @_buildToolbar(jobs)
 
-        toolbar.on('toolbar:buttonStrip:run:test:job', =>
-          @_runTestJob(jobs, layout)
-        )
         toolbar.on('state:filter:changed', (filterModels) =>
           @_filterJobs(jobs, filterModels)
         )
         toolbar.on('workers:filter:changed', (filterModels) =>
           @_filterJobs(jobs, filterModels)
         )
+        toolbar.on('toolbar:buttonStrip:run:test:job', =>
+          @_runTestJob(jobs, layout)
+        )
+        toolbar.on('toolbar:buttonStrip:rerun:job', =>
+          selectedJobs = gridController.getSelectedModels()
+          @_rerunJobs(selectedJobs, layout)
+        )
 
         App.vent.on('run:test:job', =>
           @_runTestJob(jobs, layout)
         )
 
-        layout.on('show', ->
+        debouncedUpdateRerunButton = _.debounce(@_updateRerunButton, 10)
+        pageableJobs.on('backgrid:selected', (model, isSelected) =>
+          selected = gridController.getSelectedModels()
+          debouncedUpdateRerunButton(selected)
+        )
+
+        layout.on('show', =>
           layout.toolbarRegion.show(toolbar)
-          layout.jobsRegion.show(grid)
+          layout.jobsRegion.show(gridController.getGridLayout())
         )
 
         App.contentRegion.show(layout)

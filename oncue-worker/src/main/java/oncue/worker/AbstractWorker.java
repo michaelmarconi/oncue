@@ -52,6 +52,16 @@ public abstract class AbstractWorker extends UntypedActor {
 	protected abstract void doWork(Job job) throws Exception;
 
 	/**
+	 * Re-do work that may or may not have completed successfully previously, so
+	 * the worker may need to take compensating action. Once the worker returns
+	 * from this method, we assume the work on the job is complete.
+	 * 
+	 * @param job
+	 *            is the specification for the work to be done
+	 */
+	protected abstract void redoWork(Job job) throws Exception;
+
+	/**
 	 * Submit the job to the scheduler.
 	 * 
 	 * @param workerType
@@ -70,7 +80,7 @@ public abstract class AbstractWorker extends UntypedActor {
 							new Timeout(settings.SCHEDULER_TIMEOUT)), settings.SCHEDULER_TIMEOUT);
 		} catch (Exception e) {
 			if (e instanceof AskTimeoutException) {
-				log.error(e, "Timeout waiting for queue manager to enqueue job");
+				log.error(e, "Timeout waiting for scheduler to enqueue job");
 			} else {
 				log.error(e, "Failed to enqueue job");
 			}
@@ -87,7 +97,10 @@ public abstract class AbstractWorker extends UntypedActor {
 		if (message instanceof Job) {
 			this.job = (Job) message;
 			prepareWork();
-			doWork((Job) message);
+			if (job.isRerun())
+				redoWork(job);
+			else
+				doWork(job);
 			workComplete();
 		}
 	}

@@ -8,6 +8,7 @@ import oncue.OnCueService;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobSummary;
+import oncue.common.messages.RerunJob;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
@@ -140,6 +141,39 @@ public class Jobs extends Controller {
 						} else {
 							Logger.error("Failed to enqueue job", t);
 							return internalServerError("Failed to enqueue job");
+						}
+					}
+				}, OnCueService.system().dispatcher())).map(new Function<Object, Result>() {
+			@Override
+			public Result apply(Object response) {
+				if (response instanceof Result) {
+					// Result objects are returned by the recover handler above
+					return (Result) response;
+				} else {
+					return ok(mapper.valueToTree(response));
+				}
+			}
+		}));
+	}
+
+	/**
+	 * Re-run a job
+	 * 
+	 * @return a {@linkplain Job}
+	 */
+	public static Result rerun(final Long id) {
+		RerunJob rerunJob = new RerunJob(id);
+		ActorRef scheduler = OnCueService.system().actorFor(settings.SCHEDULER_PATH);
+		return async(Akka.asPromise(
+				ask(scheduler, rerunJob, new Timeout(settings.SCHEDULER_TIMEOUT)).recover(new Recover<Object>() {
+					@Override
+					public Object recover(Throwable t) throws Throwable {
+						if (t instanceof AskTimeoutException) {
+							Logger.error("Timeout waiting for queue manager to enqueue a job to re-run", t);
+							return internalServerError("Timeout");
+						} else {
+							Logger.error("Failed to enqueue a job to re-run", t);
+							return internalServerError("Failed to enqueue job to re-run");
 						}
 					}
 				}, OnCueService.system().dispatcher())).map(new Function<Object, Result>() {

@@ -87,6 +87,9 @@ public class RedisBackingStore extends AbstractBackingStore {
 	// The worker type assigned to a job
 	public static final String JOB_WORKER_TYPE = "job_worker_type";
 
+	// The re-run status of a job
+	public static final String JOB_RERUN_STATUS = "job_rerun_status";
+
 	/*
 	 * The queue of jobs that acts as an external interface; the scheduler
 	 * component will watch this queue for new jobs
@@ -162,9 +165,11 @@ public class RedisBackingStore extends AbstractBackingStore {
 			String progress = redis.hget(jobKey, JOB_PROGRESS);
 			String params = redis.hget(jobKey, JOB_PARAMS);
 			String errorMessage = redis.hget(jobKey, JOB_ERROR_MESSAGE);
+			String rerunStatus = redis.hget(jobKey, JOB_RERUN_STATUS);
 
 			job = new Job(new Long(id), workerType);
 			job.setEnqueuedAt(enqueuedAt);
+			job.setRerun(Boolean.parseBoolean(rerunStatus));
 
 			if (params != null)
 				job.setParams((Map<String, String>) JSONValue.parse(params));
@@ -204,6 +209,7 @@ public class RedisBackingStore extends AbstractBackingStore {
 		String jobKey = String.format(JOB_KEY, job.getId());
 		transaction.hset(jobKey, JOB_ENQUEUED_AT, job.getEnqueuedAt().toString());
 		transaction.hset(jobKey, JOB_WORKER_TYPE, job.getWorkerType());
+		transaction.hset(jobKey, JOB_RERUN_STATUS, Boolean.toString(job.isRerun()));
 
 		if (job.getParams() != null)
 			transaction.hset(jobKey, JOB_PARAMS, JSONValue.toJSONString(job.getParams()));
@@ -270,12 +276,7 @@ public class RedisBackingStore extends AbstractBackingStore {
 	public void addUnscheduledJob(Job job) {
 		Jedis redis = RedisBackingStore.getConnection();
 
-		// Save the unscheduled job if it doesn't exist
-		String jobKey = String.format(JOB_KEY, job.getId());
-		if (!redis.exists(jobKey))
-			persistJob(job, UNSCHEDULED_JOBS, redis);
-		else
-			redis.lpush(UNSCHEDULED_JOBS, new Long(job.getId()).toString());
+		persistJob(job, UNSCHEDULED_JOBS, redis);
 
 		RedisBackingStore.releaseConnection(redis);
 	}
@@ -309,6 +310,20 @@ public class RedisBackingStore extends AbstractBackingStore {
 	}
 
 	@Override
+	public long getNextJobID() {
+
+		// Get a connection to Redis
+		Jedis redis = getConnection();
+
+		// Increment and return the latest job ID
+		Long jobId = redis.incr(RedisBackingStore.JOB_COUNT_KEY);
+
+		releaseConnection(redis);
+
+		return jobId;
+	}
+
+	@Override
 	public void persistJobFailure(Job job) {
 		Jedis redis = getConnection();
 		persistJob(job, FAILED_JOBS, redis);
@@ -327,6 +342,24 @@ public class RedisBackingStore extends AbstractBackingStore {
 			redis.lpush(COMPLETED_JOBS, new Long(job.getId()).toString());
 
 		releaseConnection(redis);
+	}
+
+	@Override
+	public void removeCompletedJob(Job job) {
+		Jedis redis = RedisBackingStore.getConnection();
+
+		redis.lrem(COMPLETED_JOBS, 0, new Long(job.getId()).toString());
+
+		RedisBackingStore.releaseConnection(redis);
+	}
+
+	@Override
+	public void removeFailedJob(Job job) {
+		Jedis redis = RedisBackingStore.getConnection();
+
+		redis.lrem(FAILED_JOBS, 0, new Long(job.getId()).toString());
+
+		RedisBackingStore.releaseConnection(redis);
 	}
 
 	@Override
@@ -373,19 +406,5 @@ public class RedisBackingStore extends AbstractBackingStore {
 		RedisBackingStore.releaseConnection(redis);
 
 		return jobs;
-	}
-
-	@Override
-	public long getNextJobID() {
-
-		// Get a connection to Redis
-		Jedis redis = getConnection();
-
-		// Increment and return the latest job ID
-		Long jobId = redis.incr(RedisBackingStore.JOB_COUNT_KEY);
-
-		releaseConnection(redis);
-
-		return jobId;
 	}
 }

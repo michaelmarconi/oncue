@@ -82,4 +82,14 @@ public class InMemoryBackingStore extends AbstractBackingStore {
 		return Collections.emptyList();
 	}
 
+	@Override
+	public void removeCompletedJob(Job job) {
+		completedJobs.remove(job);
+	}
+
+	@Override
+	public void removeFailedJob(Job job) {
+		failedJobs.remove(job);
+	}
+
 }

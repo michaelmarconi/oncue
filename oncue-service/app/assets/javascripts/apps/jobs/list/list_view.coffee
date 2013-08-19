@@ -77,6 +77,16 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
       return this
 
   #
+  # A custom Backgrid cell that displays the state of a job,
+  # including a label when it has been re-run
+  #
+  class List.RerunCell extends Backgrid.Cell
+    render: ->
+      if(@model.get('rerun') is true)
+        @$el.append("<span class='label label-info'><i class='icon-repeat'></i>rerun</span>")
+      return this
+
+  #
   # A custom Backgrid cell that displays job progress
   #
   class List.ProgressCell extends Backgrid.Cell
