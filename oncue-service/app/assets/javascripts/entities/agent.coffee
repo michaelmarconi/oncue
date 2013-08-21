@@ -31,6 +31,7 @@ App.module 'Entities.Agent', (Agent, App, Backbone, Marionette, $, _) ->
         )
         return defer.promise()
 
+  # ~~~~~~~~~~~
 
   Agent.addInitializer ->
     Agent.controller = new Agent.Controller()

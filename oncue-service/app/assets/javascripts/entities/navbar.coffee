@@ -24,6 +24,8 @@ App.module 'Entities.Navbar', (Navbar, App, Backbone, Marionette, $, _) ->
     getNavbarEntities: ->
       return Navbar.itemCollection
 
+  # ~~~~~~~~~~~
+
   Navbar.addInitializer ->
     Navbar.itemCollection = new Navbar.ItemCollection([
       new Navbar.Item(

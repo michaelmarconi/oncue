@@ -50,8 +50,9 @@ App.module "Jobs.Show", (Show, App, Backbone, Marionette, $, _) ->
       toolbarItems = new App.Components.Toolbar.ItemsCollection()
       toolbarItems.add(listJobsButton)
       toolbarItems.add(actionButtons)
-      toolbarController = new App.Components.Toolbar.Controller()
-      return toolbarController.createToolbar(toolbarItems)
+      return new App.Components.Toolbar.Controller(
+        collection: toolbarItems
+      )
 
     _rerunJob: (job, layout) ->
       # Saving an existing job will cause an HTTP UPDATE
@@ -66,49 +67,72 @@ App.module "Jobs.Show", (Show, App, Backbone, Marionette, $, _) ->
         layout.errorRegion.show(errorView)
       )
 
+    #
+    # Show an individual job
+    #
     showJob: (id) ->
+
+      # Show a loading view
       @_showLoadingView(id)
 
+      # Fetch the job from the server
       fetchingJob = App.request('job:entity', id)
-      $.when(fetchingJob).done( (job) =>
-        layout = new Show.Layout(model: job)
-        layout.on('show', ->
+      $.when(fetchingJob).done( (@job) =>
+
+        # Remove all previous event handlers on this controller
+        @stopListening()
+
+        # Create the layout
+        layout = new Show.Layout(model: @job)
+
+        # Create the toolbar and set initial button state
+        toolbarController = @_buildToolbar(@job)
+        toolbarView = toolbarController.getView()
+        @_updateToolbarButtons(@job)
+
+        # Create the job details and params views
+        detailsView = new Show.JobDetailsView(model: @job)
+        if @job.get('params') and @job.get('params').length > 0
+          paramsView = new Show.JobParamsView(
+            collection: @job.get('params')
+          )
+
+        # Listen to toolbar events
+        @listenTo(toolbarView, 'toolbar:list:jobs', ->
+          App.trigger('jobs:list')
+        )
+        @listenTo(toolbarView, 'toolbar:buttonStrip:rerun:job', ->
+          @_rerunJob(@job, layout)
+        )
+        @listenTo(toolbarView, 'toolbar:buttonStrip:delete:job', ->
+          # TODO implement this
+        )
+
+        # Layout components when the layout is displayed
+        @listenTo(layout, 'show', ->
           layout.toolbarRegion.show(toolbarView)
           layout.detailsRegion.show(detailsView)
-          if job.get('params') and job.get('params').length > 0
+          if @job.get('params') and @job.get('params').length > 0
             layout.paramsRegion.show(paramsView)
         )
 
-        toolbarView = @_buildToolbar(job)
-        @_updateToolbarButtons(job)
-        toolbarView.on('toolbar:list:jobs', ->
-          App.trigger('jobs:list')
-        )
-        toolbarView.on('toolbar:buttonStrip:rerun:job', =>
-          @_rerunJob(job, layout)
-        )
-        toolbarView.on('toolbar:buttonStrip:delete:job', =>
-          # TODO
-        )
-
-        detailsView = new Show.JobDetailsView(model: job)
-        if job.get('params') and job.get('params').length > 0
-          paramsView = new Show.JobParamsView(
-            collection: job.get('params')
-          )
-
-        # TODO This callback needs to be detached when this controller is closed!
-        App.vent.on('job:progressed', (jobData) =>
-          if jobData.id == job.id
-            job.set(jobData)
-          @_updateToolbarButtons(job)
-        )
-
+        # Display the layout
         App.contentRegion.show(layout)
       )
       $.when(fetchingJob).fail( =>
         @_showErrorView(id)
       )
+
+    #
+    # Update the display of an existing job
+    #
+    updateJob: (data) =>
+      if not @job then return
+      if data.id == @job.id
+        @job.set(data)
+      @_updateToolbarButtons(@job)
+
+  # ~~~~~~~~~~~~~
 
   Show.addInitializer ->
     Show.controller = new Show.Controller()

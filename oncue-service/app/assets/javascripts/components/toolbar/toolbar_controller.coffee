@@ -2,14 +2,20 @@ App.module "Components.Toolbar", (Toolbar, App, Backbone, Marionette, $, _) ->
 
   class Toolbar.Controller extends Marionette.Controller
 
-    createToolbar: (toolbarItems) ->
-      toolbarView = new Toolbar.View(
+    initialize: (options) ->
+      if not options['collection'] then throw 'You must supply a collection of toolbar items'
+      toolbarItems = options['collection']
+
+      # Remove all previous event handlers on this controller
+      @stopListening()
+
+      @view = new Toolbar.View(
         collection: toolbarItems
       )
 
       # Listen to toolbar filter item selection changes and update the filter (filtered state)
       # and filter item (checked/unchecked) views
-      toolbarView.on('toolbar:filter:item:changed', (filterView, filterItemView) ->
+      @listenTo(@view, 'toolbar:filter:item:changed', (filterView, filterItemView) ->
         filter = filterView.model
         filterItem = filterItemView.model
         filterItems = filterView.collection.models
@@ -29,7 +35,13 @@ App.module "Components.Toolbar", (Toolbar, App, Backbone, Marionette, $, _) ->
         for toolbarItem in toolbarItems.models
           if toolbarItem instanceof Toolbar.FilterModel
             filterModels.push(toolbarItem)
+        @view.trigger(filter.get('event'), filterModels)
+      )
+      return this
 
-        @trigger(filter.get('event'), filterModels)
-        )
-      return toolbarView
+    #
+    # Access the view for this toolbar, once it has been created.
+    #
+    getView: ->
+      if not @view then throw 'No toolbar view exists!'
+      return @view

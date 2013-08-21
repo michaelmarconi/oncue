@@ -15,18 +15,28 @@ App.module 'Jobs', (Jobs, App, Backbone, Marionette, $, _) ->
       Jobs.Show.controller.showJob(id)
       App.Navbar.List.controller.setActiveNavbarItem('jobs')
 
+    updateJob: (data) ->
+      Jobs.Show.controller.updateJob(data)
+
   # ~~~~~~~~~~~~~
 
   Jobs.addInitializer ->
+
     Jobs.controller = new Jobs.Controller()
     new Jobs.Router(
       controller: Jobs.controller
     )
-    App.on('jobs:list', ->
+
+    @listenTo(App, 'jobs:list', ->
       App.navigate('jobs')
       Jobs.controller.listJobs()
     )
-    App.on('job:show', (id) ->
+
+    @listenTo(App, 'job:show', (id) ->
       App.navigate("jobs/#{id}")
       Jobs.controller.showJob(id)
+    )
+
+    @listenTo(App.vent, 'job:progressed', (data) ->
+      Jobs.controller.updateJob(data)
     )

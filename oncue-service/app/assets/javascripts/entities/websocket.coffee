@@ -48,7 +48,6 @@ App.module 'Entities.Websocket', (Websocket, App, Backbone, Marionette, $, _) ->
       subject = _.first(eventKey.split(':'))
       event = _.last(eventKey.split(':'))
       payload = messageData[eventKey][subject]
-#      console.log "Subject: #{subject} , Event: #{event}, Payload: #{payload}" #TODO whack this
       App.vent.trigger("#{subject}:#{event}", payload)
 
   # ~~~~~~~~~~~
@@ -58,6 +57,8 @@ App.module 'Entities.Websocket', (Websocket, App, Backbone, Marionette, $, _) ->
       if not Websocket.connection
         Websocket.connection = new Websocket.Connection()
       return Websocket.connection
+
+  # ~~~~~~~~~~~
 
   Websocket.addInitializer ->
     Websocket.controller = new Websocket.Controller()

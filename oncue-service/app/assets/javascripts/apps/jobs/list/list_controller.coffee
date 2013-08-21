@@ -10,6 +10,9 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
       errorView = new App.Common.Views.ErrorView(message: 'Failed to load jobs')
       App.contentRegion.show(errorView)
 
+    #
+    # Build up a toolbar component from a model and create the controller
+    #
     _buildToolbar: (jobs) =>
 
       runTestJobButton = new App.Components.Toolbar.ButtonModel(
@@ -68,8 +71,9 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
       toolbarItems.add(stateFilter)
       toolbarItems.add(workerFilter)
       toolbarItems.add(actionButtons)
-      toolbarController = new App.Components.Toolbar.Controller()
-      return toolbarController.createToolbar(toolbarItems)
+      return new App.Components.Toolbar.Controller(
+        collection: toolbarItems
+      )
 
 
     _buildGrid: (jobs) ->
@@ -117,9 +121,9 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
             cell: App.Jobs.List.ProgressCell
           ]
       )
-      gridController = new App.Components.Grid.Controller()
-      gridController.createGrid(gridModel)
-      return gridController
+      return gridController = new App.Components.Grid.Controller(
+        model: gridModel
+      )
 
     _runTestJob: (jobs, layout) ->
       testJob = new App.Entities.Job.Model(
@@ -184,10 +188,16 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
       @rerunJobButton.set('enabled', rerunnable)
 
     listJobs: ->
+
+      # Show a loading view
       @_showLoadingView()
-      layout = new List.Layout()
+
+      # Fetch the collection of jobs from the server
       fetchingJobs = App.request('job:entities')
       $.when(fetchingJobs).done( (jobs) =>
+
+        # Remove all previous event handlers on this controller
+        @stopListening()
 
         # Create a pageable collection for the grid
         pageableJobs = new Backbone.PageableCollection(jobs.clone().models,
@@ -197,48 +207,61 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
             sortKey: 'id'
             order: 1
         )
-        jobs.filtered.on('reset', (collection) ->
+
+        # Create the layout
+        layout = new List.Layout()
+
+        # Create the toolbar
+        toolbarController = @_buildToolbar(jobs)
+        toolbarView = toolbarController.getView()
+
+        # Create the grid
+        gridController = @_buildGrid(pageableJobs)
+        gridLayout = gridController.getLayout()
+
+        # Listen to changes in the underlying job collection
+        # and reset and sort the pageable collection
+        @listenTo(jobs.filtered, 'reset', (collection) ->
           pageableJobs.fullCollection.reset(jobs.filtered.models)
           pageableJobs.fullCollection.sort()
         )
 
-        gridController = @_buildGrid(pageableJobs)
-        toolbar = @_buildToolbar(jobs)
-
-        toolbar.on('state:filter:changed', (filterModels) =>
+        # Listen to toolbar events
+        @listenTo(toolbarView, 'state:filter:changed', (filterModels) =>
           @_filterJobs(jobs, filterModels)
         )
-        toolbar.on('workers:filter:changed', (filterModels) =>
+        @listenTo(toolbarView, 'workers:filter:changed', (filterModels) =>
           @_filterJobs(jobs, filterModels)
         )
-        toolbar.on('toolbar:buttonStrip:run:test:job', =>
+        @listenTo(toolbarView, 'toolbar:buttonStrip:run:test:job', (filterModels) =>
           @_runTestJob(jobs, layout)
         )
-        toolbar.on('toolbar:buttonStrip:rerun:job', =>
+        @listenTo(toolbarView, 'toolbar:buttonStrip:rerun:job', (filterModels) =>
           selectedJobs = gridController.getSelectedModels()
           @_rerunJobs(selectedJobs, layout)
         )
 
-        App.vent.on('run:test:job', =>
-          @_runTestJob(jobs, layout)
-        )
-
+        # Listen to job selections
         debouncedUpdateRerunButton = _.debounce(@_updateRerunButton, 10)
-        pageableJobs.on('backgrid:selected', (model, isSelected) =>
+        @listenTo(pageableJobs, 'backgrid:selected', (model, isSelected) =>
           selected = gridController.getSelectedModels()
           debouncedUpdateRerunButton(selected)
         )
 
-        layout.on('show', =>
-          layout.toolbarRegion.show(toolbar)
-          layout.jobsRegion.show(gridController.getGridLayout())
+        # Layout components when the layout is displayed
+        @listenTo(layout, 'show', ->
+          layout.toolbarRegion.show(toolbarView)
+          layout.jobsRegion.show(gridLayout)
         )
 
+        # Display the layout
         App.contentRegion.show(layout)
       )
       $.when(fetchingJobs).fail( =>
         @_showErrorView()
       )
+
+  # ~~~~~~~~~~~~~
 
   List.addInitializer ->
     List.controller = new List.Controller()

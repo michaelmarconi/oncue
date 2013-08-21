@@ -17,8 +17,8 @@ App.module "Components.Grid", (Grid, App, Backbone, Marionette, $, _) ->
 
     _initialEvents: ->
       if @collection
-        @listenTo(@collection, 'add', @_collectionChanged, this)
-        @listenTo(@collection, 'reset', @_collectionChanged, this)
+        @listenTo(@collection, 'add', @_collectionChanged)
+        @listenTo(@collection, 'reset', @_collectionChanged)
 
     _layoutGrid: ->
       @layout.gridRegion.show(@gridView)
@@ -33,10 +33,13 @@ App.module "Components.Grid", (Grid, App, Backbone, Marionette, $, _) ->
           collection: @collection
         )
 
-    #
-    # Create a grid from a model, with optional pagination and empty view.
-    #
-    createGrid: (model) ->
+    initialize: (options) ->
+      if not options['model'] then throw 'You must supply a grid model'
+      model = options['model']
+
+      # Remove all previous event handlers on this controller
+      @stopListening()
+
       @EmptyView = model.get('emptyView')
       @collection = model.get('items')
       @paginated = model.get('paginated')
@@ -52,7 +55,7 @@ App.module "Components.Grid", (Grid, App, Backbone, Marionette, $, _) ->
         throw 'Collection is empty and no empty view was specified'
 
       @layout = new Grid.Layout()
-      @layout.on('show', =>
+      @listenTo(@layout, 'show', =>
         if @collection and @collection.length > 0
           @_layoutGrid()
         else if @EmptyView
@@ -62,7 +65,7 @@ App.module "Components.Grid", (Grid, App, Backbone, Marionette, $, _) ->
     #
     # Access the layout for this grid, once it has been created.
     #
-    getGridLayout: =>
+    getLayout: =>
       if not @layout then throw 'The grid must be created first'
       return @layout
 

@@ -88,6 +88,7 @@ App.module 'Entities.Job', (Job, App, Backbone, Marionette, $, _) ->
       )
       return defer.promise()
 
+  # ~~~~~~~~~~~
 
   Job.addInitializer ->
 
