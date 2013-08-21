@@ -12,7 +12,13 @@ App.module "Jobs.Show", (Show, App, Backbone, Marionette, $, _) ->
 
     _updateToolbarButtons: (job) ->
       state = job.get('state')
-      if state is 'complete' or state is 'failed'
+      if state is 'queued'
+        @rerunJobButton.set('enabled', false)
+        @deleteJobButton.set('enabled', true)
+      else if state is 'running'
+        @rerunJobButton.set('enabled', false)
+        @deleteJobButton.set('enabled', false)
+      else if state is 'complete' or state is 'failed'
         @rerunJobButton.set('enabled', true)
         @deleteJobButton.set('enabled', true)
       else
@@ -67,6 +73,18 @@ App.module "Jobs.Show", (Show, App, Backbone, Marionette, $, _) ->
         layout.errorRegion.show(errorView)
       )
 
+    _deleteJob: (job, layout) ->
+      deletingJob = App.request('job:entity:delete', job)
+      $.when(deletingJob).done( (job) =>
+        App.trigger('jobs:list')
+      )
+      $.when(deletingJob).fail( (job, xhr) ->
+        errorView = new App.Common.Views.ErrorView(
+          message: "Failed to delete job (#{xhr.statusText})"
+        )
+        layout.errorRegion.show(errorView)
+      )
+
     #
     # Show an individual job
     #
@@ -105,7 +123,7 @@ App.module "Jobs.Show", (Show, App, Backbone, Marionette, $, _) ->
           @_rerunJob(@job, layout)
         )
         @listenTo(toolbarView, 'toolbar:buttonStrip:delete:job', ->
-          # TODO implement this
+          @_deleteJob(@job, layout)
         )
 
         # Layout components when the layout is displayed

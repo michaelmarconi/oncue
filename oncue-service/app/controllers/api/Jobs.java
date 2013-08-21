@@ -5,6 +5,7 @@ import static akka.pattern.Patterns.ask;
 import java.text.SimpleDateFormat;
 
 import oncue.OnCueService;
+import oncue.common.messages.DeleteJob;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobSummary;
@@ -155,6 +156,39 @@ public class Jobs extends Controller {
 			}
 		}));
 	}
+	
+	/**
+	 * Delete an existing job
+	 * 
+	 * @return a {@linkplain Job}
+	 */
+	public static Result delete(final Long id) {
+		DeleteJob deleteJob = new DeleteJob(id);
+		ActorRef scheduler = OnCueService.system().actorFor(settings.SCHEDULER_PATH);
+		return async(Akka.asPromise(
+				ask(scheduler, deleteJob, new Timeout(settings.SCHEDULER_TIMEOUT)).recover(new Recover<Object>() {
+					@Override
+					public Object recover(Throwable t) throws Throwable {
+						if (t instanceof AskTimeoutException) {
+							Logger.error("Timeout waiting for scheduler to delete job", t);
+							return internalServerError("Timeout");
+						} else {
+							Logger.error("Failed to delete job", t);
+							return internalServerError("Failed to delete job");
+						}
+					}
+				}, OnCueService.system().dispatcher())).map(new Function<Object, Result>() {
+			@Override
+			public Result apply(Object response) {
+				if (response instanceof Result) {
+					// Result objects are returned by the recover handler above
+					return (Result) response;
+				} else {
+					return ok(mapper.valueToTree(response));
+				}
+			}
+		}));
+	}	
 
 	/**
 	 * Re-run a job

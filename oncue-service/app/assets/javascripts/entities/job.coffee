@@ -88,6 +88,16 @@ App.module 'Entities.Job', (Job, App, Backbone, Marionette, $, _) ->
       )
       return defer.promise()
 
+    deleteJobEntity: (job) ->
+      defer = $.Deferred()
+      job.destroy(
+        success: (model) ->
+          defer.resolve(model)
+        error: (model, xhr) ->
+          defer.reject(model, xhr)
+      )
+      return defer.promise()
+
   # ~~~~~~~~~~~
 
   Job.addInitializer ->
@@ -102,6 +112,9 @@ App.module 'Entities.Job', (Job, App, Backbone, Marionette, $, _) ->
     )
     App.reqres.setHandler('job:entity:save', (job) ->
       Job.controller.saveJobEntity(job)
+    )
+    App.reqres.setHandler('job:entity:delete', (job) ->
+      Job.controller.deleteJobEntity(job)
     )
 
     # If the websocket reconnects, update the collection

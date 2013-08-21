@@ -74,4 +74,7 @@ App.module "Components.Grid", (Grid, App, Backbone, Marionette, $, _) ->
     #
     getSelectedModels: =>
       if not @gridView then throw 'The grid must be created first'
-      return @gridView.getSelectedModels()
+      # This is a workaround for what appears to be a bug in
+      # backgone.pageable, which sometimes returns undefined entries
+      # in the array of selected models!
+      return _.without(@gridView.getSelectedModels(), undefined)

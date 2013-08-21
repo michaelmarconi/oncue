@@ -49,6 +49,11 @@ public class Job implements Serializable, Cloneable {
 			public String toString() {
 				return "scheduled";
 			}
+		},
+		DELETED {
+			public String toString() {
+				return "deleted";
+			}
 		}
 	}
 

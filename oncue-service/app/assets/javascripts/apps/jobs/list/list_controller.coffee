@@ -30,7 +30,7 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
         event: 'rerun:job'
       )
 
-      deleteJobButton = new App.Components.Toolbar.ButtonModel(
+      @deleteJobButton = new App.Components.Toolbar.ButtonModel(
         title: 'Delete'
         tooltip: 'Delete jobs permanently'
         iconClass: 'icon-trash'
@@ -41,7 +41,7 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
       actionButtons = new App.Components.Toolbar.ButtonStripModel(
         cssClasses: 'pull-right'
         buttons: new App.Components.Toolbar.ButtonCollection([
-          runTestJobButton, @rerunJobButton, deleteJobButton
+          runTestJobButton, @rerunJobButton, @deleteJobButton
         ])
       )
 
@@ -166,10 +166,21 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
         savingJob = App.request('job:entity:save', job)
         $.when(savingJob).done( (job) =>
           @_updateRerunButton(jobs)
+          @_updateDeleteButton(jobs)
         )
         $.when(savingJob).fail( (job, xhr) ->
           errorView = new App.Common.Views.ErrorView(
             message: "Failed to re-run job (#{xhr.statusText})"
+          )
+          layout.errorRegion.show(errorView)
+        )
+
+    _deleteJobs: (jobs, layout) =>
+      for job in jobs
+        deletingJob = App.request('job:entity:delete', job)
+        $.when(deletingJob).fail( (job, xhr) ->
+          errorView = new App.Common.Views.ErrorView(
+            message: "Failed to delete job (#{xhr.statusText})"
           )
           layout.errorRegion.show(errorView)
         )
@@ -186,6 +197,19 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
         unless state is 'complete' or state is 'failed'
           rerunnable = false
       @rerunJobButton.set('enabled', rerunnable)
+
+    # Determine whether the delete button should be enabled
+    _updateDeleteButton: (selectedJobs) =>
+      if not @deleteJobButton then throw 'Delete job button undefined'
+      if selectedJobs.length == 0
+        @deleteJobButton.set('enabled', false)
+        return
+      deletable = true
+      for job in selectedJobs
+        state = job.get('state')
+        unless state is 'queued' or state is 'complete' or state is 'failed'
+          deletable = false
+      @deleteJobButton.set('enabled', deletable)
 
     listJobs: ->
 
@@ -233,25 +257,36 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
         @listenTo(toolbarView, 'workers:filter:changed', (filterModels) =>
           @_filterJobs(jobs, filterModels)
         )
-        @listenTo(toolbarView, 'toolbar:buttonStrip:run:test:job', (filterModels) =>
+        @listenTo(toolbarView, 'toolbar:buttonStrip:run:test:job', =>
           @_runTestJob(jobs, layout)
         )
-        @listenTo(toolbarView, 'toolbar:buttonStrip:rerun:job', (filterModels) =>
+        @listenTo(toolbarView, 'toolbar:buttonStrip:rerun:job', =>
           selectedJobs = gridController.getSelectedModels()
           @_rerunJobs(selectedJobs, layout)
+        )
+        @listenTo(toolbarView, 'toolbar:buttonStrip:delete:job', =>
+          selectedJobs = gridController.getSelectedModels()
+          @_deleteJobs(selectedJobs, layout)
         )
 
         # Listen to job selections
         debouncedUpdateRerunButton = _.debounce(@_updateRerunButton, 10)
+        debouncedUpdateDeleteButton = _.debounce(@_updateDeleteButton, 10)
         @listenTo(pageableJobs, 'backgrid:selected', (model, isSelected) =>
           selected = gridController.getSelectedModels()
           debouncedUpdateRerunButton(selected)
+          debouncedUpdateDeleteButton(selected)
         )
 
         # Layout components when the layout is displayed
         @listenTo(layout, 'show', ->
           layout.toolbarRegion.show(toolbarView)
           layout.jobsRegion.show(gridLayout)
+        )
+
+        # This is for the 'No Jobs' view, which offers a link to create a test job
+        @listenTo(App.vent, 'run:test:job', =>
+          @_runTestJob(jobs, layout)
         )
 
         # Display the layout

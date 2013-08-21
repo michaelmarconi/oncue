@@ -18,8 +18,8 @@ package oncue.common.messages;
 import java.io.Serializable;
 
 /**
- * This message is sent to the queue manager (a concrete implementation of
- * AbstractQueueManager) in order to enqueue another run of an existing job.
+ * This message is sent to the scheduler in order to enqueue another run of an
+ * existing job.
  */
 public class RerunJob implements Serializable {
 

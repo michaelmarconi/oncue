@@ -30,9 +30,11 @@ import oncue.common.events.AgentStoppedEvent;
 import oncue.common.events.JobEnqueuedEvent;
 import oncue.common.events.JobFailedEvent;
 import oncue.common.events.JobProgressEvent;
+import oncue.common.exceptions.DeleteJobException;
 import oncue.common.messages.AbstractWorkRequest;
 import oncue.common.messages.Agent;
 import oncue.common.messages.AgentSummary;
+import oncue.common.messages.DeleteJob;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.Job.State;
@@ -52,6 +54,7 @@ import akka.actor.ActorInitializationException;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Cancellable;
+import akka.actor.Status.Failure;
 import akka.actor.UntypedActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
@@ -192,6 +195,37 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	 */
 	private WorkAvailable createWorkAvailable() {
 		return new WorkAvailable(unscheduledJobs.getWorkerTypes());
+	}
+
+	/**
+	 * Delete an existing job
+	 * 
+	 * @param job
+	 *            is the job to delete
+	 * @return the deleted job
+	 * @throws DeleteJobException
+	 *             if the job is currently running
+	 */
+	private Job deleteJob(Job job) throws DeleteJobException {
+		switch (job.getState()) {
+		case RUNNING:
+			throw new DeleteJobException("This job cannot be deleted as it is currently running");
+		case QUEUED:
+			boolean removed = unscheduledJobs.removeJob(job);
+			if (!removed)
+				throw new DeleteJobException("Failed to remove the job from the unscheduled jobs queue");
+			break;
+		case COMPLETE:
+			backingStore.removeCompletedJob(job);
+			break;
+		case FAILED:
+			backingStore.removeFailedJob(job);
+			break;
+		default:
+			throw new DeleteJobException(job.getState().toString() + " is an unrecognised job state");
+		}
+		job.setState(State.DELETED);
+		return job;
 	}
 
 	/**
@@ -397,6 +431,19 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 			getSender().tell(rerunJob, getSelf());
 		}
 
+		else if (message instanceof DeleteJob) {
+			log.debug("Got an existing job to delete: {}", message);
+			Job job = findExistingJob(((DeleteJob) message).getId());
+			Job deleteJob;
+			try {
+				deleteJob = deleteJob(job);
+				getSender().tell(deleteJob, getSelf());
+			} catch (DeleteJobException e) {
+				log.error(e, "Failed to delete job {}", job.getId());
+				getSender().tell(new Failure(e), getSelf());
+			}
+		}
+
 		else if (message instanceof AbstractWorkRequest) {
 			log.debug("Got a work request from agent '{}': {}", getSender().path().toString(), message);
 			AbstractWorkRequest workRequest = (AbstractWorkRequest) message;
@@ -557,14 +604,14 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 		if (job.getParams() != null)
 			rerunJob.setParams(job.getParams());
 		rerunJob.setRerun(true);
-		
+
 		// TODO Find a way to make this transactional
 		unscheduledJobs.addJob(rerunJob);
 		if (job.getState() == Job.State.COMPLETE)
 			backingStore.removeCompletedJob(job);
 		else if (job.getState() == Job.State.FAILED)
 			backingStore.removeFailedJob(job);
-		
+
 		getContext().system().eventStream().publish(new JobEnqueuedEvent(job));
 		startJobsBroadcast();
 		return rerunJob;

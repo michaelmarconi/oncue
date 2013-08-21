@@ -16,43 +16,33 @@
 package oncue.common.messages;
 
 import java.io.Serializable;
-import java.util.Collections;
-import java.util.Map;
 
 /**
- * This message is sent to the scheduler in order to create and enqueue a new
- * job.
+ * This message is sent to the scheduler in order to delete an existing job.
  */
-public class EnqueueJob implements Serializable {
+public class DeleteJob implements Serializable {
 
-	private static final long serialVersionUID = -1624154938276876491L;
+	private static final long serialVersionUID = 8618404729694566138L;
+	private long id;
 
-	protected String workerType;
-	protected Map<String, String> params = Collections.emptyMap();
-
-	public EnqueueJob() {
+	public DeleteJob() {
 	}
 
-	public EnqueueJob(String workerType) {
-		this(workerType, Collections.<String, String> emptyMap());
+	public DeleteJob(long id) {
+		this.setId(id);
 	}
 
-	public EnqueueJob(String workerType, Map<String, String> jobParams) {
-		this.workerType = workerType;
-		this.params = jobParams;
+	public long getId() {
+		return id;
 	}
 
-	public Map<String, String> getParams() {
-		return params;
-	}
-
-	public String getWorkerType() {
-		return workerType;
+	public void setId(long id) {
+		this.id = id;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("Enqueue job for %s", workerType);
+		return String.format("Delete job %s", id);
 	}
 
 }
