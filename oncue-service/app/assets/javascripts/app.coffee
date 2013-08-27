@@ -15,7 +15,4 @@ App.addRegions(
 App.on('initialize:after', ->
   if Backbone.history
     Backbone.history.start({pushState: true})
-
-    if @getCurrentRoute() is ""
-      App.trigger('jobs:list')
 )

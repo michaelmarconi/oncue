@@ -26,3 +26,6 @@ App.module "Agents.List", (List, App, Backbone, Marionette, $, _) ->
   List.addInitializer ->
     List.controller = new List.Controller()
 
+  List.addFinalizer ->
+    List.controller.close()
+    delete List.controller

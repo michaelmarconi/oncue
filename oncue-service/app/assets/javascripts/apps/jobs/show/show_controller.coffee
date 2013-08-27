@@ -154,3 +154,7 @@ App.module "Jobs.Show", (Show, App, Backbone, Marionette, $, _) ->
 
   Show.addInitializer ->
     Show.controller = new Show.Controller()
+
+  Show.addFinalizer ->
+    Show.controller.close()
+    delete Show.controller

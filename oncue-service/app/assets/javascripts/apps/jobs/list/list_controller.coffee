@@ -1,5 +1,8 @@
 App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
 
+  # Don't start this module automatically
+  @startWithParent = false
+
   class List.Controller extends Marionette.Controller
 
     _showLoadingView: ->
@@ -300,3 +303,7 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
 
   List.addInitializer ->
     List.controller = new List.Controller()
+
+  List.addFinalizer ->
+    List.controller.close()
+    delete List.controller
