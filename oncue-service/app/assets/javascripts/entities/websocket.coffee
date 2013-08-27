@@ -43,6 +43,9 @@ OnCue.module 'Entities.Websocket', (Websocket, OnCue, Backbone, Marionette, $, _
       OnCue.vent.trigger('websocket:error', error)
 
     onMessage: (message) =>
+      # Ignore pings; they just keep the connection alive!
+      if message.data is "\"PING\"" then return
+
       messageData = JSON.parse(message.data)
       eventKey = _.keys(messageData)[0]
       subject = _.first(eventKey.split(':'))
