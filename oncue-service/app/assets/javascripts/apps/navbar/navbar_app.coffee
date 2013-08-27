@@ -14,3 +14,7 @@ OnCue.module 'Navbar', (Navbar, OnCue, Backbone, Marionette, $, _) ->
     Navbar.on('start', ->
       Navbar.controller.listNavbar()
     )
+
+  Navbar.addFinalizer ->
+    Navbar.controller.close()
+    delete Navbar.controller
