@@ -1,4 +1,4 @@
-App.module 'Entities.Job', (Job, App, Backbone, Marionette, $, _) ->
+OnCue.module 'Entities.Job', (Job, OnCue, Backbone, Marionette, $, _) ->
 
   #
   # A job
@@ -9,7 +9,7 @@ App.module 'Entities.Job', (Job, App, Backbone, Marionette, $, _) ->
   #
   # A collection of jobs
   #
-  class Job.Collection extends App.Entities.Common.FilteredCollection
+  class Job.Collection extends OnCue.Entities.Common.FilteredCollection
     url: '/api/jobs'
     model: Job.Model
 
@@ -104,27 +104,27 @@ App.module 'Entities.Job', (Job, App, Backbone, Marionette, $, _) ->
 
     Job.controller = new Job.Controller()
 
-    App.reqres.setHandler('job:entities', ->
+    OnCue.reqres.setHandler('job:entities', ->
       Job.controller.getJobEntities()
     )
-    App.reqres.setHandler('job:entity', (id) ->
+    OnCue.reqres.setHandler('job:entity', (id) ->
       Job.controller.getJobEntity(id)
     )
-    App.reqres.setHandler('job:entity:save', (job) ->
+    OnCue.reqres.setHandler('job:entity:save', (job) ->
       Job.controller.saveJobEntity(job)
     )
-    App.reqres.setHandler('job:entity:delete', (job) ->
+    OnCue.reqres.setHandler('job:entity:delete', (job) ->
       Job.controller.deleteJobEntity(job)
     )
 
     # If the websocket reconnects, update the collection
-    App.vent.on('websocket:reconnected', ->
+    OnCue.vent.on('websocket:reconnected', ->
       if Job.collection
         Job.collection.fetch()
     )
 
     # Update the collection if a job is updated
-    App.vent.on('job:progressed', (jobData) ->
+    OnCue.vent.on('job:progressed', (jobData) ->
       if Job.collection
         job = Job.collection.get(jobData.id)
         if job

@@ -1,4 +1,4 @@
-App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
+OnCue.module "Jobs.List", (List, OnCue, Backbone, Marionette, $, _) ->
 
   # Don't start this module automatically
   @startWithParent = false
@@ -6,26 +6,26 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
   class List.Controller extends Marionette.Controller
 
     _showLoadingView: ->
-      loadingView = new App.Common.Views.LoadingView(message: 'Loading jobs...')
-      App.contentRegion.show(loadingView)
+      loadingView = new OnCue.Common.Views.LoadingView(message: 'Loading jobs...')
+      OnCue.contentRegion.show(loadingView)
 
     _showErrorView: ->
-      errorView = new App.Common.Views.ErrorView(message: 'Failed to load jobs')
-      App.contentRegion.show(errorView)
+      errorView = new OnCue.Common.Views.ErrorView(message: 'Failed to load jobs')
+      OnCue.contentRegion.show(errorView)
 
     #
     # Build up a toolbar component from a model and create the controller
     #
     _buildToolbar: (jobs) =>
 
-      runTestJobButton = new App.Components.Toolbar.ButtonModel(
+      runTestJobButton = new OnCue.Components.Toolbar.ButtonModel(
         title: 'Run test'
         tooltip: 'Run a test job'
         iconClass: 'icon-play'
         event: 'run:test:job'
       )
 
-      @rerunJobButton = new App.Components.Toolbar.ButtonModel(
+      @rerunJobButton = new OnCue.Components.Toolbar.ButtonModel(
         title: 'Re-run'
         tooltip: 'Re-run complete or failed jobs'
         iconClass: 'icon-repeat'
@@ -33,7 +33,7 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
         event: 'rerun:job'
       )
 
-      @deleteJobButton = new App.Components.Toolbar.ButtonModel(
+      @deleteJobButton = new OnCue.Components.Toolbar.ButtonModel(
         title: 'Delete'
         tooltip: 'Delete jobs permanently'
         iconClass: 'icon-trash'
@@ -41,51 +41,51 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
         event: 'delete:job'
       )
 
-      actionButtons = new App.Components.Toolbar.ButtonStripModel(
+      actionButtons = new OnCue.Components.Toolbar.ButtonStripModel(
         cssClasses: 'pull-right'
-        buttons: new App.Components.Toolbar.ButtonCollection([
+        buttons: new OnCue.Components.Toolbar.ButtonCollection([
           runTestJobButton, @rerunJobButton, @deleteJobButton
         ])
       )
 
-      stateFilter = new App.Components.Toolbar.FilterModel(
+      stateFilter = new OnCue.Components.Toolbar.FilterModel(
         title: 'State'
         event: 'state:filter:changed'
-        menuItems: new App.Components.Toolbar.FilterItemsCollection([
-          new App.Components.Toolbar.FilterItemModel(title: 'Queued', value: 'queued')
-          new App.Components.Toolbar.FilterItemModel(title: 'Running', value: 'running')
-          new App.Components.Toolbar.FilterItemModel(title: 'Complete', value: 'complete')
-          new App.Components.Toolbar.FilterItemModel(title: 'Failed', value: 'failed')
+        menuItems: new OnCue.Components.Toolbar.FilterItemsCollection([
+          new OnCue.Components.Toolbar.FilterItemModel(title: 'Queued', value: 'queued')
+          new OnCue.Components.Toolbar.FilterItemModel(title: 'Running', value: 'running')
+          new OnCue.Components.Toolbar.FilterItemModel(title: 'Complete', value: 'complete')
+          new OnCue.Components.Toolbar.FilterItemModel(title: 'Failed', value: 'failed')
         ])
       )
 
       workers = _.unique(_.map(jobs.models, (job) -> job.get('worker_type')))
-      workerFilter = new App.Components.Toolbar.FilterModel(
+      workerFilter = new OnCue.Components.Toolbar.FilterModel(
         title: 'Worker'
         event: 'workers:filter:changed'
-        menuItems: new App.Components.Toolbar.FilterItemsCollection(
+        menuItems: new OnCue.Components.Toolbar.FilterItemsCollection(
           _.map(workers, (worker) ->
-            new App.Components.Toolbar.FilterItemModel(title: worker, value: worker)
+            new OnCue.Components.Toolbar.FilterItemModel(title: worker, value: worker)
           )
         )
       )
 
-      toolbarItems = new App.Components.Toolbar.ItemsCollection()
+      toolbarItems = new OnCue.Components.Toolbar.ItemsCollection()
       toolbarItems.add(stateFilter)
       toolbarItems.add(workerFilter)
       toolbarItems.add(actionButtons)
-      return new App.Components.Toolbar.Controller(
+      return new OnCue.Components.Toolbar.Controller(
         collection: toolbarItems
       )
 
 
     _buildGrid: (jobs) ->
-      gridModel = new App.Components.Grid.Model(
+      gridModel = new OnCue.Components.Grid.Model(
         items: jobs
         paginated: true
-        emptyView: App.Jobs.List.NoJobsView
+        emptyView: OnCue.Jobs.List.NoJobsView
         backgrid:
-          row: App.Jobs.List.JobStateRow
+          row: OnCue.Jobs.List.JobStateRow
           columns: [
             name: 'selector'
             cell: 'select-row'
@@ -99,7 +99,7 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
             name: 'worker_type'
             label: 'Worker'
             editable: false
-            cell:  App.Jobs.List.WorkerCell
+            cell:  OnCue.Jobs.List.WorkerCell
           ,
             name: 'enqueued_at'
             label: 'Enqueued'
@@ -116,29 +116,29 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
             name: 'rerun'
             label: ''
             editable: false
-            cell: App.Jobs.List.RerunCell
+            cell: OnCue.Jobs.List.RerunCell
           ,
             name: 'progress'
             label: 'Progress'
             editable: false
-            cell: App.Jobs.List.ProgressCell
+            cell: OnCue.Jobs.List.ProgressCell
           ]
       )
-      return gridController = new App.Components.Grid.Controller(
+      return gridController = new OnCue.Components.Grid.Controller(
         model: gridModel
       )
 
     _runTestJob: (jobs, layout) ->
-      testJob = new App.Entities.Job.Model(
+      testJob = new OnCue.Entities.Job.Model(
         worker_type: 'oncue.worker.TestWorker'
       )
-      savingJob = App.request('job:entity:save', testJob)
+      savingJob = OnCue.request('job:entity:save', testJob)
       $.when(savingJob).done( (job) ->
         job.set('is_new', true)
         jobs.add(job)
       )
       $.when(savingJob).fail( (job, xhr) ->
-        errorView = new App.Common.Views.ErrorView(
+        errorView = new OnCue.Common.Views.ErrorView(
           message: "Failed to kick off a test job (#{xhr.statusText})"
         )
         layout.errorRegion.show(errorView)
@@ -166,13 +166,13 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
     _rerunJobs: (jobs, layout) =>
       for job in jobs
         # Saving an existing job will cause an HTTP UPDATE
-        savingJob = App.request('job:entity:save', job)
+        savingJob = OnCue.request('job:entity:save', job)
         $.when(savingJob).done( (job) =>
           @_updateRerunButton(jobs)
           @_updateDeleteButton(jobs)
         )
         $.when(savingJob).fail( (job, xhr) ->
-          errorView = new App.Common.Views.ErrorView(
+          errorView = new OnCue.Common.Views.ErrorView(
             message: "Failed to re-run job (#{xhr.statusText})"
           )
           layout.errorRegion.show(errorView)
@@ -180,9 +180,9 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
 
     _deleteJobs: (jobs, layout) =>
       for job in jobs
-        deletingJob = App.request('job:entity:delete', job)
+        deletingJob = OnCue.request('job:entity:delete', job)
         $.when(deletingJob).fail( (job, xhr) ->
-          errorView = new App.Common.Views.ErrorView(
+          errorView = new OnCue.Common.Views.ErrorView(
             message: "Failed to delete job (#{xhr.statusText})"
           )
           layout.errorRegion.show(errorView)
@@ -220,7 +220,7 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
       @_showLoadingView()
 
       # Fetch the collection of jobs from the server
-      fetchingJobs = App.request('job:entities')
+      fetchingJobs = OnCue.request('job:entities')
       $.when(fetchingJobs).done( (jobs) =>
 
         # Remove all previous event handlers on this controller
@@ -288,12 +288,12 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
         )
 
         # This is for the 'No Jobs' view, which offers a link to create a test job
-        @listenTo(App.vent, 'run:test:job', =>
+        @listenTo(OnCue.vent, 'run:test:job', =>
           @_runTestJob(jobs, layout)
         )
 
         # Display the layout
-        App.contentRegion.show(layout)
+        OnCue.contentRegion.show(layout)
       )
       $.when(fetchingJobs).fail( =>
         @_showErrorView()

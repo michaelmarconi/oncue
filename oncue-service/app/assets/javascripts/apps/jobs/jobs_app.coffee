@@ -1,4 +1,4 @@
-App.module 'Jobs', (Jobs, App, Backbone, Marionette, $, _) ->
+OnCue.module 'Jobs', (Jobs, OnCue, Backbone, Marionette, $, _) ->
 
   # Don't start this module automatically
   @startWithParent = false
@@ -14,13 +14,13 @@ App.module 'Jobs', (Jobs, App, Backbone, Marionette, $, _) ->
       Jobs.Show.stop()
       Jobs.List.start()
       Jobs.List.controller.listJobs()
-      App.Navbar.List.controller.setActiveNavbarItem('jobs')
+      OnCue.Navbar.List.controller.setActiveNavbarItem('jobs')
 
     showJob: (id) ->
       Jobs.List.stop()
       Jobs.Show.start()
       Jobs.Show.controller.showJob(id)
-      App.Navbar.List.controller.setActiveNavbarItem('jobs')
+      OnCue.Navbar.List.controller.setActiveNavbarItem('jobs')
 
     updateJob: (data) ->
       if Jobs.Show.controller
@@ -33,15 +33,15 @@ App.module 'Jobs', (Jobs, App, Backbone, Marionette, $, _) ->
     new Jobs.Router(
       controller: Jobs.controller
     )
-    @listenTo(App, 'jobs:list', ->
-      App.navigate('jobs')
+    @listenTo(OnCue, 'jobs:list', ->
+      OnCue.navigate('jobs')
       Jobs.controller.listJobs()
     )
-    @listenTo(App, 'job:show', (id) ->
-      App.navigate("jobs/#{id}")
+    @listenTo(OnCue, 'job:show', (id) ->
+      OnCue.navigate("jobs/#{id}")
       Jobs.controller.showJob(id)
     )
-    @listenTo(App.vent, 'job:progressed', (data) ->
+    @listenTo(OnCue.vent, 'job:progressed', (data) ->
       Jobs.controller.updateJob(data)
     )
 

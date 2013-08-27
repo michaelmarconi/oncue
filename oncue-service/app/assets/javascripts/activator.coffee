@@ -1,4 +1,4 @@
-App.module 'Activator', (Activator, App, Backbone, Marionette, $, _) ->
+OnCue.module 'Activator', (Activator, OnCue, Backbone, Marionette, $, _) ->
 
   #--------------------------------------------------
   # This module is responsible for activating and
@@ -15,26 +15,26 @@ App.module 'Activator', (Activator, App, Backbone, Marionette, $, _) ->
   class Activator.Controller extends Marionette.Controller
 
     listJobs: ->
-      App.module('Agents').stop()
-      App.module('Jobs').start()
-      App.trigger('jobs:list')
-      @listenToOnce(App, 'agents:list', ->
+      OnCue.module('Agents').stop()
+      OnCue.module('Jobs').start()
+      OnCue.trigger('jobs:list')
+      @listenToOnce(OnCue, 'agents:list', ->
         Activator.controller.listAgents()
       )
 
     showJob: (id) ->
-      App.module('Agents').stop()
-      App.module('Jobs').start()
-      App.trigger('job:show', id)
-      @listenToOnce(App, 'agents:list', ->
+      OnCue.module('Agents').stop()
+      OnCue.module('Jobs').start()
+      OnCue.trigger('job:show', id)
+      @listenToOnce(OnCue, 'agents:list', ->
         Activator.controller.listAgents()
       )
 
     listAgents: ->
-      App.module('Jobs').stop()
-      App.module('Agents').start()
-      App.trigger('agents:list')
-      @listenToOnce(App, 'jobs:list', ->
+      OnCue.module('Jobs').stop()
+      OnCue.module('Agents').start()
+      OnCue.trigger('agents:list')
+      @listenToOnce(OnCue, 'jobs:list', ->
         Activator.controller.listJobs()
       )
 

@@ -1,4 +1,4 @@
-App.module 'Navbar', (Navbar, App, Backbone, Marionette, $, _) ->
+OnCue.module 'Navbar', (Navbar, OnCue, Backbone, Marionette, $, _) ->
 
   class Navbar.Controller extends Marionette.Controller
 

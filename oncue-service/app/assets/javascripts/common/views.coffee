@@ -1,4 +1,4 @@
-App.module "Common.Views", (Views, App, Backbone, Marionette, $, _) ->
+OnCue.module "Common.Views", (Views, OnCue, Backbone, Marionette, $, _) ->
 
   #
   # Display a loading view, with an animated progress bar

@@ -1,4 +1,4 @@
-App.module 'Agents', (Agents, App, Backbone, Marionette, $, _) ->
+OnCue.module 'Agents', (Agents, OnCue, Backbone, Marionette, $, _) ->
 
   # Don't start this module automatically
   @startWithParent = false
@@ -11,7 +11,7 @@ App.module 'Agents', (Agents, App, Backbone, Marionette, $, _) ->
 
     listAgents: ->
       Agents.List.controller.listAgents()
-      App.Navbar.List.controller.setActiveNavbarItem('agents')
+      OnCue.Navbar.List.controller.setActiveNavbarItem('agents')
 
   # ~~~~~~~~~~~~
 
@@ -20,8 +20,8 @@ App.module 'Agents', (Agents, App, Backbone, Marionette, $, _) ->
     new Agents.Router(
       controller: Agents.controller
     )
-    @listenTo(App, 'agents:list', ->
-      App.navigate('agents')
+    @listenTo(OnCue, 'agents:list', ->
+      OnCue.navigate('agents')
       Agents.controller.listAgents()
     )
 

@@ -1,4 +1,4 @@
-App.module 'Entities.Websocket', (Websocket, App, Backbone, Marionette, $, _) ->
+OnCue.module 'Entities.Websocket', (Websocket, OnCue, Backbone, Marionette, $, _) ->
 
   #
   # The state of the web socket connection
@@ -18,7 +18,7 @@ App.module 'Entities.Websocket', (Websocket, App, Backbone, Marionette, $, _) ->
 
     _connect: =>
       @set('state', 'connecting')
-      App.vent.trigger('websocket:connecting')
+      OnCue.vent.trigger('websocket:connecting')
       if @websocket then delete @websocket
       @websocket = new WebSocket("ws://#{window.location.hostname}:#{window.location.port}/websocket")
       @websocket.onopen = @onOpen
@@ -29,18 +29,18 @@ App.module 'Entities.Websocket', (Websocket, App, Backbone, Marionette, $, _) ->
     onOpen: =>
       @set('state', 'connected')
       @set('attempts', @get('attempts') + 1 )
-      App.vent.trigger('websocket:connected')
+      OnCue.vent.trigger('websocket:connected')
       if @get('attempts') > 1
-        App.vent.trigger('websocket:reconnected')
+        OnCue.vent.trigger('websocket:reconnected')
 
     onClose: =>
       @set('state', 'connecting')
-      App.vent.trigger('websocket:closed')
+      OnCue.vent.trigger('websocket:closed')
       _.delay(@_connect, 1000)
 
     onError: (error) =>
       @set('state', 'connecting')
-      App.vent.trigger('websocket:error', error)
+      OnCue.vent.trigger('websocket:error', error)
 
     onMessage: (message) =>
       messageData = JSON.parse(message.data)
@@ -48,7 +48,7 @@ App.module 'Entities.Websocket', (Websocket, App, Backbone, Marionette, $, _) ->
       subject = _.first(eventKey.split(':'))
       event = _.last(eventKey.split(':'))
       payload = messageData[eventKey][subject]
-      App.vent.trigger("#{subject}:#{event}", payload)
+      OnCue.vent.trigger("#{subject}:#{event}", payload)
 
   # ~~~~~~~~~~~
 
@@ -63,6 +63,6 @@ App.module 'Entities.Websocket', (Websocket, App, Backbone, Marionette, $, _) ->
   Websocket.addInitializer ->
     Websocket.controller = new Websocket.Controller()
 
-    App.reqres.setHandler('websocket:connection', ->
+    OnCue.reqres.setHandler('websocket:connection', ->
       Websocket.controller.getConnection()
     )

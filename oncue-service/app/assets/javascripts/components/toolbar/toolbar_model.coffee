@@ -1,4 +1,4 @@
-App.module "Components.Toolbar", (Toolbar, App, Backbone, Marionette, $, _) ->
+OnCue.module "Components.Toolbar", (Toolbar, OnCue, Backbone, Marionette, $, _) ->
 
   #
   # A model for a button

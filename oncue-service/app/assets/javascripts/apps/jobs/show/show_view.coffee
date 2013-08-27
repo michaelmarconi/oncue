@@ -1,4 +1,4 @@
-App.module "Jobs.Show", (Show, App, Backbone, Marionette, $, _) ->
+OnCue.module "Jobs.Show", (Show, OnCue, Backbone, Marionette, $, _) ->
 
   #
   # Template helpers to simplify presentation logic, designed to be mixed in

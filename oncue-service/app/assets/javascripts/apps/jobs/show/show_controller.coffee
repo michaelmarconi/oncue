@@ -1,14 +1,14 @@
-App.module "Jobs.Show", (Show, App, Backbone, Marionette, $, _) ->
+OnCue.module "Jobs.Show", (Show, OnCue, Backbone, Marionette, $, _) ->
 
   class Show.Controller extends Marionette.Controller
 
     _showLoadingView: (jobId) ->
-      loadingView = new App.Common.Views.LoadingView(message: "Loading job #{jobId}...")
-      App.contentRegion.show(loadingView)
+      loadingView = new OnCue.Common.Views.LoadingView(message: "Loading job #{jobId}...")
+      OnCue.contentRegion.show(loadingView)
 
     _showErrorView: (jobId) ->
-      errorView = new App.Common.Views.ErrorView(message: "Failed to load job #{jobId}")
-      App.contentRegion.show(errorView)
+      errorView = new OnCue.Common.Views.ErrorView(message: "Failed to load job #{jobId}")
+      OnCue.contentRegion.show(errorView)
 
     _updateToolbarButtons: (job) ->
       state = job.get('state')
@@ -27,59 +27,59 @@ App.module "Jobs.Show", (Show, App, Backbone, Marionette, $, _) ->
 
     _buildToolbar: (job) ->
       state = job.get('state')
-      listJobsButton = new App.Components.Toolbar.ButtonModel(
+      listJobsButton = new OnCue.Components.Toolbar.ButtonModel(
         title: 'All jobs'
         tooltip: 'Return to the list of jobs'
         iconClass: 'icon-arrow-left muted'
         event: 'list:jobs'
       )
-      @rerunJobButton = new App.Components.Toolbar.ButtonModel(
+      @rerunJobButton = new OnCue.Components.Toolbar.ButtonModel(
         title: 'Re-run'
         tooltip: 'Re-run this job'
         iconClass: 'icon-repeat'
         event: 'rerun:job'
         enabled: false
       )
-      @deleteJobButton = new App.Components.Toolbar.ButtonModel(
+      @deleteJobButton = new OnCue.Components.Toolbar.ButtonModel(
         title: 'Delete'
         tooltip: 'Delete this job permanently'
         iconClass: 'icon-trash'
         enabled: false
         event: 'delete:job'
       )
-      actionButtons = new App.Components.Toolbar.ButtonStripModel(
+      actionButtons = new OnCue.Components.Toolbar.ButtonStripModel(
         cssClasses: 'pull-right'
-        buttons: new App.Components.Toolbar.ButtonCollection([
+        buttons: new OnCue.Components.Toolbar.ButtonCollection([
           @rerunJobButton, @deleteJobButton
         ])
       )
-      toolbarItems = new App.Components.Toolbar.ItemsCollection()
+      toolbarItems = new OnCue.Components.Toolbar.ItemsCollection()
       toolbarItems.add(listJobsButton)
       toolbarItems.add(actionButtons)
-      return new App.Components.Toolbar.Controller(
+      return new OnCue.Components.Toolbar.Controller(
         collection: toolbarItems
       )
 
     _rerunJob: (job, layout) ->
       # Saving an existing job will cause an HTTP UPDATE
-      savingJob = App.request('job:entity:save', job)
+      savingJob = OnCue.request('job:entity:save', job)
       $.when(savingJob).done( (job) =>
         @_updateToolbarButtons(job)
       )
       $.when(savingJob).fail( (job, xhr) ->
-        errorView = new App.Common.Views.ErrorView(
+        errorView = new OnCue.Common.Views.ErrorView(
           message: "Failed to re-run job (#{xhr.statusText})"
         )
         layout.errorRegion.show(errorView)
       )
 
     _deleteJob: (job, layout) ->
-      deletingJob = App.request('job:entity:delete', job)
+      deletingJob = OnCue.request('job:entity:delete', job)
       $.when(deletingJob).done( (job) =>
-        App.trigger('jobs:list')
+        OnCue.trigger('jobs:list')
       )
       $.when(deletingJob).fail( (job, xhr) ->
-        errorView = new App.Common.Views.ErrorView(
+        errorView = new OnCue.Common.Views.ErrorView(
           message: "Failed to delete job (#{xhr.statusText})"
         )
         layout.errorRegion.show(errorView)
@@ -94,7 +94,7 @@ App.module "Jobs.Show", (Show, App, Backbone, Marionette, $, _) ->
       @_showLoadingView(id)
 
       # Fetch the job from the server
-      fetchingJob = App.request('job:entity', id)
+      fetchingJob = OnCue.request('job:entity', id)
       $.when(fetchingJob).done( (@job) =>
 
         # Remove all previous event handlers on this controller
@@ -117,7 +117,7 @@ App.module "Jobs.Show", (Show, App, Backbone, Marionette, $, _) ->
 
         # Listen to toolbar events
         @listenTo(toolbarView, 'toolbar:list:jobs', ->
-          App.trigger('jobs:list')
+          OnCue.trigger('jobs:list')
         )
         @listenTo(toolbarView, 'toolbar:buttonStrip:rerun:job', ->
           @_rerunJob(@job, layout)
@@ -135,7 +135,7 @@ App.module "Jobs.Show", (Show, App, Backbone, Marionette, $, _) ->
         )
 
         # Display the layout
-        App.contentRegion.show(layout)
+        OnCue.contentRegion.show(layout)
       )
       $.when(fetchingJob).fail( =>
         @_showErrorView(id)

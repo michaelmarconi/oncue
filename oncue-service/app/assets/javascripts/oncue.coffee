@@ -1,18 +1,18 @@
-window.App = new Marionette.Application()
+window.OnCue = new Marionette.Application()
 
-App.navigate = (route, options) ->
+OnCue.navigate = (route, options) ->
   options or (options = {})
   Backbone.history.navigate(route, options)
 
-App.getCurrentRoute = ->
+OnCue.getCurrentRoute = ->
   Backbone.history.fragment
 
-App.addRegions(
+OnCue.addRegions(
   navbarRegion: '#navbar'
   contentRegion: '#content'
 )
 
-App.on('initialize:after', ->
+OnCue.on('initialize:after', ->
   if Backbone.history
     Backbone.history.start({pushState: true})
 )

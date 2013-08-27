@@ -1,4 +1,4 @@
-App.module 'Entities.Navbar', (Navbar, App, Backbone, Marionette, $, _) ->
+OnCue.module 'Entities.Navbar', (Navbar, OnCue, Backbone, Marionette, $, _) ->
 
   #
   # A navigation link on the navigation bar
@@ -40,6 +40,6 @@ App.module 'Entities.Navbar', (Navbar, App, Backbone, Marionette, $, _) ->
 
     Navbar.controller = new Navbar.Controller()
 
-    App.reqres.setHandler('navbar:entities', ->
+    OnCue.reqres.setHandler('navbar:entities', ->
       Navbar.controller.getNavbarEntities()
     )

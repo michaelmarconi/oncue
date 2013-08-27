@@ -1,4 +1,4 @@
-App.module "Agents.List", (List, App, Backbone, Marionette, $, _) ->
+OnCue.module "Agents.List", (List, OnCue, Backbone, Marionette, $, _) ->
 
   #
   # The view to display when there are no agents registered

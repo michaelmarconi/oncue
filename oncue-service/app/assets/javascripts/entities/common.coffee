@@ -1,4 +1,4 @@
-App.module "Entities.Common", (Common, App, Backbone, Marionette, $, _) ->
+OnCue.module "Entities.Common", (Common, OnCue, Backbone, Marionette, $, _) ->
 
   #
   # A collection decorator that allows a filter funtion to be applied.

@@ -1,23 +1,23 @@
-App.module "Agents.List", (List, App, Backbone, Marionette, $, _) ->
+OnCue.module "Agents.List", (List, OnCue, Backbone, Marionette, $, _) ->
 
   class List.Controller extends Marionette.Controller
 
     _showLoadingView: ->
-      loadingView = new App.Common.Views.LoadingView(message: 'Loading agents...')
-      App.contentRegion.show(loadingView)
+      loadingView = new OnCue.Common.Views.LoadingView(message: 'Loading agents...')
+      OnCue.contentRegion.show(loadingView)
 
     _showErrorView: ->
-      errorView = new App.Common.Views.ErrorView(message: 'Failed to load registered agents')
-      App.contentRegion.show(errorView)
+      errorView = new OnCue.Common.Views.ErrorView(message: 'Failed to load registered agents')
+      OnCue.contentRegion.show(errorView)
 
     listAgents: ->
       @_showLoadingView()
-      fetchingAgents = App.request('agent:entities')
+      fetchingAgents = OnCue.request('agent:entities')
       $.when(fetchingAgents).done( (agents) =>
         agentsView = new List.AgentsView(
           collection: agents
         )
-        App.contentRegion.show(agentsView)
+        OnCue.contentRegion.show(agentsView)
       )
       $.when(fetchingAgents).fail( =>
         @_showErrorView()

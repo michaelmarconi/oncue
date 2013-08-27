@@ -1,4 +1,4 @@
-App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
+OnCue.module "Jobs.List", (List, OnCue, Backbone, Marionette, $, _) ->
 
   #
   # This is the top-level layout for the jobs list page
@@ -21,7 +21,7 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
       'click a' : '_runTestJob'
 
     _runTestJob: ->
-      App.vent.trigger('run:test:job')
+      OnCue.vent.trigger('run:test:job')
 
   #
   # A custom Backgrid row that changes the row
@@ -54,7 +54,7 @@ App.module "Jobs.List", (List, App, Backbone, Marionette, $, _) ->
     _showJobItem: (event) ->
       event.preventDefault()
       event.stopPropagation()
-      App.trigger('job:show', event.target.id)
+      OnCue.trigger('job:show', event.target.id)
 
     render: ->
       @$el.html(@template(@model.attributes))

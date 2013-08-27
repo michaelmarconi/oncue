@@ -1,4 +1,4 @@
-App.module "Components.Grid", (Grid, App, Backbone, Marionette, $, _) ->
+OnCue.module "Components.Grid", (Grid, OnCue, Backbone, Marionette, $, _) ->
 
   #
   # A model that describes a data grid

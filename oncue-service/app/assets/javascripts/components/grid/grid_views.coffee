@@ -1,4 +1,4 @@
-App.module "Components.Grid", (Grid, App, Backbone, Marionette, $, _) ->
+OnCue.module "Components.Grid", (Grid, OnCue, Backbone, Marionette, $, _) ->
 
   class Grid.Layout extends Marionette.Layout
     template: '#grid_layout'

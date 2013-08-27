@@ -1,4 +1,4 @@
-App.module "Navbar.List", (List, App, Backbone, Marionette, $, _) ->
+OnCue.module "Navbar.List", (List, OnCue, Backbone, Marionette, $, _) ->
 
   #
   # A navbar layout that renders a connection state/brand item on the left
