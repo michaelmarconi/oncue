@@ -60,6 +60,8 @@ public class Job implements Serializable, Cloneable {
 	private static final long serialVersionUID = -2375588116753600617L;
 
 	private DateTime enqueuedAt;
+	private DateTime startedAt;
+	private DateTime completedAt;
 	private String errorMessage;
 	private long id;
 	private Map<String, String> params;
@@ -104,6 +106,8 @@ public class Job implements Serializable, Cloneable {
 	public Object clone() {
 		Job clone = new Job(this.getId(), this.getWorkerType());
 		clone.setEnqueuedAt(this.getEnqueuedAt());
+		clone.setStartedAt(this.getStartedAt());
+		clone.setCompletedAt(this.getCompletedAt());
 		clone.setErrorMessage(this.getErrorMessage());
 		clone.setProgress(this.getProgress());
 		clone.setState(this.getState());
@@ -118,6 +122,10 @@ public class Job implements Serializable, Cloneable {
 		}
 
 		return clone;
+	}
+
+	public DateTime getCompletedAt() {
+		return completedAt;
 	}
 
 	public DateTime getEnqueuedAt() {
@@ -140,6 +148,10 @@ public class Job implements Serializable, Cloneable {
 		return progress;
 	}
 
+	public DateTime getStartedAt() {
+		return startedAt;
+	}
+
 	public State getState() {
 		return state;
 	}
@@ -150,6 +162,10 @@ public class Job implements Serializable, Cloneable {
 
 	public boolean isRerun() {
 		return rerun;
+	}
+
+	public void setCompletedAt(DateTime completedAt) {
+		this.completedAt = completedAt;
 	}
 
 	public void setEnqueuedAt(DateTime enqueuedAt) {
@@ -172,14 +188,19 @@ public class Job implements Serializable, Cloneable {
 		this.rerun = rerun;
 	}
 
+	public void setStartedAt(DateTime startedAt) {
+		this.startedAt = startedAt;
+	}
+
 	public void setState(State state) {
 		this.state = state;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("Job %s (state=%s, enqueuedAt=%s, workerType=%s, re-run=%s, progress=%s)", id, state,
-				getEnqueuedAt(), workerType, rerun, progress);
+		return String
+				.format("Job %s (state=%s, enqueuedAt=%s, startedAt=%s, completedAt=%s, workerType=%s, re-run=%s, progress=%s)",
+						id, state, getEnqueuedAt(), getStartedAt(), getCompletedAt(), workerType, rerun, progress);
 	}
 
 }

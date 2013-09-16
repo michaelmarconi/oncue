@@ -6,6 +6,10 @@ import java.util.List;
 
 import oncue.common.messages.Job;
 import oncue.common.settings.Settings;
+
+import org.joda.time.DateTime;
+import org.joda.time.Duration;
+
 import akka.actor.ActorSystem;
 
 /**
@@ -92,4 +96,30 @@ public class InMemoryBackingStore extends AbstractBackingStore {
 		failedJobs.remove(job);
 	}
 
+	@Override
+	public void cleanupJobs(boolean includeFailedJobs, Duration expirationAge) {
+		List<Job> expiredCompletedJobs = new ArrayList<>();
+		for (Job completedJob : completedJobs) {
+			DateTime expirationThreshold = DateTime.now().minus(expirationAge.getMillis());
+			boolean isExpired = completedJob.getCompletedAt().isBefore(expirationThreshold.toInstant());
+			if (isExpired) {
+				expiredCompletedJobs.add(completedJob);
+			}
+		}
+		completedJobs.removeAll(expiredCompletedJobs);
+		
+		if (!includeFailedJobs) {
+			return;
+		}
+
+		List<Job> expiredFailedJobs = new ArrayList<>();
+		for (Job failedJob : failedJobs) {
+			DateTime expirationThreshold = DateTime.now().minus(expirationAge.getMillis());
+			boolean isExpired = failedJob.getCompletedAt().isBefore(expirationThreshold.toInstant());
+			if (isExpired) {
+				expiredFailedJobs.add(failedJob);
+			}
+		}
+		expiredFailedJobs.removeAll(expiredFailedJobs);
+	}
 }

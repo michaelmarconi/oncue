@@ -22,6 +22,17 @@ OnCue.module "Jobs.Show", (Show, OnCue, Backbone, Marionette, $, _) ->
       showEnqueuedAt: ->
         return moment(@enqueued_at).format('MMMM Do YYYY, h:mm:ss a')
 
+      showStartedAt: ->
+        if(@started_at)
+          return moment(@started_at).format('MMMM Do YYYY, h:mm:ss a')
+        return "&mdash;"
+
+      showCompletedAt: ->
+        if(@completed_at)
+          return moment(@completed_at).format('MMMM Do YYYY, h:mm:ss a')
+        else
+          return "&mdash;"
+
   #
   # This is the top-level layout for the jobs show page
   #
