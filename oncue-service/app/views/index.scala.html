@@ -37,7 +37,7 @@
    *--- Common Views ---
    *------------------*@
 
-  <script type="text/template" id="loading_view">
+  <script id="loading_view" type="text/template">
     <div class="well well-small">
       <span class="text-info"><%= message %></span>
       <div class="progress progress-striped active">
@@ -46,7 +46,7 @@
     </div>
   </script>
 
-  <script type="text/template" id="error_view">
+  <script id="error_view" type="text/template">
     <strong>Error!</strong> <%= message %>
   </script>
 
@@ -54,7 +54,7 @@
    *--- Navbar Views ---
    *------------------*@
 
-  <script type="text/template" id="navbar_list_layout">
+  <script id="navbar_list_layout" type="text/template">
     <div class="navbar-inner">
       <div class="container">
         <div id="connection_region"></div>
@@ -63,12 +63,12 @@
     </div>
   </script>
 
-  <script type="text/template" id="connection_view">
+  <script id="connection_view" type="text/template">
     <i></i>
     nCue
   </script>
 
-  <script type="text/template" id="navbar_item_view">
+  <script id="navbar_item_view" type="text/template">
     <a href="<%= url %>"><%= name %></a>
   </script>
 
@@ -76,7 +76,7 @@
    *--- Jobs Views ---
    *----------------*@
 
-  <script type="text/template" id="jobs_show_layout">
+  <script id="jobs_show_layout" type="text/template">
     <div id="toolbar_region"></div>
     <div id="error_region"></div>
     <div id="details_region"></div>
@@ -128,24 +128,24 @@
     </table>
   </script>
 
-  <script type="text/template"id="no_jobs_view">
+  <script id="no_jobs_view" type="text/template">
     <h4>No Jobs</h4>
     No jobs have been run yet.  You could try <a href='#'>running a test job</a> to check everything is working properly.
   </script>
 
-  <script type="text/template" id="jobs_list_layout">
+  <script id="jobs_list_layout" type="text/template">
     <div id="toolbar_region"></div>
     <div id="error_region"></div>
     <div id="jobs_region"></div>
   </script>
 
-  <script type="text/template" id="job_list_progress">
+  <script id="job_list_progress" type="text/template">
    <div class='progress'>
      <div class='bar' style='width: <%= progress * 100 %>%'></div>
    </div>
   </script>
 
-  <script type="text/template" id="job_list_id">
+  <script id="job_list_id" type="text/template">
    <a href='jobs/<%= id %>' id='<%= id %>'>Job <%= id %></a>
   </script>
 
@@ -153,7 +153,7 @@
    *--- Grid Views ---
    *----------------*@
 
-  <script type="text/template" id="grid_layout">
+  <script id="grid_layout" type="text/template">
     <div id="grid_region"></div>
     <div id="paginator_region"></div>
   </script>
@@ -162,19 +162,19 @@
    *--- Toolbar Views ---
    *-------------------*@
 
-  <script type="text/template" id="toolbar_view">
+  <script id="toolbar_view" type="text/template">
     <div class="toolbar-items"></div>
     <div class="clearfix"></div>
   </script>
 
-  <script type="text/template" id="toolbar_button_view">
+  <script id="toolbar_button_view" type="text/template">
     <% if (typeof(iconClass) != "undefined") { %>
       <i class="<%= iconClass %>"></i>
     <% } %>
     <%= title %>
   </script>
 
-  <script type="text/template" id="toolbar_filter_view">
+  <script id="toolbar_filter_view" type="text/template">
     <a class="btn dropdown-toggle" data-toggle="dropdown">
       <span class="title muted"><%= title %>:</span>
         <% if (filtered) { %>
@@ -187,7 +187,7 @@
     <ul class="dropdown-menu"></ul>
   </script>
 
-  <script type="text/template" id="toolbar_filter_item_view">
+  <script id="toolbar_filter_item_view" type="text/template">
     <a>
       <label class="checkbox">
         <% if (selected) { %>
@@ -204,12 +204,12 @@
    *--- Agents Views ---
    *------------------*@
 
-  <script type="text/template"id="no_agents_view">
+  <script id="no_agents_view" type="text/template">
     <h4>No Agents</h4>
     No agents are currently registered with the service.
   </script>
 
-  <script type="text/template"id="agents_list_view">
+  <script id="agents_list_view" type="text/template">
     <table class="table table-hover">
       <thead>
         <tr>
@@ -222,7 +222,7 @@
     </table>
   </script>
 
-  <script type="text/template"id="agents_item_view">
+  <script id="agents_item_view" type="text/template">
     <td><%= id %></td>
     <td>&mdash;</td>
   </script>
