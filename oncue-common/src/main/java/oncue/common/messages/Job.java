@@ -60,6 +60,8 @@ public class Job implements Serializable, Cloneable {
 	private static final long serialVersionUID = -2375588116753600617L;
 
 	private DateTime enqueuedAt;
+	private DateTime startedAt;
+	private DateTime completedAt;	
 	private String errorMessage;
 	private long id;
 	private Map<String, String> params;
@@ -120,6 +122,10 @@ public class Job implements Serializable, Cloneable {
 		return clone;
 	}
 
+	public DateTime getCompletedAt() {
+		return completedAt;
+	}
+
 	public DateTime getEnqueuedAt() {
 		return enqueuedAt;
 	}
@@ -140,6 +146,10 @@ public class Job implements Serializable, Cloneable {
 		return progress;
 	}
 
+	public DateTime getStartedAt() {
+		return startedAt;
+	}
+
 	public State getState() {
 		return state;
 	}
@@ -150,6 +160,10 @@ public class Job implements Serializable, Cloneable {
 
 	public boolean isRerun() {
 		return rerun;
+	}
+
+	public void setCompletedAt(DateTime completedAt) {
+		this.completedAt = completedAt;
 	}
 
 	public void setEnqueuedAt(DateTime enqueuedAt) {
@@ -170,6 +184,10 @@ public class Job implements Serializable, Cloneable {
 
 	public void setRerun(boolean rerun) {
 		this.rerun = rerun;
+	}
+
+	public void setStartedAt(DateTime startedAt) {
+		this.startedAt = startedAt;
 	}
 
 	public void setState(State state) {
