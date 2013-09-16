@@ -24,6 +24,7 @@ import oncue.common.messages.Job.State;
 import oncue.common.settings.Settings;
 
 import org.joda.time.DateTime;
+import org.joda.time.Duration;
 import org.json.simple.JSONValue;
 
 import redis.clients.jedis.Jedis;
@@ -439,5 +440,28 @@ public class RedisBackingStore extends AbstractBackingStore {
 		RedisBackingStore.releaseConnection(redis);
 
 		return jobs;
+	}
+
+	@Override
+	public void cleanupJobs(boolean includeFailedJobs, Duration expirationAge) {
+		for (Job completedJob : getCompletedJobs()) {
+			DateTime expirationThreshold = DateTime.now().minus(expirationAge.getMillis());
+			boolean isExpired = completedJob.getCompletedAt().isBefore(expirationThreshold.toInstant());
+			if (isExpired) {
+				removeCompletedJob(completedJob);
+			}
+		}
+		
+		if (!includeFailedJobs) {
+			return;
+		}
+
+		for (Job failedJob : getFailedJobs()) {
+			DateTime expirationThreshold = DateTime.now().minus(expirationAge.getMillis());
+			boolean isExpired = failedJob.getCompletedAt().isBefore(expirationThreshold.toInstant());
+			if (isExpired) {
+				removeFailedJob(failedJob);
+			}
+		}
 	}
 }

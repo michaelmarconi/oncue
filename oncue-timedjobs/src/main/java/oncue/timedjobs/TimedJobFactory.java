@@ -1,5 +1,6 @@
 package oncue.timedjobs;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -26,9 +27,12 @@ public class TimedJobFactory {
 				failureRetryCount = (Integer) jobMap.get("failureRetryCount");
 			}
 
-			Map<String, String> parameters = null;
+			Map<String, String> parameters = new HashMap<>();
 			if (jobMap.keySet().contains("parameters")) {
-				parameters = (Map<String, String>) jobMap.get("parameters");
+				Map<String, Object> jobParams = (Map<String, Object>) jobMap.get("parameters");
+				for (String key : jobParams.keySet()) {
+					parameters.put(key, jobParams.get(key).toString());
+				}
 			}
 
 			createTimedJob(system, workerType, name, endpointUri, parameters, failureRetryCount, testingProbe);
