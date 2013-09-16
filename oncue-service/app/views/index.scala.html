@@ -90,6 +90,12 @@
         <small><%= showWorker() %></small>
       </h1>
     </div>
+    <% if (state == "failed") { %>
+      <div class="alert alert-error">
+        <i class="icon-warning-sign bold"></i>
+        This job has failed!
+      </div>
+    <% } %>
     <% if (rerun) { %>
       <div class="alert alert-info">
         <i class="icon-repeat bold"></i>
@@ -99,7 +105,7 @@
     <table>
       <tbody>
         <tr>
-          <th>Worker Type</th>
+          <th>Worker type</th>
           <td class="monospace"><%= worker_type %></td>
         </tr>
         <tr>
@@ -110,6 +116,16 @@
           <th>State</th>
           <td class="capitalised <%= state %>"><%= state %></td>
         </tr>
+        <% if (state == "failed") { %>
+          <tr>
+            <th>Error</th>
+            <td>
+              <code class="failed">
+                <%= error_message %>
+              </code>
+            </td>
+          </tr>
+        <% } %>
       </tbody>
     </table>
   </script>

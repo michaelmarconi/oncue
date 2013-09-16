@@ -44,6 +44,9 @@ OnCue.module 'Jobs', (Jobs, OnCue, Backbone, Marionette, $, _) ->
     @listenTo(OnCue.vent, 'job:progressed', (data) ->
       Jobs.controller.updateJob(data)
     )
+    @listenTo(OnCue.vent, 'job:failed', (data) ->
+      Jobs.controller.updateJob(data)
+    )
 
   Jobs.addFinalizer ->
     @stopListening()

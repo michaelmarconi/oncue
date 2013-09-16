@@ -98,6 +98,15 @@ OnCue.module 'Entities.Job', (Job, OnCue, Backbone, Marionette, $, _) ->
       )
       return defer.promise()
 
+    updateJobEntity: (jobData) ->
+      if Job.collection
+        job = Job.collection.get(jobData.id)
+        if job
+          job.set(jobData)
+        else
+          throw "Cannot update unrecognised job #{jobData.id}"
+
+
   # ~~~~~~~~~~~
 
   Job.addInitializer ->
@@ -123,13 +132,13 @@ OnCue.module 'Entities.Job', (Job, OnCue, Backbone, Marionette, $, _) ->
         Job.collection.fetch()
     )
 
-    # Update the collection if a job is updated
+    # Update the collection if a job progresses
     OnCue.vent.on('job:progressed', (jobData) ->
-      if Job.collection
-        job = Job.collection.get(jobData.id)
-        if job
-          job.set(jobData)
-        else
-          throw "Cannot update unrecognised job #{jobData.id}"
+      Job.controller.updateJobEntity(jobData)
+    )
+
+    # Update the collection if a job fails
+    OnCue.vent.on('job:failed', (jobData) ->
+      Job.controller.updateJobEntity(jobData)
     )
 

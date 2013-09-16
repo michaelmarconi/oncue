@@ -30,7 +30,7 @@ OnCue.module "Jobs.List", (List, OnCue, Backbone, Marionette, $, _) ->
   class List.JobStateRow extends Backgrid.Row
     className: =>
       if @model.get('state') == 'complete' then 'muted success'
-      else if @model.get('state') == 'failed' then 'error'
+      else if @model.get('state') == 'failed' then 'muted error'
       else if @model.get('state') == 'running' then 'info'
 
     render: ->
@@ -58,6 +58,10 @@ OnCue.module "Jobs.List", (List, OnCue, Backbone, Marionette, $, _) ->
 
     render: ->
       @$el.html(@template(@model.attributes))
+      if @model.get('state') == 'complete'
+        @$el.find('a').addClass('text-success')
+      else if @model.get('state') == 'failed'
+        @$el.find('a').addClass('text-error')
       return this
 
   #
