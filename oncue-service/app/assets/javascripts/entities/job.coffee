@@ -98,6 +98,11 @@ OnCue.module 'Entities.Job', (Job, OnCue, Backbone, Marionette, $, _) ->
       )
       return defer.promise()
 
+    addJobEntity: (jobData) ->
+      if Job.collection
+        jobData.is_new = true
+        Job.collection.add(jobData)
+
     updateJobEntity: (jobData) ->
       if Job.collection
         job = Job.collection.get(jobData.id)
@@ -105,6 +110,10 @@ OnCue.module 'Entities.Job', (Job, OnCue, Backbone, Marionette, $, _) ->
           job.set(jobData)
         else
           throw "Cannot update unrecognised job #{jobData.id}"
+
+    updateJobEntities: ->
+      if Job.collection
+        Job.collection.fetch()
 
 
   # ~~~~~~~~~~~
@@ -132,6 +141,11 @@ OnCue.module 'Entities.Job', (Job, OnCue, Backbone, Marionette, $, _) ->
         Job.collection.fetch()
     )
 
+    # Update the collection if a job is enqueued
+    OnCue.vent.on('job:enqueued', (jobData) ->
+      Job.controller.addJobEntity(jobData)
+    )
+
     # Update the collection if a job progresses
     OnCue.vent.on('job:progressed', (jobData) ->
       Job.controller.updateJobEntity(jobData)
@@ -140,5 +154,11 @@ OnCue.module 'Entities.Job', (Job, OnCue, Backbone, Marionette, $, _) ->
     # Update the collection if a job fails
     OnCue.vent.on('job:failed', (jobData) ->
       Job.controller.updateJobEntity(jobData)
+    )
+
+    # Update the collection if the jobs have been
+    # cleaned up by the maintenance worker
+    OnCue.vent.on('jobs:cleanup', ->
+      Job.controller.updateJobEntities()
     )
 

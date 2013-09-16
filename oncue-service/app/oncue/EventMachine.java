@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 
 import oncue.common.events.AgentStartedEvent;
 import oncue.common.events.AgentStoppedEvent;
+import oncue.common.events.JobCleanupEvent;
 import oncue.common.events.JobEnqueuedEvent;
 import oncue.common.events.JobFailedEvent;
 import oncue.common.events.JobProgressEvent;
@@ -53,6 +54,7 @@ public class EventMachine extends UntypedActor {
 		eventStream.subscribe(getSelf(), JobEnqueuedEvent.class);
 		eventStream.subscribe(getSelf(), JobProgressEvent.class);
 		eventStream.subscribe(getSelf(), JobFailedEvent.class);
+		eventStream.subscribe(getSelf(), JobCleanupEvent.class);
 		log.info("EventMachine is listening for OnCue events.");
 	}
 
@@ -107,6 +109,11 @@ public class EventMachine extends UntypedActor {
 			JobFailedEvent jobFailed = (JobFailedEvent) message;
 			for (WebSocket.Out<JsonNode> client : clients) {
 				ObjectNode event = constructEvent("job:failed", "job", jobFailed.getJob());
+				client.write(event);
+			}
+		} else if (message instanceof JobCleanupEvent) {
+			for (WebSocket.Out<JsonNode> client : clients) {
+				ObjectNode event = constructEvent("jobs:cleanup", "jobs", null);
 				client.write(event);
 			}
 		}

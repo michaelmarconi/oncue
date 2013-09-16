@@ -187,13 +187,13 @@ public class RedisBackingStore extends AbstractBackingStore {
 
 			job = new Job(new Long(id), workerType);
 			job.setEnqueuedAt(enqueuedAt);
-			
+
 			if (startedAt != null)
 				job.setStartedAt(startedAt);
-			
+
 			if (completedAt != null)
 				job.setCompletedAt(completedAt);
-			
+
 			job.setRerun(Boolean.parseBoolean(rerunStatus));
 
 			if (params != null)
@@ -233,13 +233,13 @@ public class RedisBackingStore extends AbstractBackingStore {
 		// Create a map describing the job
 		String jobKey = String.format(JOB_KEY, job.getId());
 		transaction.hset(jobKey, JOB_ENQUEUED_AT, job.getEnqueuedAt().toString());
-		
+
 		if (job.getStartedAt() != null)
 			transaction.hset(jobKey, JOB_STARTED_AT, job.getStartedAt().toString());
-		
+
 		if (job.getCompletedAt() != null)
 			transaction.hset(jobKey, JOB_COMPLETED_AT, job.getCompletedAt().toString());
-		
+
 		transaction.hset(jobKey, JOB_WORKER_TYPE, job.getWorkerType());
 		transaction.hset(jobKey, JOB_RERUN_STATUS, Boolean.toString(job.isRerun()));
 
@@ -369,11 +369,13 @@ public class RedisBackingStore extends AbstractBackingStore {
 		String jobKey = String.format(JOB_KEY, job.getId());
 		redis.hset(jobKey, JOB_PROGRESS, job.getProgress().toString());
 		redis.hset(jobKey, JOB_STATE, job.getState().toString());
-		redis.hset(jobKey, JOB_STARTED_AT, job.getStartedAt().toString());
+		if (job.getStartedAt() != null)
+			redis.hset(jobKey, JOB_STARTED_AT, job.getStartedAt().toString());
 
 		if (job.getState() == Job.State.COMPLETE)
-			redis.hset(jobKey, JOB_COMPLETED_AT, job.getCompletedAt().toString());
-			redis.lpush(COMPLETED_JOBS, new Long(job.getId()).toString());
+			if (job.getCompletedAt() != null)
+				redis.hset(jobKey, JOB_COMPLETED_AT, job.getCompletedAt().toString());
+		redis.lpush(COMPLETED_JOBS, new Long(job.getId()).toString());
 
 		releaseConnection(redis);
 	}
@@ -451,7 +453,7 @@ public class RedisBackingStore extends AbstractBackingStore {
 				removeCompletedJob(completedJob);
 			}
 		}
-		
+
 		if (!includeFailedJobs) {
 			return;
 		}

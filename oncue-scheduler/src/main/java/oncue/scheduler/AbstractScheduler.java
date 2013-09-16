@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import oncue.backingstore.BackingStore;
 import oncue.common.events.AgentStartedEvent;
 import oncue.common.events.AgentStoppedEvent;
+import oncue.common.events.JobCleanupEvent;
 import oncue.common.events.JobEnqueuedEvent;
 import oncue.common.events.JobFailedEvent;
 import oncue.common.events.JobProgressEvent;
@@ -450,6 +451,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 			log.debug("Clean up jobs");
 			CleanupJobs cleanupJobs = (CleanupJobs) message;
 			backingStore.cleanupJobs(cleanupJobs.isIncludeFailedJobs(), cleanupJobs.getExpirationAge());
+			getContext().system().eventStream().publish(new JobCleanupEvent());
 			getSender().tell(new Success("Job cleanup succeeded"), getSelf());
 		}
 
