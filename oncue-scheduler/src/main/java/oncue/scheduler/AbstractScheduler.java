@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import oncue.backingstore.BackingStore;
 import oncue.common.events.AgentStartedEvent;
 import oncue.common.events.AgentStoppedEvent;
+import oncue.common.events.JobCleanupEvent;
 import oncue.common.events.JobEnqueuedEvent;
 import oncue.common.events.JobFailedEvent;
 import oncue.common.events.JobProgressEvent;
@@ -34,6 +35,7 @@ import oncue.common.exceptions.DeleteJobException;
 import oncue.common.messages.AbstractWorkRequest;
 import oncue.common.messages.Agent;
 import oncue.common.messages.AgentSummary;
+import oncue.common.messages.CleanupJobs;
 import oncue.common.messages.DeleteJob;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
@@ -55,6 +57,7 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Cancellable;
 import akka.actor.Status.Failure;
+import akka.actor.Status.Success;
 import akka.actor.UntypedActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
@@ -442,6 +445,14 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 				log.error(e, "Failed to delete job {}", job.getId());
 				getSender().tell(new Failure(e), getSelf());
 			}
+		}
+
+		else if (message instanceof CleanupJobs) {
+			log.debug("Clean up jobs");
+			CleanupJobs cleanupJobs = (CleanupJobs) message;
+			backingStore.cleanupJobs(cleanupJobs.isIncludeFailedJobs(), cleanupJobs.getExpirationAge());
+			getContext().system().eventStream().publish(new JobCleanupEvent());
+			getSender().tell(new Success("Job cleanup succeeded"), getSelf());
 		}
 
 		else if (message instanceof AbstractWorkRequest) {

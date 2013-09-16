@@ -24,6 +24,9 @@ import oncue.common.messages.Job.State;
 import oncue.common.messages.JobProgress;
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
+
+import org.joda.time.DateTime;
+
 import scala.concurrent.Await;
 import akka.actor.ActorRef;
 import akka.actor.UntypedActor;
@@ -106,12 +109,12 @@ public abstract class AbstractWorker extends UntypedActor {
 	}
 
 	/**
-	 * Set the job state to running and let the agent know we have begun
-	 * working.
+	 * Update the job state let the agent know we have begun working.
 	 */
 	private void prepareWork() {
 		job.setState(State.RUNNING);
 		job.setProgress(0.0);
+		job.setStartedAt(DateTime.now());
 		getSender().tell(new JobProgress(job), getSelf());
 	}
 
@@ -134,6 +137,7 @@ public abstract class AbstractWorker extends UntypedActor {
 	private void workComplete() {
 		job.setState(State.COMPLETE);
 		job.setProgress(1);
+		job.setCompletedAt(DateTime.now());
 		log.debug("Work on {} is complete.", job);
 		agent.tell(new JobProgress(job), getSelf());
 		getContext().stop(getSelf());
