@@ -21,6 +21,7 @@ import static play.test.Helpers.stop;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,6 +61,7 @@ public class APITest {
 	public void startFakeApplication() {
 		Map<String, Object> extraConfig = new HashMap<>();
 		extraConfig.put("oncue.scheduler.backing-store.class", "oncue.backingstore.InMemoryBackingStore");
+		extraConfig.put("oncue.timed-jobs.timetable", Collections.EMPTY_LIST);
 		fakeApplication = fakeApplication(extraConfig);
 		start(fakeApplication);
 		DateTimeUtils.setCurrentMillisFixed(new DateTime(2013, 03, 27, 12, 34, 56).getMillis());
@@ -176,19 +178,19 @@ public class APITest {
 		Result result = routeAndCall(fakeRequest(POST, "/api/jobs").withJsonBody(mapper.valueToTree(enqueueJob)));
 		Job job = mapper.readValue(contentAsString(result), Job.class);
 
-//		result = routeAndCall(fakeRequest(PUT, "/api/jobs/" + job.getId()));
-//		Job rerunJob = mapper.readValue(contentAsString(result), Job.class);
-//
-//		assertEquals(OK, status(result));
-//		assertEquals("application/json", contentType(result));
-//		assertEquals("utf-8", charset(result));
-//
-//		assertEquals("oncue.test.TestWorker", rerunJob.getWorkerType());
-//		assertTrue(expectedEnqueuedAt.isEqual(rerunJob.getEnqueuedAt()));
-//		assertEquals(job.getId(), rerunJob.getId());
-//		assertEquals(0.0, rerunJob.getProgress());
-//		assertTrue(job.getParams().isEmpty());
-//		assertTrue(rerunJob.isRerun() == true);
+		// result = routeAndCall(fakeRequest(PUT, "/api/jobs/" + job.getId()));
+		// Job rerunJob = mapper.readValue(contentAsString(result), Job.class);
+		//
+		// assertEquals(OK, status(result));
+		// assertEquals("application/json", contentType(result));
+		// assertEquals("utf-8", charset(result));
+		//
+		// assertEquals("oncue.test.TestWorker", rerunJob.getWorkerType());
+		// assertTrue(expectedEnqueuedAt.isEqual(rerunJob.getEnqueuedAt()));
+		// assertEquals(job.getId(), rerunJob.getId());
+		// assertEquals(0.0, rerunJob.getProgress());
+		// assertTrue(job.getParams().isEmpty());
+		// assertTrue(rerunJob.isRerun() == true);
 	}
 
 }
