@@ -7,7 +7,6 @@ import static org.fest.assertions.Assertions.assertThat;
 import static play.mvc.Http.Status.OK;
 import static play.test.Helpers.GET;
 import static play.test.Helpers.POST;
-import static play.test.Helpers.PUT;
 import static play.test.Helpers.charset;
 import static play.test.Helpers.contentAsString;
 import static play.test.Helpers.contentType;
