@@ -6,7 +6,6 @@ jdk:
 branches:
   only:
     - master
-    - develop
 
 services:
   - redis-server
