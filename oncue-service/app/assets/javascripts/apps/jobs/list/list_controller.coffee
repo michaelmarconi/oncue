@@ -102,10 +102,24 @@ OnCue.module "Jobs.List", (List, OnCue, Backbone, Marionette, $, _) ->
             cell:  OnCue.Jobs.List.WorkerCell
           ,
             name: 'enqueued_at'
-            label: 'Enqueued'
+            label: 'Enqueued at'
             editable: false
             cell: Backgrid.Extension.MomentCell.extend(
-              displayFormat: 'MMMM Do YYYY, h:mm:ss a'
+              displayFormat: 'lll'
+            )
+          ,
+            name: 'started_at'
+            label: 'Started at'
+            editable: false
+            cell: Backgrid.Extension.MomentCell.extend(
+              displayFormat: 'lll'
+            )
+          ,
+            name: 'completed_at'
+            label: 'Completed at'
+            editable: false
+            cell: Backgrid.Extension.MomentCell.extend(
+              displayFormat: 'lll'
             )
           ,
             name: 'state'

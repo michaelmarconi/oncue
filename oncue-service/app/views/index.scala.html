@@ -109,8 +109,16 @@
           <td class="monospace"><%= worker_type %></td>
         </tr>
         <tr>
-          <th>Enqueued</th>
+          <th>Enqueued at</th>
           <td><%= showEnqueuedAt() %></td>
+        </tr>
+        <tr>
+          <th>Started at</th>
+          <td><%= showStartedAt() %></td>
+        </tr>
+        <tr>
+          <th>Completed at</th>
+          <td><%= showCompletedAt() %></td>
         </tr>
         <tr>
           <th>State</th>

@@ -66,6 +66,12 @@ public class RedisBackingStore extends AbstractBackingStore {
 	// The time the job was enqueued
 	public static final String JOB_ENQUEUED_AT = "job_enqueued_at";
 
+	// The time the job was started
+	public static final String JOB_STARTED_AT = "job_started_at";
+
+	// The time the job was completed
+	public static final String JOB_COMPLETED_AT = "job_completed_at";
+
 	// The message associated with a failed job
 	public static final String JOB_ERROR_MESSAGE = "job_failure_message";
 
@@ -160,6 +166,17 @@ public class RedisBackingStore extends AbstractBackingStore {
 
 		try {
 			DateTime enqueuedAt = DateTime.parse(redis.hget(jobKey, JOB_ENQUEUED_AT));
+
+			DateTime startedAt = null;
+			String startedAtRaw = redis.hget(jobKey, JOB_STARTED_AT);
+			if (startedAtRaw != null)
+				startedAt = DateTime.parse(startedAtRaw);
+
+			DateTime completedAt = null;
+			String completedAtRaw = redis.hget(jobKey, JOB_COMPLETED_AT);
+			if (completedAtRaw != null)
+				completedAt = DateTime.parse(completedAtRaw);
+
 			String workerType = redis.hget(jobKey, JOB_WORKER_TYPE);
 			String state = redis.hget(jobKey, JOB_STATE);
 			String progress = redis.hget(jobKey, JOB_PROGRESS);
@@ -169,6 +186,13 @@ public class RedisBackingStore extends AbstractBackingStore {
 
 			job = new Job(new Long(id), workerType);
 			job.setEnqueuedAt(enqueuedAt);
+			
+			if (startedAt != null)
+				job.setStartedAt(startedAt);
+			
+			if (completedAt != null)
+				job.setCompletedAt(completedAt);
+			
 			job.setRerun(Boolean.parseBoolean(rerunStatus));
 
 			if (params != null)
@@ -183,8 +207,8 @@ public class RedisBackingStore extends AbstractBackingStore {
 			if (errorMessage != null)
 				job.setErrorMessage(errorMessage);
 
-		} catch (NullPointerException e) {
-			throw new RuntimeException(String.format("Cannot find a job with id %s in Redis", id));
+		} catch (Exception e) {
+			throw new RuntimeException(String.format("Could not load job with id %s from Redis", id), e);
 		}
 
 		return job;
@@ -208,6 +232,13 @@ public class RedisBackingStore extends AbstractBackingStore {
 		// Create a map describing the job
 		String jobKey = String.format(JOB_KEY, job.getId());
 		transaction.hset(jobKey, JOB_ENQUEUED_AT, job.getEnqueuedAt().toString());
+		
+		if (job.getStartedAt() != null)
+			transaction.hset(jobKey, JOB_STARTED_AT, job.getStartedAt().toString());
+		
+		if (job.getCompletedAt() != null)
+			transaction.hset(jobKey, JOB_COMPLETED_AT, job.getCompletedAt().toString());
+		
 		transaction.hset(jobKey, JOB_WORKER_TYPE, job.getWorkerType());
 		transaction.hset(jobKey, JOB_RERUN_STATUS, Boolean.toString(job.isRerun()));
 
@@ -337,8 +368,10 @@ public class RedisBackingStore extends AbstractBackingStore {
 		String jobKey = String.format(JOB_KEY, job.getId());
 		redis.hset(jobKey, JOB_PROGRESS, job.getProgress().toString());
 		redis.hset(jobKey, JOB_STATE, job.getState().toString());
+		redis.hset(jobKey, JOB_STARTED_AT, job.getStartedAt().toString());
 
 		if (job.getState() == Job.State.COMPLETE)
+			redis.hset(jobKey, JOB_COMPLETED_AT, job.getCompletedAt().toString());
 			redis.lpush(COMPLETED_JOBS, new Long(job.getId()).toString());
 
 		releaseConnection(redis);

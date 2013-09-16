@@ -61,7 +61,7 @@ public class Job implements Serializable, Cloneable {
 
 	private DateTime enqueuedAt;
 	private DateTime startedAt;
-	private DateTime completedAt;	
+	private DateTime completedAt;
 	private String errorMessage;
 	private long id;
 	private Map<String, String> params;
@@ -106,6 +106,8 @@ public class Job implements Serializable, Cloneable {
 	public Object clone() {
 		Job clone = new Job(this.getId(), this.getWorkerType());
 		clone.setEnqueuedAt(this.getEnqueuedAt());
+		clone.setStartedAt(this.getStartedAt());
+		clone.setCompletedAt(this.getCompletedAt());
 		clone.setErrorMessage(this.getErrorMessage());
 		clone.setProgress(this.getProgress());
 		clone.setState(this.getState());
@@ -196,8 +198,9 @@ public class Job implements Serializable, Cloneable {
 
 	@Override
 	public String toString() {
-		return String.format("Job %s (state=%s, enqueuedAt=%s, workerType=%s, re-run=%s, progress=%s)", id, state,
-				getEnqueuedAt(), workerType, rerun, progress);
+		return String
+				.format("Job %s (state=%s, enqueuedAt=%s, startedAt=%s, completedAt=%s, workerType=%s, re-run=%s, progress=%s)",
+						id, state, getEnqueuedAt(), getStartedAt(), getCompletedAt(), workerType, rerun, progress);
 	}
 
 }

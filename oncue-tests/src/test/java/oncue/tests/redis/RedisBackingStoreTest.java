@@ -34,6 +34,7 @@ import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.IncompetentTestWorker;
 import oncue.tests.workers.TestWorker;
 
+import org.joda.time.DateTime;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -365,17 +366,27 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 		params.put("month", "Jan");
 		params.put("size", "x-large");
 
+		DateTime testTime = DateTime.now();
+		
 		Job job = new Job(0, TestWorker.class.getName());
 		job.setParams(params);
 		job.setProgress(0.8);
 		job.setRerun(true);
+		job.setStartedAt(testTime);
+		job.setCompletedAt(testTime);
 		Jedis redis = RedisBackingStore.getConnection();
 		RedisBackingStore.persistJob(job, "test_queue", redis);
 		Job loadedJob = RedisBackingStore.loadJob(0, redis);
 		RedisBackingStore.releaseConnection(redis);
 
+		assertNotNull("Expected 'enqueued at' timestamp", job.getEnqueuedAt());
+		assertNotNull("Expected 'started at' timestamp", job.getStartedAt());
+		assertNotNull("Expected 'completed at' timestamp", job.getCompletedAt());
+
 		assertEquals(job.getId(), loadedJob.getId());
 		assertEquals(job.getEnqueuedAt().toString(), loadedJob.getEnqueuedAt().toString());
+		assertEquals(testTime.toString(), loadedJob.getStartedAt().toString());
+		assertEquals(testTime.toString(), loadedJob.getCompletedAt().toString());
 		assertEquals(job.getWorkerType(), loadedJob.getWorkerType());
 		assertEquals(job.getProgress(), loadedJob.getProgress());
 		assertEquals(job.isRerun(), loadedJob.isRerun());
@@ -385,13 +396,15 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 	}
 
 	@Test
-	@Ignore("Not implemented yet") // TODO
+	@Ignore("Not implemented yet")
+	// TODO
 	public void removeCompletedJob() {
 
 	}
 
 	@Test
-	@Ignore("Not implemented yet") // TODO
+	@Ignore("Not implemented yet")
+	// TODO
 	public void removeFailedJob() {
 
 	}
