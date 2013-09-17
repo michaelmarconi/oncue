@@ -16,7 +16,6 @@ import org.junit.Test;
 import redis.clients.jedis.Jedis;
 import akka.testkit.JavaTestKit;
 
-@SuppressWarnings("unused")
 public class DistributedTimedJobTest extends DistributedActorSystemTest {
 
 	@Test
@@ -37,7 +36,6 @@ public class DistributedTimedJobTest extends DistributedActorSystemTest {
 			}
 		};
 
-		createQueueManager(null);
 		createScheduler(null);
 
 		// Create a throttled agent

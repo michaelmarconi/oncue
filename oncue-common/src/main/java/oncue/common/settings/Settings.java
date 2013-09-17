@@ -39,11 +39,6 @@ public class Settings implements Extension {
 	public final FiniteDuration SCHEDULER_MONITOR_AGENTS_FREQUENCY;
 	public final FiniteDuration SCHEDULER_AGENT_HEARTBEAT_TIMEOUT;
 
-	public final String QUEUE_MANAGER_NAME;
-	public final String QUEUE_MANAGER_CLASS;
-	public final String QUEUE_MANAGER_PATH;
-	public final FiniteDuration QUEUE_MANAGER_TIMEOUT;
-
 	public final FiniteDuration TIMED_JOBS_RETRY_DELAY;
 
 	public final String AGENT_NAME;
@@ -61,7 +56,8 @@ public class Settings implements Extension {
 		SCHEDULER_NAME = config.getString("scheduler.name");
 		SCHEDULER_PATH = config.getString("scheduler.path");
 		SCHEDULER_CLASS = config.getString("scheduler.class");
-		SCHEDULER_TIMEOUT = Duration.create(config.getMilliseconds("scheduler.response-timeout"), TimeUnit.MILLISECONDS);
+		SCHEDULER_TIMEOUT = Duration
+				.create(config.getMilliseconds("scheduler.response-timeout"), TimeUnit.MILLISECONDS);
 
 		try {
 			SCHEDULER_BACKING_STORE_CLASS = config.getString("scheduler.backing-store.class");
@@ -80,11 +76,6 @@ public class Settings implements Extension {
 
 		SCHEDULER_AGENT_HEARTBEAT_TIMEOUT = Duration.create(
 				config.getMilliseconds("scheduler.agent-heartbeat-timeout"), TimeUnit.MILLISECONDS);
-
-		QUEUE_MANAGER_NAME = config.getString("queue-manager.name");
-		QUEUE_MANAGER_CLASS = config.getString("queue-manager.class");
-		QUEUE_MANAGER_PATH = config.getString("queue-manager.path");
-		QUEUE_MANAGER_TIMEOUT = Duration.create(config.getMilliseconds("queue-manager.response-timeout"), TimeUnit.MILLISECONDS);
 
 		AGENT_NAME = config.getString("agent.name");
 		AGENT_PATH = config.getString("agent.path");

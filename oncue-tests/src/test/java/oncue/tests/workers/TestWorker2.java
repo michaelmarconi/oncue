@@ -22,6 +22,10 @@ public class TestWorker2 extends AbstractWorker {
 
 	@Override
 	public void doWork(Job job) throws InterruptedException {
+		processJob();
+	}
+
+	private void processJob() throws InterruptedException {
 		double progress = 0.0;
 		for (int i = 0; i < 3; i++) {
 			progress += 0.25;
@@ -29,6 +33,11 @@ public class TestWorker2 extends AbstractWorker {
 			reportProgress(progress);
 		}
 		Thread.sleep(500);
+	}
+
+	@Override
+	protected void redoWork(Job job) throws Exception {
+		processJob();
 	}
 
 }

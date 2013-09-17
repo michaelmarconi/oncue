@@ -24,6 +24,7 @@ import oncue.common.messages.Job.State;
 import oncue.common.settings.Settings;
 
 import org.joda.time.DateTime;
+import org.joda.time.Duration;
 import org.json.simple.JSONValue;
 
 import redis.clients.jedis.Jedis;
@@ -66,6 +67,12 @@ public class RedisBackingStore extends AbstractBackingStore {
 	// The time the job was enqueued
 	public static final String JOB_ENQUEUED_AT = "job_enqueued_at";
 
+	// The time the job was started
+	public static final String JOB_STARTED_AT = "job_started_at";
+
+	// The time the job was completed
+	public static final String JOB_COMPLETED_AT = "job_completed_at";
+
 	// The message associated with a failed job
 	public static final String JOB_ERROR_MESSAGE = "job_failure_message";
 
@@ -86,6 +93,9 @@ public class RedisBackingStore extends AbstractBackingStore {
 
 	// The worker type assigned to a job
 	public static final String JOB_WORKER_TYPE = "job_worker_type";
+
+	// The re-run status of a job
+	public static final String JOB_RERUN_STATUS = "job_rerun_status";
 
 	/*
 	 * The queue of jobs that acts as an external interface; the scheduler
@@ -157,14 +167,34 @@ public class RedisBackingStore extends AbstractBackingStore {
 
 		try {
 			DateTime enqueuedAt = DateTime.parse(redis.hget(jobKey, JOB_ENQUEUED_AT));
+
+			DateTime startedAt = null;
+			String startedAtRaw = redis.hget(jobKey, JOB_STARTED_AT);
+			if (startedAtRaw != null)
+				startedAt = DateTime.parse(startedAtRaw);
+
+			DateTime completedAt = null;
+			String completedAtRaw = redis.hget(jobKey, JOB_COMPLETED_AT);
+			if (completedAtRaw != null)
+				completedAt = DateTime.parse(completedAtRaw);
+
 			String workerType = redis.hget(jobKey, JOB_WORKER_TYPE);
 			String state = redis.hget(jobKey, JOB_STATE);
 			String progress = redis.hget(jobKey, JOB_PROGRESS);
 			String params = redis.hget(jobKey, JOB_PARAMS);
 			String errorMessage = redis.hget(jobKey, JOB_ERROR_MESSAGE);
+			String rerunStatus = redis.hget(jobKey, JOB_RERUN_STATUS);
 
 			job = new Job(new Long(id), workerType);
 			job.setEnqueuedAt(enqueuedAt);
+
+			if (startedAt != null)
+				job.setStartedAt(startedAt);
+
+			if (completedAt != null)
+				job.setCompletedAt(completedAt);
+
+			job.setRerun(Boolean.parseBoolean(rerunStatus));
 
 			if (params != null)
 				job.setParams((Map<String, String>) JSONValue.parse(params));
@@ -178,8 +208,8 @@ public class RedisBackingStore extends AbstractBackingStore {
 			if (errorMessage != null)
 				job.setErrorMessage(errorMessage);
 
-		} catch (NullPointerException e) {
-			throw new RuntimeException(String.format("Cannot find a job with id %s in Redis", id));
+		} catch (Exception e) {
+			throw new RuntimeException(String.format("Could not load job with id %s from Redis", id), e);
 		}
 
 		return job;
@@ -203,7 +233,15 @@ public class RedisBackingStore extends AbstractBackingStore {
 		// Create a map describing the job
 		String jobKey = String.format(JOB_KEY, job.getId());
 		transaction.hset(jobKey, JOB_ENQUEUED_AT, job.getEnqueuedAt().toString());
+
+		if (job.getStartedAt() != null)
+			transaction.hset(jobKey, JOB_STARTED_AT, job.getStartedAt().toString());
+
+		if (job.getCompletedAt() != null)
+			transaction.hset(jobKey, JOB_COMPLETED_AT, job.getCompletedAt().toString());
+
 		transaction.hset(jobKey, JOB_WORKER_TYPE, job.getWorkerType());
+		transaction.hset(jobKey, JOB_RERUN_STATUS, Boolean.toString(job.isRerun()));
 
 		if (job.getParams() != null)
 			transaction.hset(jobKey, JOB_PARAMS, JSONValue.toJSONString(job.getParams()));
@@ -270,12 +308,7 @@ public class RedisBackingStore extends AbstractBackingStore {
 	public void addUnscheduledJob(Job job) {
 		Jedis redis = RedisBackingStore.getConnection();
 
-		// Save the unscheduled job if it doesn't exist
-		String jobKey = String.format(JOB_KEY, job.getId());
-		if (!redis.exists(jobKey))
-			persistJob(job, UNSCHEDULED_JOBS, redis);
-		else
-			redis.lpush(UNSCHEDULED_JOBS, new Long(job.getId()).toString());
+		persistJob(job, UNSCHEDULED_JOBS, redis);
 
 		RedisBackingStore.releaseConnection(redis);
 	}
@@ -309,6 +342,20 @@ public class RedisBackingStore extends AbstractBackingStore {
 	}
 
 	@Override
+	public long getNextJobID() {
+
+		// Get a connection to Redis
+		Jedis redis = getConnection();
+
+		// Increment and return the latest job ID
+		Long jobId = redis.incr(RedisBackingStore.JOB_COUNT_KEY);
+
+		releaseConnection(redis);
+
+		return jobId;
+	}
+
+	@Override
 	public void persistJobFailure(Job job) {
 		Jedis redis = getConnection();
 		persistJob(job, FAILED_JOBS, redis);
@@ -322,22 +369,33 @@ public class RedisBackingStore extends AbstractBackingStore {
 		String jobKey = String.format(JOB_KEY, job.getId());
 		redis.hset(jobKey, JOB_PROGRESS, job.getProgress().toString());
 		redis.hset(jobKey, JOB_STATE, job.getState().toString());
+		if (job.getStartedAt() != null)
+			redis.hset(jobKey, JOB_STARTED_AT, job.getStartedAt().toString());
 
 		if (job.getState() == Job.State.COMPLETE)
-			redis.lpush(COMPLETED_JOBS, new Long(job.getId()).toString());
+			if (job.getCompletedAt() != null)
+				redis.hset(jobKey, JOB_COMPLETED_AT, job.getCompletedAt().toString());
+		redis.lpush(COMPLETED_JOBS, new Long(job.getId()).toString());
 
 		releaseConnection(redis);
 	}
 
 	@Override
-	public long popUnscheduledJob() {
+	public void removeCompletedJob(Job job) {
 		Jedis redis = RedisBackingStore.getConnection();
 
-		String jobID = redis.rpop(UNSCHEDULED_JOBS);
+		redis.lrem(COMPLETED_JOBS, 0, new Long(job.getId()).toString());
 
 		RedisBackingStore.releaseConnection(redis);
+	}
 
-		return new Long(jobID);
+	@Override
+	public void removeFailedJob(Job job) {
+		Jedis redis = RedisBackingStore.getConnection();
+
+		redis.lrem(FAILED_JOBS, 0, new Long(job.getId()).toString());
+
+		RedisBackingStore.releaseConnection(redis);
 	}
 
 	@Override
@@ -384,5 +442,28 @@ public class RedisBackingStore extends AbstractBackingStore {
 		RedisBackingStore.releaseConnection(redis);
 
 		return jobs;
+	}
+
+	@Override
+	public void cleanupJobs(boolean includeFailedJobs, Duration expirationAge) {
+		for (Job completedJob : getCompletedJobs()) {
+			DateTime expirationThreshold = DateTime.now().minus(expirationAge.getMillis());
+			boolean isExpired = completedJob.getCompletedAt().isBefore(expirationThreshold.toInstant());
+			if (isExpired) {
+				removeCompletedJob(completedJob);
+			}
+		}
+
+		if (!includeFailedJobs) {
+			return;
+		}
+
+		for (Job failedJob : getFailedJobs()) {
+			DateTime expirationThreshold = DateTime.now().minus(expirationAge.getMillis());
+			boolean isExpired = failedJob.getCompletedAt().isBefore(expirationThreshold.toInstant());
+			if (isExpired) {
+				removeFailedJob(failedJob);
+			}
+		}
 	}
 }

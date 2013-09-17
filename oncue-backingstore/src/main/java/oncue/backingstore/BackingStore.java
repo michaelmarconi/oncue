@@ -19,6 +19,8 @@ import java.util.List;
 
 import oncue.common.messages.Job;
 
+import org.joda.time.Duration;
+
 /**
  * The contract for all persistent data stores.
  */
@@ -38,6 +40,19 @@ public interface BackingStore {
 	public void addUnscheduledJob(Job job);
 
 	/**
+	 * Clean up complete and optionally, failed jobs from the backing store
+	 * 
+	 * @param includeFailedJobs
+	 *            determines whether failed jobs will also be cleaned up
+	 * @param expirationAge
+	 *            is the duration that must have elapsed before the job is
+	 *            eligible for cleanup, e.g. "24 hours" means that the job won't
+	 *            be cleaned up until at least 24 hours have elapsed since it
+	 *            completed.
+	 */
+	public void cleanupJobs(boolean includeFailedJobs, Duration expirationAge);
+
+	/**
 	 * The backing store makes a note of jobs that complete successfully. Get
 	 * the list of these.
 	 * 
@@ -51,6 +66,13 @@ public interface BackingStore {
 	 * @return a list of failed {@linkplain Job}
 	 */
 	public List<Job> getFailedJobs();
+
+	/**
+	 * Fetch the next monotonically-increasing job identifier. NOTE: This action
+	 * *must* increment the job identifier in the persistent store, as well as
+	 * return it!
+	 */
+	public long getNextJobID();
 
 	/**
 	 * Persist the details of a failed job
@@ -69,11 +91,14 @@ public interface BackingStore {
 	public void persistJobProgress(Job job);
 
 	/**
-	 * Pop the first job off the unscheduled jobs queue
-	 * 
-	 * @return the id of the popped job
+	 * Remove a job from the list of completed jobs
 	 */
-	public long popUnscheduledJob();
+	public void removeCompletedJob(Job job);
+
+	/**
+	 * Remove a job from the list of failed jobs
+	 */
+	public void removeFailedJob(Job job);
 
 	/**
 	 * Remove a job from the list of scheduled jobs

@@ -3,9 +3,11 @@ package oncue;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import oncue.common.events.AgentStartedEvent;
 import oncue.common.events.AgentStoppedEvent;
+import oncue.common.events.JobCleanupEvent;
 import oncue.common.events.JobEnqueuedEvent;
 import oncue.common.events.JobFailedEvent;
 import oncue.common.events.JobProgressEvent;
@@ -19,6 +21,8 @@ import org.codehaus.jackson.node.ObjectNode;
 import play.libs.F.Callback0;
 import play.libs.Json;
 import play.mvc.WebSocket;
+import scala.concurrent.duration.Duration;
+import akka.actor.Cancellable;
 import akka.actor.UntypedActor;
 import akka.event.EventStream;
 import akka.event.Logging;
@@ -29,6 +33,11 @@ public class EventMachine extends UntypedActor {
 	private final LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 	private static List<WebSocket.Out<JsonNode>> clients = new ArrayList<>();
 	private final static ObjectMapper mapper = new ObjectMapper();
+	private final Cancellable pinger = getContext()
+			.system()
+			.scheduler()
+			.schedule(Duration.create(500, TimeUnit.MILLISECONDS), Duration.create(30000, TimeUnit.MILLISECONDS),
+					getSelf(), "PING", getContext().dispatcher());
 
 	static {
 		mapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssz"));
@@ -45,7 +54,13 @@ public class EventMachine extends UntypedActor {
 		eventStream.subscribe(getSelf(), JobEnqueuedEvent.class);
 		eventStream.subscribe(getSelf(), JobProgressEvent.class);
 		eventStream.subscribe(getSelf(), JobFailedEvent.class);
+		eventStream.subscribe(getSelf(), JobCleanupEvent.class);
 		log.info("EventMachine is listening for OnCue events.");
+	}
+
+	@Override
+	public void postStop() {
+		pinger.cancel();
 	}
 
 	public static void addSocket(WebSocket.In<JsonNode> in, final WebSocket.Out<JsonNode> out) {
@@ -61,7 +76,12 @@ public class EventMachine extends UntypedActor {
 
 	@Override
 	public void onReceive(Object message) throws Exception {
-		if (message instanceof AgentStartedEvent) {
+		if (message.equals("PING")) {
+			log.debug("Pinging websocket clients...");
+			for (WebSocket.Out<JsonNode> client : clients) {
+				client.write(Json.toJson("PING"));
+			}
+		} else if (message instanceof AgentStartedEvent) {
 			AgentStartedEvent agentStarted = (AgentStartedEvent) message;
 			for (WebSocket.Out<JsonNode> client : clients) {
 				ObjectNode event = constructEvent("agent:started", "agent", agentStarted.getAgent());
@@ -89,6 +109,11 @@ public class EventMachine extends UntypedActor {
 			JobFailedEvent jobFailed = (JobFailedEvent) message;
 			for (WebSocket.Out<JsonNode> client : clients) {
 				ObjectNode event = constructEvent("job:failed", "job", jobFailed.getJob());
+				client.write(event);
+			}
+		} else if (message instanceof JobCleanupEvent) {
+			for (WebSocket.Out<JsonNode> client : clients) {
+				ObjectNode event = constructEvent("jobs:cleanup", "jobs", null);
 				client.write(event);
 			}
 		}

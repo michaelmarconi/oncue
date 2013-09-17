@@ -60,9 +60,6 @@ public class TimedJobTest extends ActorSystemTest {
 					}
 				};
 
-				// Create a queue manager
-				createQueueManager(system, null);
-
 				// Create a scheduler
 				createScheduler(system, null);
 
@@ -127,9 +124,6 @@ public class TimedJobTest extends ActorSystemTest {
 					}
 				};
 
-				// Create a queue manager
-				createQueueManager(system, null);
-
 				// Create a scheduler
 				createScheduler(system, null);
 
@@ -160,7 +154,7 @@ public class TimedJobTest extends ActorSystemTest {
 	}
 
 	@Test
-	public void timedJobRetriesWhenQueueManagerIsNotFound() {
+	public void timedJobRetriesWhenSchedulerCannotBeReached() {
 		new JavaTestKit(system) {
 			{
 				// Create an agent probe
@@ -204,6 +198,10 @@ public class TimedJobTest extends ActorSystemTest {
 				List<Job> jobs = response.getJobs();
 				assertEquals(0, jobs.size());
 
+				// Kill the scheduler
+				ActorRef schedulerRef = system.actorFor(settings.SCHEDULER_PATH);
+				schedulerRef.tell(Kill.getInstance(), this.getRef());
+
 				// Create timed job
 				TimedJobFactory.createTimedJob(system, TestWorker.class.getName(), "test-1", "quartz://test-timer-1",
 						null, timedJobProbe.getRef());
@@ -211,12 +209,12 @@ public class TimedJobTest extends ActorSystemTest {
 				// Wait for Camel to start up
 				timedJobProbe.expectMsgClass(duration(CAMEL_WAIT_TIME), CamelMessage.class);
 
-				agentProbe.expectNoMsg(duration("5 seconds"));
+				agentProbe.expectNoMsg(duration("2 seconds"));
 
-				// Create a queue manager
-				createQueueManager(system, null);
+				// Bring back the scheduler
+				createScheduler(system, null);
 
-				// Expect work response
+				// Expect work response from agent as it can talk again
 				response = agentProbe.expectMsgClass(duration("5 seconds"), WorkResponse.class);
 				Job job = response.getJobs().get(0);
 				assertEquals(TestWorker.class.getName(), job.getWorkerType());
@@ -241,9 +239,6 @@ public class TimedJobTest extends ActorSystemTest {
 						};
 					}
 				};
-
-				// Create a scheduler
-				createScheduler(system, null);
 
 				Map<String, String> params = new HashMap<String, String>();
 				params.put("key", "value");
@@ -292,9 +287,6 @@ public class TimedJobTest extends ActorSystemTest {
 						};
 					}
 				};
-
-				// Create a scheduler
-				createScheduler(system, null);
 
 				// Create timed job that uses the agent probe
 				Map<String, String> params = new HashMap<String, String>();

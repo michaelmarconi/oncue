@@ -49,16 +49,24 @@ public class Job implements Serializable, Cloneable {
 			public String toString() {
 				return "scheduled";
 			}
+		},
+		DELETED {
+			public String toString() {
+				return "deleted";
+			}
 		}
 	}
 
 	private static final long serialVersionUID = -2375588116753600617L;
 
 	private DateTime enqueuedAt;
+	private DateTime startedAt;
+	private DateTime completedAt;
 	private String errorMessage;
 	private long id;
 	private Map<String, String> params;
 	private Double progress;
+	private boolean rerun;
 	private State state;
 	private String workerType;
 
@@ -69,6 +77,7 @@ public class Job implements Serializable, Cloneable {
 		this.setEnqueuedAt(new DateTime(DateTimeUtils.currentTimeMillis()));
 		this.state = State.QUEUED;
 		this.progress = 0.0;
+		this.setRerun(false);
 	}
 
 	/**
@@ -87,7 +96,6 @@ public class Job implements Serializable, Cloneable {
 		this();
 		this.id = id;
 		this.workerType = workerType;
-
 	}
 
 	/*
@@ -98,9 +106,12 @@ public class Job implements Serializable, Cloneable {
 	public Object clone() {
 		Job clone = new Job(this.getId(), this.getWorkerType());
 		clone.setEnqueuedAt(this.getEnqueuedAt());
+		clone.setStartedAt(this.getStartedAt());
+		clone.setCompletedAt(this.getCompletedAt());
 		clone.setErrorMessage(this.getErrorMessage());
 		clone.setProgress(this.getProgress());
 		clone.setState(this.getState());
+		clone.setRerun(this.isRerun());
 
 		if (this.getParams() != null) {
 			Map<String, String> paramsClone = new HashMap<>();
@@ -109,8 +120,12 @@ public class Job implements Serializable, Cloneable {
 			}
 			clone.setParams(paramsClone);
 		}
-		
+
 		return clone;
+	}
+
+	public DateTime getCompletedAt() {
+		return completedAt;
 	}
 
 	public DateTime getEnqueuedAt() {
@@ -133,12 +148,24 @@ public class Job implements Serializable, Cloneable {
 		return progress;
 	}
 
+	public DateTime getStartedAt() {
+		return startedAt;
+	}
+
 	public State getState() {
 		return state;
 	}
 
 	public String getWorkerType() {
 		return workerType;
+	}
+
+	public boolean isRerun() {
+		return rerun;
+	}
+
+	public void setCompletedAt(DateTime completedAt) {
+		this.completedAt = completedAt;
 	}
 
 	public void setEnqueuedAt(DateTime enqueuedAt) {
@@ -157,14 +184,23 @@ public class Job implements Serializable, Cloneable {
 		this.progress = progress;
 	}
 
+	public void setRerun(boolean rerun) {
+		this.rerun = rerun;
+	}
+
+	public void setStartedAt(DateTime startedAt) {
+		this.startedAt = startedAt;
+	}
+
 	public void setState(State state) {
 		this.state = state;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("Job %s (state=%s, enqueuedAt=%s, workerType=%s, progress=%s)", id, state,
-				getEnqueuedAt(), workerType, progress);
+		return String
+				.format("Job %s (state=%s, enqueuedAt=%s, startedAt=%s, completedAt=%s, workerType=%s, re-run=%s, progress=%s)",
+						id, state, getEnqueuedAt(), getStartedAt(), getCompletedAt(), workerType, rerun, progress);
 	}
 
 }

@@ -44,18 +44,15 @@ public class BroadcastWorkTest extends ActorSystemTest {
 	public void oneJobToScheduleButNoAgents() {
 		new JavaTestKit(system) {
 			{
-				// Create a queue manager
-				ActorRef queueManager = createQueueManager(system, null);
-
 				// Create a scheduler with a probe
 				final JavaTestKit schedulerProbe = new JavaTestKit(system);
-				createScheduler(system, schedulerProbe.getRef());
+				ActorRef scheduler = createScheduler(system, schedulerProbe.getRef());
 
 				// Enqueue a job
-				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
+				scheduler.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
 
 				// Expect the Scheduler to see the new Job
-				schedulerProbe.expectMsgClass(Job.class);
+				schedulerProbe.expectMsgClass(EnqueueJob.class);
 
 				// Expect no broadcast, as there are no agents
 				schedulerProbe.expectNoMsg();
@@ -95,11 +92,8 @@ public class BroadcastWorkTest extends ActorSystemTest {
 					}
 				};
 
-				// Create a queue manager
-				ActorRef queueManager = createQueueManager(system, null);
-
 				// Create a scheduler with a probe
-				createScheduler(system, schedulerProbe.getRef());
+				ActorRef scheduler = createScheduler(system, schedulerProbe.getRef());
 
 				// Create an agent
 				createAgent(system, new HashSet<String>(Arrays.asList(TestWorker.class.getName())), agentProbe.getRef());
@@ -109,7 +103,7 @@ public class BroadcastWorkTest extends ActorSystemTest {
 				assertEquals(0, workResponse.getJobs().size());
 
 				// Enqueue a job
-				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
+				scheduler.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
 
 				// Expect the broadcast about the job
 				agentProbe.expectMsgClass(WorkAvailable.class);

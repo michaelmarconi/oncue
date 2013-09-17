@@ -44,8 +44,8 @@ import akka.testkit.JavaTestKit;
  */
 public class AgentDiesTest extends ActorSystemTest {
 
+	@SuppressWarnings("serial")
 	@Test
-	@SuppressWarnings({ "serial", "unused" })
 	public void testAgentDiesAndAnotherReplacesIt() {
 		new JavaTestKit(system) {
 			{
@@ -65,22 +65,20 @@ public class AgentDiesTest extends ActorSystemTest {
 					}
 				};
 
-				// Create a queue manager
-				ActorRef queueManager = createQueueManager(system, null);
-
 				// Create a scheduler with a probe
-				createScheduler(system, schedulerProbe.getRef());
+				ActorRef scheduler = createScheduler(system, schedulerProbe.getRef());
 
 				// Create an agent
 				ActorRef agent1 = system.actorOf(new Props(new UntypedActorFactory() {
 					@Override
 					public Actor create() throws Exception {
-						return new UnlimitedCapacityAgent(new HashSet<String>(Arrays.asList(TestWorker.class.getName())));
+						return new UnlimitedCapacityAgent(
+								new HashSet<String>(Arrays.asList(TestWorker.class.getName())));
 					}
 				}), "agent1");
 
 				// Enqueue a job
-				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
+				scheduler.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
 				Job job = expectMsgClass(Job.class);
 
 				// Wait for some progress
@@ -100,7 +98,8 @@ public class AgentDiesTest extends ActorSystemTest {
 				system.actorOf(new Props(new UntypedActorFactory() {
 					@Override
 					public Actor create() throws Exception {
-						return new UnlimitedCapacityAgent(new HashSet<String>(Arrays.asList(TestWorker.class.getName())));
+						return new UnlimitedCapacityAgent(
+								new HashSet<String>(Arrays.asList(TestWorker.class.getName())));
 					}
 				}), "agent2");
 

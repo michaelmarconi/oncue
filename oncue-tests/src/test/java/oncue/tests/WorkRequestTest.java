@@ -71,11 +71,8 @@ public class WorkRequestTest extends ActorSystemTest {
 					}
 				};
 
-				// Create a queue manager
-				ActorRef queueManager = createQueueManager(system, null);
-
 				// Create a scheduler with a probe
-				createScheduler(system, schedulerProbe.getRef());
+				ActorRef scheduler = createScheduler(system, schedulerProbe.getRef());
 
 				// Create an agent with a probe
 				createAgent(system, new HashSet<String>(Arrays.asList(TestWorker.class.getName())), agentProbe.getRef());
@@ -85,7 +82,7 @@ public class WorkRequestTest extends ActorSystemTest {
 				assertEquals(0, workResponse.getJobs().size());
 
 				// Enqueue a job
-				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
+				scheduler.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
 				Job job = expectMsgClass(Job.class);
 
 				// Expect a request for work from the agent

@@ -21,14 +21,12 @@ import oncue.agent.AbstractAgent;
 import oncue.backingstore.RedisBackingStore;
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
-import oncue.queuemanager.AbstractQueueManager;
 import oncue.scheduler.AbstractScheduler;
 
 import org.junit.After;
 import org.junit.Before;
 
 import redis.clients.jedis.Jedis;
-
 import akka.actor.Actor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -76,33 +74,6 @@ public abstract class ActorSystemTest {
 				return agent;
 			}
 		}), settings.AGENT_NAME + agentCount);
-	}
-
-	/**
-	 * Construct a Queue Manager without a probe
-	 */
-	public ActorRef createQueueManager(ActorSystem system) {
-		return createQueueManager(system, null);
-	}
-
-	/**
-	 * Create a queue manager component, with an optional probe
-	 * 
-	 * @param probe
-	 *            can be null
-	 */
-	@SuppressWarnings("serial")
-	public ActorRef createQueueManager(ActorSystem system, final ActorRef probe) {
-		return system.actorOf(new Props(new UntypedActorFactory() {
-			@Override
-			public Actor create() throws Exception {
-				AbstractQueueManager queueManager = (AbstractQueueManager) Class.forName(settings.QUEUE_MANAGER_CLASS)
-						.newInstance();
-				if (probe != null)
-					queueManager.injectProbe(probe);
-				return queueManager;
-			}
-		}), settings.QUEUE_MANAGER_NAME);
 	}
 
 	/**

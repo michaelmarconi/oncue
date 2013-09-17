@@ -27,12 +27,12 @@ import oncue.common.messages.Job;
 import akka.event.LoggingAdapter;
 
 /**
- * An encapsulated job queue of unscheduled {@linkplain Job}s. If this queue has
- * a backing store, all actions on the queue will be persisted.
+ * An encapsulated job queue of unscheduled {@linkplain Job}s that relies on a
+ * backing store for persistence.
  */
 public class UnscheduledJobs {
 
-	// An optional, persistent backing store
+	// The persistent backing store
 	private BackingStore backingStore;
 
 	private LoggingAdapter log;
@@ -42,23 +42,20 @@ public class UnscheduledJobs {
 
 	/**
 	 * @param backingStore
-	 *            is an optional instance of {@linkplain BackingStore}
+	 *            is an instance of {@linkplain BackingStore}
 	 */
 	public UnscheduledJobs(BackingStore backingStore, LoggingAdapter log) {
 		this.backingStore = backingStore;
 		this.log = log;
-		if (backingStore != null)
-			restoreJobs();
+		restoreJobs();
 	}
 
 	/**
 	 * Add a job to the queue
 	 */
 	public void addJob(Job job) {
+		backingStore.addUnscheduledJob(job);		
 		unscheduledJobs.add(job);
-
-		if (backingStore != null)
-			backingStore.addUnscheduledJob(job);
 	}
 
 	/**
@@ -115,7 +112,7 @@ public class UnscheduledJobs {
 	 */
 	public boolean removeJob(Job job) {
 		boolean removed = unscheduledJobs.remove(job);
-		if (backingStore != null && removed)
+		if (removed)
 			backingStore.removeUnscheduledJob(job);
 
 		return removed;

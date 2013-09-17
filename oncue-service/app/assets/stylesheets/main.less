@@ -1,24 +1,71 @@
 @import "bootstrap/variables";
 @import "bootstrap/mixins";
 
+/* Sticky footer styles
+-------------------------------------------------- */
+
+html,
+body {
+  height: 100%;
+  /* The html and body elements cannot have any padding or margin. */
+}
+
+/* Wrapper for page content to push down footer */
+#wrap {
+  min-height: 100%;
+  height: auto !important;
+  height: 100%;
+  /* Negative indent footer by it's height */
+  margin: 0 auto -40px;
+}
+
+#wrap > .container {
+  padding-top: 60px;
+}
+
+/* Set the fixed height of the footer here */
+#push,
+#footer {
+  height: 40px;
+}
+#footer {
+  background-color: #f5f5f5;
+  code {
+    color: @gray;
+  }
+  & > .container {
+    padding-top: 10px;
+  }
+}
+
+/* Lastly, apply responsive CSS fixes as necessary */
+@media (max-width: 767px) {
+  #footer {
+    margin-left: -20px;
+    margin-right: -20px;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+}
+
+/* -------------------------------------------------- */
+
+#loading {
+  width: 200px;
+  margin: 100px auto 0 auto;
+  .progress {
+    height: 14px;
+    margin-top: 5px;
+    margin-bottom: 0;
+  }
+}
+
 .monospace {
-    font-family: monospace;
+  font-family: monospace;
 }
 
-.navbar {
-    a.brand {
-      cursor: help;
-      i {
-        margin-right: -5px;
-      }
-    }
-    .nav a {
-      cursor: pointer;
-    }
-}
-
-.progress {
-  margin-bottom: 0;
+.bold {
+  font-weight: bold;
 }
 
 .capitalised {
@@ -27,94 +74,88 @@
   }
 }
 
-button#run-first-job {
-  margin-top: -35px;
+.centered {
+  text-align: center;
 }
 
-#job-tools a {
-  cursor: pointer;
+// Map Bootstrap colours to job state
+.running {
+  color: @infoText;
+}
+.complete {
+  color: @successText;
+}
+.failed {
+  color: @errorText;
 }
 
-table#jobs, table#job {
-  td {
-    &.id {
-      white-space: nowrap;
-    }
-    &.enqueued-at {
-      white-space: nowrap;
-    }
-    &.worker-type {
-      .monospace;
-    }
-    &.progress-container {
-      width: 25%;
-    }
-    &.state {
-      .capitalised;
+.navbar {
+  a.brand {
+    cursor: default;
+    i {
+      margin-right: -5px;
     }
   }
-  tr.complete {
-    background-color: @successBackground;
-    td.id a {
-      color: @successText;
-      &:hover, focus {
-        color: darken(@successText, 10%);
+}
+
+#jobs_list, #jobs_show {
+  #toolbar_region {
+    margin-top: -21px;
+  }
+  .well {
+    padding: 15px;
+  }
+}
+
+#jobs_list {
+  .progress {
+    margin-bottom: 0;
+  }
+  table {
+    th:nth-child(1), td:nth-child(1) {
+      width: 1%;
+    }
+    th:nth-child(2), td:nth-child(2) {
+      border-right: 1px solid @grayLighter;
+      text-align: right;
+      width: 1%;
+      white-space: nowrap;
+      padding-right: 20px;
+    }
+    th:nth-child(3), td:nth-child(3) {
+      padding-left: 20px;
+    }
+    td.min-width {
+      width: 1%;
+    }
+    span.label {
+      margin-left: 10px;
+      i {
+        margin-right: 3px;
       }
     }
   }
-  tr.failed {
-    background-color: @errorBackground;
-    td.id a {
-      color: @errorText;
-      &:hover, focus {
-        color: darken(@errorText, 10%);
-      }
-    }
-  }
 }
 
-table#job {
-  th {
-    width: 20%;
+#jobs_show {
+  .breadcrumb {
+    margin-top: -20px;
   }
-  tr:first-child {
+  .page-header {
+    margin-top: 30px;
+    margin-bottom: 20px;
+  }
+  #params_region {
+    margin-top: 15px;
+  }
+  table {
+    th {
+      text-align: right;
+      min-width: 133px;
+      vertical-align: top;
+    }
     th, td {
-      border-top: none;
+      padding: 10px;
     }
-  }
-  tr.complete {
-    background-color: transparent;
-    td.state {
-      color: @successText;
-    }
-  }
-  tr.failed {
-    background-color: transparent;
-    td.state {
-      color: @errorText;
-    }
-  }
-}
-
-table#params {
-  td.key {
-    .monospace;
-    width: 1%;
-    white-space: nowrap;
-    text-align: right;
-  }
-  th, td {
-    border: none;
-    vertical-align: top;
-  }
-  margin: -5px;
-}
-
-#processing-jobs {
-  i.icon-time {
-    color: blue;
-  }
-  i.icon-play {
-    color: green;
   }
 }

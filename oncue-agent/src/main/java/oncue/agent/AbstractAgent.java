@@ -93,6 +93,7 @@ public abstract class AbstractAgent extends UntypedActor {
 	 * @return
 	 * @throws MissingWorkerException	If the class cannot be instantiated or the class does not extend AbstractWorker
 	 */
+	@SuppressWarnings("unchecked")
 	private static Class<? extends AbstractWorker> fetchWorkerClass(String workerType) throws MissingWorkerException {
 		try {
 			Class<? extends AbstractWorker> workerClass = (Class<? extends AbstractWorker>) Class
@@ -284,7 +285,7 @@ public abstract class AbstractAgent extends UntypedActor {
 	 * @param error	The Throwable from the worker
 	 */
 	protected void onWorkerDeath(Job job, Throwable error) {
-		// Do nothing
+		// Do nothing by default
 	}
 
 	/**

@@ -17,5 +17,7 @@ GET     /assets/*file               controllers.Assets.at(path="/public", file)
 GET   	/api/agents               	controllers.api.Agents.index()
 GET		/api/jobs                   controllers.api.Jobs.index()
 GET		/api/jobs/:id               controllers.api.Jobs.show(id: Long)
+DELETE	/api/jobs/:id               controllers.api.Jobs.delete(id: Long)
 POST	/api/jobs                   controllers.api.Jobs.create()
+PUT		/api/jobs/:id               controllers.api.Jobs.rerun(id: Long)
 

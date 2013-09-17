@@ -17,6 +17,7 @@ package oncue.scheduler;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -26,27 +27,37 @@ import java.util.concurrent.ConcurrentHashMap;
 import oncue.backingstore.BackingStore;
 import oncue.common.events.AgentStartedEvent;
 import oncue.common.events.AgentStoppedEvent;
+import oncue.common.events.JobCleanupEvent;
+import oncue.common.events.JobEnqueuedEvent;
 import oncue.common.events.JobFailedEvent;
 import oncue.common.events.JobProgressEvent;
+import oncue.common.exceptions.DeleteJobException;
 import oncue.common.messages.AbstractWorkRequest;
 import oncue.common.messages.Agent;
 import oncue.common.messages.AgentSummary;
+import oncue.common.messages.CleanupJobs;
+import oncue.common.messages.DeleteJob;
+import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.Job.State;
 import oncue.common.messages.JobFailed;
 import oncue.common.messages.JobProgress;
 import oncue.common.messages.JobSummary;
+import oncue.common.messages.RerunJob;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
 import oncue.common.messages.WorkAvailable;
 import oncue.common.messages.WorkResponse;
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
+import oncue.scheduler.exceptions.JobNotFoundException;
 import oncue.scheduler.exceptions.ScheduleException;
 import scala.concurrent.duration.Deadline;
 import akka.actor.ActorInitializationException;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Cancellable;
+import akka.actor.Status.Failure;
+import akka.actor.Status.Success;
 import akka.actor.UntypedActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
@@ -68,7 +79,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	// Map an agent to a the set of worker types it can process
 	private Map<String, Set<String>> agentWorkers = new ConcurrentHashMap<>();
 
-	// The optional persistent backing store
+	// The persistent backing store
 	protected BackingStore backingStore;
 
 	// A scheduled check for jobs to broadcast
@@ -92,18 +103,12 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 
 	/**
 	 * @param backingStore
-	 *            is either an implementation of {@linkplain BackingStore} or
-	 *            null
-	 * @throws NoSuchJobException
+	 *            is an implementation of {@linkplain BackingStore}
 	 */
 	public AbstractScheduler(Class<? extends BackingStore> backingStore) {
 
-		if (backingStore == null) {
-			unscheduledJobs = new UnscheduledJobs(null, log);
-			scheduledJobs = new ScheduledJobs(null);
-			log.info("{} is running without a backing store", getClass().getSimpleName());
-			return;
-		}
+		if (backingStore == null)
+			throw new RuntimeException("A backing store implementation must be specified!");
 
 		try {
 			this.backingStore = backingStore.getConstructor(ActorSystem.class, Settings.class).newInstance(
@@ -196,6 +201,37 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	}
 
 	/**
+	 * Delete an existing job
+	 * 
+	 * @param job
+	 *            is the job to delete
+	 * @return the deleted job
+	 * @throws DeleteJobException
+	 *             if the job is currently running
+	 */
+	private Job deleteJob(Job job) throws DeleteJobException {
+		switch (job.getState()) {
+		case RUNNING:
+			throw new DeleteJobException("This job cannot be deleted as it is currently running");
+		case QUEUED:
+			boolean removed = unscheduledJobs.removeJob(job);
+			if (!removed)
+				throw new DeleteJobException("Failed to remove the job from the unscheduled jobs queue");
+			break;
+		case COMPLETE:
+			backingStore.removeCompletedJob(job);
+			break;
+		case FAILED:
+			backingStore.removeFailedJob(job);
+			break;
+		default:
+			throw new DeleteJobException(job.getState().toString() + " is an unrecognised job state");
+		}
+		job.setState(State.DELETED);
+		return job;
+	}
+
+	/**
 	 * De-register an agent
 	 */
 	private void deregisterAgent(String url) {
@@ -235,6 +271,36 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	}
 
 	/**
+	 * Enqueue a new job
+	 */
+	private Job enqueueJob(EnqueueJob enqueueJob) {
+		Job job = new Job(backingStore.getNextJobID(), enqueueJob.getWorkerType());
+		if (enqueueJob.getParams() != null)
+			job.setParams(enqueueJob.getParams());
+		unscheduledJobs.addJob(job);
+		getContext().system().eventStream().publish(new JobEnqueuedEvent(job));
+		startJobsBroadcast();
+		return job;
+	}
+
+	/**
+	 * Look through all jobs to find an existing job
+	 * 
+	 * @param id
+	 *            is the unique job identifier
+	 * @return the matching job
+	 * @throws JobNotFoundException
+	 */
+	private Job findExistingJob(long id) throws JobNotFoundException {
+		Set<Job> jobs = getAllJobs();
+		for (Job job : jobs) {
+			if (job.getId() == id)
+				return job;
+		}
+		throw new JobNotFoundException("Failed to find an existing job with ID " + id);
+	}
+
+	/**
 	 * @return the set of all registered agents
 	 */
 	protected Set<String> getAgents() {
@@ -246,6 +312,21 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	 */
 	protected Map<String, Set<String>> getAgentWorkers() {
 		return agentWorkers;
+	}
+
+	/**
+	 * @return the full set of unscheduled, scheduled, complete and failed jobs
+	 */
+	private Set<Job> getAllJobs() {
+		Set<Job> jobs = new HashSet<>();
+		for (Iterator<Job> iterator = unscheduledJobs.iterator(); iterator.hasNext();) {
+			jobs.add(iterator.next());
+		}
+		jobs.addAll(scheduledJobs.getJobs());
+		jobs.addAll(backingStore.getCompletedJobs());
+		jobs.addAll(backingStore.getFailedJobs());
+
+		return jobs;
 	}
 
 	/**
@@ -340,10 +421,38 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 			checkAgents();
 		}
 
-		else if (message instanceof Job) {
-			log.debug("Got a new job to schedule: {}", message);
-			unscheduledJobs.addJob((Job) message);
-			startJobsBroadcast();
+		else if (message instanceof EnqueueJob) {
+			log.debug("Got a new job to enqueue: {}", message);
+			Job job = enqueueJob((EnqueueJob) message);
+			getSender().tell(job, getSelf());
+		}
+
+		else if (message instanceof RerunJob) {
+			log.debug("Got an existing job to re-run: {}", message);
+			Job job = findExistingJob(((RerunJob) message).getId());
+			Job rerunJob = rerunJob(job);
+			getSender().tell(rerunJob, getSelf());
+		}
+
+		else if (message instanceof DeleteJob) {
+			log.debug("Got an existing job to delete: {}", message);
+			Job job = findExistingJob(((DeleteJob) message).getId());
+			Job deleteJob;
+			try {
+				deleteJob = deleteJob(job);
+				getSender().tell(deleteJob, getSelf());
+			} catch (DeleteJobException e) {
+				log.error(e, "Failed to delete job {}", job.getId());
+				getSender().tell(new Failure(e), getSelf());
+			}
+		}
+
+		else if (message instanceof CleanupJobs) {
+			log.debug("Clean up jobs");
+			CleanupJobs cleanupJobs = (CleanupJobs) message;
+			backingStore.cleanupJobs(cleanupJobs.isIncludeFailedJobs(), cleanupJobs.getExpirationAge());
+			getContext().system().eventStream().publish(new JobCleanupEvent());
+			getSender().tell(new Success("Job cleanup succeeded"), getSelf());
 		}
 
 		else if (message instanceof AbstractWorkRequest) {
@@ -482,14 +591,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	 */
 	private void replyWithJobSummary() {
 		List<Job> jobs = new ArrayList<>();
-		for (Iterator<Job> iterator = unscheduledJobs.iterator(); iterator.hasNext();) {
-			jobs.add(iterator.next());
-		}
-		jobs.addAll(scheduledJobs.getJobs());
-		if (backingStore != null) {
-			jobs.addAll(backingStore.getCompletedJobs());
-			jobs.addAll(backingStore.getFailedJobs());
-		}
+		jobs.addAll(getAllJobs());
 		JobSummary response = new JobSummary(jobs);
 		getSender().tell(response, getSelf());
 	}
@@ -500,6 +602,30 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	 */
 	private void replyWithNoWork(ActorRef agent) {
 		agent.tell(new WorkResponse(), getSelf());
+	}
+
+	/**
+	 * Re-run an existing job
+	 * 
+	 * @param job
+	 *            is the job to re-run
+	 */
+	private Job rerunJob(Job job) {
+		Job rerunJob = new Job(job.getId(), job.getWorkerType());
+		if (job.getParams() != null)
+			rerunJob.setParams(job.getParams());
+		rerunJob.setRerun(true);
+
+		// TODO Find a way to make this transactional
+		unscheduledJobs.addJob(rerunJob);
+		if (job.getState() == Job.State.COMPLETE)
+			backingStore.removeCompletedJob(job);
+		else if (job.getState() == Job.State.FAILED)
+			backingStore.removeFailedJob(job);
+
+		getContext().system().eventStream().publish(new JobEnqueuedEvent(job));
+		startJobsBroadcast();
+		return rerunJob;
 	}
 
 	/**

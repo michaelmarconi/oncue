@@ -17,6 +17,8 @@ package oncue.tests;
 
 import static akka.pattern.Patterns.gracefulStop;
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertNull;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -70,14 +72,16 @@ public class JobProgressTest extends ActorSystemTest {
 					}
 				};
 
-				// Create a queue manager
-				ActorRef queueManager = createQueueManager(system, null);
-
 				// Create a scheduler with a probe
-				createScheduler(system, schedulerProbe.getRef());
+				ActorRef scheduler = createScheduler(system, schedulerProbe.getRef());
 
 				// Enqueue a job
-				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
+				scheduler.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
+				Job job = expectMsgClass(Job.class);
+
+				// Ensure started/completed times aren't set yet
+				assertNull(job.getStartedAt());
+				assertNull(job.getCompletedAt());
 
 				// Start an agent with a probe
 				ActorRef agent = createAgent(system, new HashSet<String>(Arrays.asList(TestWorker.class.getName())),
@@ -100,6 +104,8 @@ public class JobProgressTest extends ActorSystemTest {
 							schedulerProgress.getJob().getProgress());
 					assertEquals("Was expecting the job to be running.", Job.State.RUNNING, schedulerProgress.getJob()
 							.getState());
+					assertNotNull("Was expecting started at time to be set", job.getStartedAt());
+					assertNull("Was expecting completed at time not to be set", job.getCompletedAt());
 
 					expectedProgress += 0.25;
 				}
@@ -108,6 +114,7 @@ public class JobProgressTest extends ActorSystemTest {
 				JobProgress schedulerProgress = schedulerProbe.expectMsgClass(JobProgress.class);
 				assertEquals(1.0, schedulerProgress.getJob().getProgress());
 				assertEquals(Job.State.COMPLETE, schedulerProgress.getJob().getState());
+				assertNotNull("Was expecting completed at time to be set", job.getCompletedAt());
 
 				// Expect no more messages
 				schedulerProbe.expectNoMsg();

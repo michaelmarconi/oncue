@@ -34,15 +34,14 @@ import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.IncompetentTestWorker;
 import oncue.tests.workers.TestWorker;
 
-import org.junit.After;
-import org.junit.Before;
+import org.joda.time.DateTime;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import redis.clients.jedis.Jedis;
 import akka.actor.ActorRef;
 import akka.testkit.JavaTestKit;
 
-@SuppressWarnings("unused")
 public class RedisBackingStoreTest extends ActorSystemTest {
 
 	@Test
@@ -61,11 +60,8 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 					}
 				};
 
-				// Create a queue manager
-				ActorRef queueManager = createQueueManager(system, null);
-
 				// Create a Redis-backed scheduler (see config) with a probe
-				createScheduler(system, schedulerProbe.getRef());
+				ActorRef scheduler = createScheduler(system, schedulerProbe.getRef());
 
 				// Construct job params
 				Map<String, String> params = new HashMap<>();
@@ -73,7 +69,7 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 				params.put("size", "x-large");
 
 				// Enqueue a job
-				queueManager.tell(new EnqueueJob(TestWorker.class.getName(), params), getRef());
+				scheduler.tell(new EnqueueJob(TestWorker.class.getName(), params), getRef());
 				Job job = expectMsgClass(Job.class);
 
 				// Start an Agent
@@ -102,11 +98,8 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 	public void addUnscheduledJob() {
 		new JavaTestKit(system) {
 			{
-				// Create a queue manager
-				ActorRef queueManager = createQueueManager(system, null);
-
 				// Create a Redis-backed scheduler (see config)
-				createScheduler(system, null);
+				ActorRef scheduler = createScheduler(system, null);
 
 				// Construct job params
 				Map<String, String> params = new HashMap<>();
@@ -114,7 +107,7 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 				params.put("size", "x-large");
 
 				// Enqueue a job
-				queueManager.tell(new EnqueueJob(TestWorker.class.getName(), params), getRef());
+				scheduler.tell(new EnqueueJob(TestWorker.class.getName(), params), getRef());
 				Job job = expectMsgClass(Job.class);
 
 				// Check to see that unscheduled job has been recorded in Redis
@@ -151,14 +144,11 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 					}
 				};
 
-				// Create a queue manager
-				ActorRef queueManager = createQueueManager(system, null);
-
 				// Create a Redis-backed scheduler (see config) with a probe
-				createScheduler(system, schedulerProbe.getRef());
+				ActorRef scheduler = createScheduler(system, schedulerProbe.getRef());
 
 				// Enqueue a job for an incompetent worker
-				queueManager.tell(new EnqueueJob(IncompetentTestWorker.class.getName()), getRef());
+				scheduler.tell(new EnqueueJob(IncompetentTestWorker.class.getName()), getRef());
 				Job job = expectMsgClass(Job.class);
 
 				// Start an Agent
@@ -168,7 +158,8 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 				JobFailed jobFailed = schedulerProbe.expectMsgClass(JobFailed.class);
 				Job failedJob = jobFailed.getJob();
 				assertEquals("Job IDs don't match", job.getId(), failedJob.getId());
-				assertTrue("Wrong exception type", jobFailed.getJob().getErrorMessage().contains(ArithmeticException.class.getName()));
+				assertTrue("Wrong exception type",
+						jobFailed.getJob().getErrorMessage().contains(ArithmeticException.class.getName()));
 
 				expectNoMsg();
 
@@ -202,14 +193,11 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 					}
 				};
 
-				// Create a queue manager
-				ActorRef queueManager = createQueueManager(system, null);
-
 				// Create a Redis-backed scheduler (see config) with a probe
-				createScheduler(system, schedulerProbe.getRef());
+				ActorRef scheduler = createScheduler(system, schedulerProbe.getRef());
 
 				// Enqueue a job
-				queueManager.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
+				scheduler.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
 				Job job = expectMsgClass(Job.class);
 
 				// Start an Agent
@@ -232,29 +220,6 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 
 				assertNotNull("No progress found", progress);
 				assertEquals("The recorded progress does not match the expected progress", 1.0, new Double(progress));
-
-				RedisBackingStore.releaseConnection(redis);
-			}
-		};
-	}
-
-	@Test
-	public void popUnscheduledJob() {
-		new JavaTestKit(system) {
-			{
-				Jedis redis = RedisBackingStore.getConnection();
-				RedisBackingStore backingStore = new RedisBackingStore(system, settings);
-
-				// Push a job into Redis
-				Job job = new Job(1, TestWorker.class.getName());
-				RedisBackingStore.persistJob(job, RedisBackingStore.UNSCHEDULED_JOBS, redis);
-
-				long jobID = backingStore.popUnscheduledJob();
-				Job poppedJob = RedisBackingStore.loadJob(jobID, redis);
-
-				assertEquals(job.getId(), poppedJob.getId());
-				assertEquals(job.getEnqueuedAt().toString(), poppedJob.getEnqueuedAt().toString());
-				assertEquals(job.getWorkerType(), poppedJob.getWorkerType());
 
 				RedisBackingStore.releaseConnection(redis);
 			}
@@ -401,20 +366,46 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 		params.put("month", "Jan");
 		params.put("size", "x-large");
 
+		DateTime testTime = DateTime.now();
+		
 		Job job = new Job(0, TestWorker.class.getName());
 		job.setParams(params);
 		job.setProgress(0.8);
+		job.setRerun(true);
+		job.setStartedAt(testTime);
+		job.setCompletedAt(testTime);
 		Jedis redis = RedisBackingStore.getConnection();
 		RedisBackingStore.persistJob(job, "test_queue", redis);
 		Job loadedJob = RedisBackingStore.loadJob(0, redis);
 		RedisBackingStore.releaseConnection(redis);
 
+		assertNotNull("Expected 'enqueued at' timestamp", job.getEnqueuedAt());
+		assertNotNull("Expected 'started at' timestamp", job.getStartedAt());
+		assertNotNull("Expected 'completed at' timestamp", job.getCompletedAt());
+
 		assertEquals(job.getId(), loadedJob.getId());
 		assertEquals(job.getEnqueuedAt().toString(), loadedJob.getEnqueuedAt().toString());
+		assertEquals(testTime.toString(), loadedJob.getStartedAt().toString());
+		assertEquals(testTime.toString(), loadedJob.getCompletedAt().toString());
 		assertEquals(job.getWorkerType(), loadedJob.getWorkerType());
 		assertEquals(job.getProgress(), loadedJob.getProgress());
+		assertEquals(job.isRerun(), loadedJob.isRerun());
 		assertEquals("Wrong number of parameters", 2, loadedJob.getParams().size());
 		assertEquals(job.getParams().get("month"), loadedJob.getParams().get("month"));
 		assertEquals(job.getParams().get("size"), loadedJob.getParams().get("size"));
+	}
+
+	@Test
+	@Ignore("Not implemented yet")
+	// TODO
+	public void removeCompletedJob() {
+
+	}
+
+	@Test
+	@Ignore("Not implemented yet")
+	// TODO
+	public void removeFailedJob() {
+
 	}
 }

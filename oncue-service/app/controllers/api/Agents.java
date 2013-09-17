@@ -5,6 +5,7 @@ import static akka.pattern.Patterns.ask;
 import java.text.SimpleDateFormat;
 
 import oncue.OnCueService;
+import oncue.common.messages.AgentSummary;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
@@ -56,7 +57,8 @@ public class Agents extends Controller {
 					// Result objects are returned by the recover handler above
 					return (Result) response;
 				} else {
-					return ok(mapper.valueToTree(response));
+					AgentSummary agentSummary = (AgentSummary) response;
+					return ok(mapper.valueToTree(agentSummary.getAgents()));
 				}
 			}
 		}));

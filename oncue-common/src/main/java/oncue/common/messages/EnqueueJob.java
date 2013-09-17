@@ -20,15 +20,15 @@ import java.util.Collections;
 import java.util.Map;
 
 /**
- * This message is sent to the queue manager (a concrete implementation of
- * AbstractQueueManager) in order to create and enqueue a new job.
+ * This message is sent to the scheduler in order to create and enqueue a new
+ * job.
  */
 public class EnqueueJob implements Serializable {
 
 	private static final long serialVersionUID = -1624154938276876491L;
 
-	private String workerType;
-	private Map<String, String> params = Collections.emptyMap();
+	protected String workerType;
+	protected Map<String, String> params = Collections.emptyMap();
 
 	public EnqueueJob() {
 	}
@@ -48,6 +48,11 @@ public class EnqueueJob implements Serializable {
 
 	public String getWorkerType() {
 		return workerType;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("Enqueue job for %s", workerType);
 	}
 
 }

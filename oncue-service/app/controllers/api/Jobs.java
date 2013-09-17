@@ -5,9 +5,11 @@ import static akka.pattern.Patterns.ask;
 import java.text.SimpleDateFormat;
 
 import oncue.OnCueService;
+import oncue.common.messages.DeleteJob;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobSummary;
+import oncue.common.messages.RerunJob;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
@@ -15,12 +17,10 @@ import oncue.common.settings.SettingsProvider;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.PropertyNamingStrategy;
 import org.codehaus.jackson.map.SerializationConfig;
-import org.codehaus.jackson.node.ObjectNode;
 
 import play.Logger;
 import play.libs.Akka;
 import play.libs.F.Function;
-import play.libs.Json;
 import play.mvc.Controller;
 import play.mvc.Result;
 import akka.actor.ActorRef;
@@ -67,9 +67,7 @@ public class Jobs extends Controller {
 					return (Result) response;
 				} else {
 					JobSummary jobSummary = (JobSummary) response;
-					ObjectNode rootNode = Json.newObject();
-					rootNode.put("jobs", mapper.valueToTree(jobSummary.getJobs()));
-					return ok(rootNode);
+					return ok(mapper.valueToTree(jobSummary.getJobs()));
 				}
 			}
 		}));
@@ -113,9 +111,7 @@ public class Jobs extends Controller {
 					if (jobToShow == null)
 						throw new RuntimeException("Failed to find a job with ID " + id);
 
-					ObjectNode rootNode = Json.newObject();
-					rootNode.put("job", mapper.valueToTree(jobToShow));
-					return ok(rootNode);
+					return ok(mapper.valueToTree(jobToShow));
 				}
 			}
 		}));
@@ -135,17 +131,83 @@ public class Jobs extends Controller {
 			return badRequest(request().body().asJson());
 		}
 
-		ActorRef queueManager = OnCueService.system().actorFor(settings.QUEUE_MANAGER_PATH);
+		ActorRef scheduler = OnCueService.system().actorFor(settings.SCHEDULER_PATH);
 		return async(Akka.asPromise(
-				ask(queueManager, enqueueJob, new Timeout(settings.SCHEDULER_TIMEOUT)).recover(new Recover<Object>() {
+				ask(scheduler, enqueueJob, new Timeout(settings.SCHEDULER_TIMEOUT)).recover(new Recover<Object>() {
 					@Override
 					public Object recover(Throwable t) throws Throwable {
 						if (t instanceof AskTimeoutException) {
-							Logger.error("Timeout waiting for queue manager to enqueue job", t);
+							Logger.error("Timeout waiting for scheduler to enqueue job", t);
 							return internalServerError("Timeout");
 						} else {
 							Logger.error("Failed to enqueue job", t);
 							return internalServerError("Failed to enqueue job");
+						}
+					}
+				}, OnCueService.system().dispatcher())).map(new Function<Object, Result>() {
+			@Override
+			public Result apply(Object response) {
+				if (response instanceof Result) {
+					// Result objects are returned by the recover handler above
+					return (Result) response;
+				} else {
+					return ok(mapper.valueToTree(response));
+				}
+			}
+		}));
+	}
+	
+	/**
+	 * Delete an existing job
+	 * 
+	 * @return a {@linkplain Job}
+	 */
+	public static Result delete(final Long id) {
+		DeleteJob deleteJob = new DeleteJob(id);
+		ActorRef scheduler = OnCueService.system().actorFor(settings.SCHEDULER_PATH);
+		return async(Akka.asPromise(
+				ask(scheduler, deleteJob, new Timeout(settings.SCHEDULER_TIMEOUT)).recover(new Recover<Object>() {
+					@Override
+					public Object recover(Throwable t) throws Throwable {
+						if (t instanceof AskTimeoutException) {
+							Logger.error("Timeout waiting for scheduler to delete job", t);
+							return internalServerError("Timeout");
+						} else {
+							Logger.error("Failed to delete job", t);
+							return internalServerError("Failed to delete job");
+						}
+					}
+				}, OnCueService.system().dispatcher())).map(new Function<Object, Result>() {
+			@Override
+			public Result apply(Object response) {
+				if (response instanceof Result) {
+					// Result objects are returned by the recover handler above
+					return (Result) response;
+				} else {
+					return ok(mapper.valueToTree(response));
+				}
+			}
+		}));
+	}	
+
+	/**
+	 * Re-run a job
+	 * 
+	 * @return a {@linkplain Job}
+	 */
+	public static Result rerun(final Long id) {
+		RerunJob rerunJob = new RerunJob(id);
+		ActorRef scheduler = OnCueService.system().actorFor(settings.SCHEDULER_PATH);
+		return async(Akka.asPromise(
+				ask(scheduler, rerunJob, new Timeout(settings.SCHEDULER_TIMEOUT)).recover(new Recover<Object>() {
+					@Override
+					public Object recover(Throwable t) throws Throwable {
+						if (t instanceof AskTimeoutException) {
+							Logger.error("Timeout waiting for queue manager to enqueue a job to re-run", t);
+							return internalServerError("Timeout");
+						} else {
+							Logger.error("Failed to enqueue a job to re-run", t);
+							return internalServerError("Failed to enqueue job to re-run");
 						}
 					}
 				}, OnCueService.system().dispatcher())).map(new Function<Object, Result>() {

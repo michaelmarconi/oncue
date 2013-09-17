@@ -31,7 +31,7 @@ import akka.actor.ActorRef;
  */
 public class ScheduledJobs {
 
-	// An optional, persistent backing store
+	// A persistent backing store
 	private BackingStore backingStore;
 
 	// Map a list of scheduled jobs to logical agent address
@@ -39,7 +39,7 @@ public class ScheduledJobs {
 	
 	/**
 	 * @param backingStore
-	 *            is an optional instance of {@linkplain BackingStore}
+	 *            is an instance of {@linkplain BackingStore}
 	 */
 	public ScheduledJobs(BackingStore backingStore) {
 		this.backingStore = backingStore;
@@ -61,9 +61,7 @@ public class ScheduledJobs {
 			scheduledJobs.put(agent.path().toString(), assignedJobs);
 		}
 		assignedJobs.addAll(jobs);
-
-		if (backingStore != null)
-			backingStore.addScheduledJobs(jobs);
+		backingStore.addScheduledJobs(jobs);
 	}
 
 	/**
@@ -133,8 +131,6 @@ public class ScheduledJobs {
 		}
 
 		scheduledJobs.get(agent).remove(jobToRemove);
-
-		if (backingStore != null)
-			backingStore.removeScheduledJob(job);
+		backingStore.removeScheduledJob(job);
 	}
 }
