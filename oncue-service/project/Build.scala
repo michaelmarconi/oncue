@@ -5,11 +5,7 @@ import play.Project._
 object ApplicationBuild extends Build {
 
   val appName         = "oncue-service"
-<<<<<<< HEAD
-  val appVersion      = "0.9.4-SNAPSHOT"
-=======
-  val appVersion      = "0.9.4"
->>>>>>> refs/heads/master
+  val appVersion      = "0.9.5-SNAPSHOT"
 
   val appDependencies = Seq(
     // Add your project dependencies here,
