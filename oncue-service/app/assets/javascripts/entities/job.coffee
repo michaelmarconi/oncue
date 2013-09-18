@@ -5,6 +5,17 @@ OnCue.module 'Entities.Job', (Job, OnCue, Backbone, Marionette, $, _) ->
   #
   class Job.Model extends Backbone.Model
     urlRoot: '/api/jobs'
+    params: ->
+      params = @get('params')
+      paramsCollection = new Job.ParamsCollection()
+      for paramKey in _.keys(params)
+        jobParam = new Job.Param(
+          key: paramKey
+          value: params[paramKey]
+        )
+        paramsCollection.add(jobParam)
+      return paramsCollection
+
 
   #
   # A collection of jobs
@@ -34,21 +45,6 @@ OnCue.module 'Entities.Job', (Job, OnCue, Backbone, Marionette, $, _) ->
 
   class Job.Controller extends Marionette.Controller
 
-    # Create a collection of params from a hash
-    _extractParams: (job) ->
-      params = job.get('params')
-      if params
-        jobParams = new Job.ParamsCollection()
-        for paramKey in _.keys(params)
-          jobParam = new Job.Param(
-            key: paramKey
-            value: params[paramKey]
-          )
-          jobParams.add(jobParam)
-        job.unset('params')
-        job.set('params', jobParams)
-        return job
-
     getJobEntities: ->
       if Job.collection
         return Job.collection
@@ -56,7 +52,7 @@ OnCue.module 'Entities.Job', (Job, OnCue, Backbone, Marionette, $, _) ->
         Job.collection = new Job.Collection()
         defer = $.Deferred()
         Job.collection.fetch(
-          success: (collection) ->
+          success: (collection) =>
             defer.resolve(collection)
           error: ->
             defer.reject()
@@ -71,7 +67,6 @@ OnCue.module 'Entities.Job', (Job, OnCue, Backbone, Marionette, $, _) ->
         defer = $.Deferred()
         job.fetch(
           success: (model) =>
-            @_extractParams(model)
             defer.resolve(model)
           error: ->
             defer.reject()
@@ -101,7 +96,8 @@ OnCue.module 'Entities.Job', (Job, OnCue, Backbone, Marionette, $, _) ->
     addJobEntity: (jobData) ->
       if Job.collection
         jobData.is_new = true
-        Job.collection.add(jobData)
+        job = new Job.Model(jobData)
+        Job.collection.add(job)
 
     updateJobEntity: (jobData) ->
       if Job.collection
