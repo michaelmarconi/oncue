@@ -221,6 +221,9 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 				assertNotNull("No progress found", progress);
 				assertEquals("The recorded progress does not match the expected progress", 1.0, new Double(progress));
 
+				// Check to see that only one job was persisted
+				assertEquals(1, redis.lrange(RedisBackingStore.COMPLETED_JOBS, 0, -1).size());
+
 				RedisBackingStore.releaseConnection(redis);
 			}
 		};
@@ -367,7 +370,7 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 		params.put("size", "x-large");
 
 		DateTime testTime = DateTime.now();
-		
+
 		Job job = new Job(0, TestWorker.class.getName());
 		job.setParams(params);
 		job.setProgress(0.8);
