@@ -110,7 +110,7 @@ OnCue.module "Jobs.Show", (Show, OnCue, Backbone, Marionette, $, _) ->
 
         # Create the job details and params views
         detailsView = new Show.JobDetailsView(model: @job)
-        if job.params().length > 0
+        if @job.params().length > 0
           paramsView = new Show.JobParamsView(
             collection: job.params()
           )
@@ -130,7 +130,7 @@ OnCue.module "Jobs.Show", (Show, OnCue, Backbone, Marionette, $, _) ->
         @listenTo(layout, 'show', ->
           layout.toolbarRegion.show(toolbarView)
           layout.detailsRegion.show(detailsView)
-          if job.params().length > 0
+          if @job.params().length > 0
             layout.paramsRegion.show(paramsView)
         )
 
