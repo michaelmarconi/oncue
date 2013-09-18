@@ -460,6 +460,13 @@ public class RedisBackingStore extends AbstractBackingStore {
 		}
 
 		for (Job failedJob : getFailedJobs()) {
+			if (failedJob.getCompletedAt() == null) {
+				log.error("Found a failed job with no completion time.  Setting completion time to now and defering to next clean up. ("
+						+ failedJob.toString() + ")");
+				failedJob.setCompletedAt(DateTime.now());
+				persistJobFailure(failedJob);
+				return;
+			}
 			DateTime expirationThreshold = DateTime.now().minus(expirationAge.getMillis());
 			boolean isExpired = failedJob.getCompletedAt().isBefore(expirationThreshold.toInstant());
 			if (isExpired) {
