@@ -372,10 +372,11 @@ public class RedisBackingStore extends AbstractBackingStore {
 		if (job.getStartedAt() != null)
 			redis.hset(jobKey, JOB_STARTED_AT, job.getStartedAt().toString());
 
-		if (job.getState() == Job.State.COMPLETE)
+		if (job.getState() == Job.State.COMPLETE) {
 			if (job.getCompletedAt() != null)
 				redis.hset(jobKey, JOB_COMPLETED_AT, job.getCompletedAt().toString());
-		redis.lpush(COMPLETED_JOBS, new Long(job.getId()).toString());
+			redis.lpush(COMPLETED_JOBS, new Long(job.getId()).toString());
+		}
 
 		releaseConnection(redis);
 	}
