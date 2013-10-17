@@ -273,7 +273,7 @@ public abstract class AbstractAgent extends UntypedActor {
 	 */
 	private void sendFailure(Job job, String message) {
 		job.setState(State.FAILED);
-		job.setErrorMessage("Failed to spawn a worker due to " + message);
+		job.setErrorMessage("A worker failed due to " + message);
 		getScheduler().tell(new JobFailed(job), getSelf());
 	}
 
