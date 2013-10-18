@@ -16,6 +16,9 @@
 package oncue.worker;
 
 import static akka.pattern.Patterns.ask;
+
+import java.util.concurrent.TimeoutException;
+
 import oncue.common.messages.CleanupJobs;
 import oncue.common.messages.Job;
 
@@ -51,9 +54,14 @@ public class MaintenanceWorker extends AbstractWorker {
 		Duration expirationAge = Duration.millis(scala.concurrent.duration.Duration.create(
 				job.getParams().get(EXPIRATION_AGE)).toMillis());
 		CleanupJobs cleanupJobs = new CleanupJobs(includeFailedJobs, expirationAge);
-		Await.result(
-				ask(getContext().actorFor(settings.SCHEDULER_PATH), cleanupJobs,
-						new Timeout(settings.SCHEDULER_TIMEOUT)), settings.SCHEDULER_TIMEOUT);
+
+		try {
+			Await.result(
+					ask(getContext().actorFor(settings.SCHEDULER_PATH), cleanupJobs, new Timeout(
+							settings.SCHEDULER_TIMEOUT)), settings.SCHEDULER_TIMEOUT);
+		} catch (TimeoutException e) {
+			throw new RuntimeException("Timeout waiting for scheduler to clean up jobs");
+		}
 	}
 
 	@Override
