@@ -25,6 +25,8 @@ import oncue.common.messages.Job;
 import org.joda.time.Duration;
 
 import scala.concurrent.Await;
+import akka.event.Logging;
+import akka.event.LoggingAdapter;
 import akka.util.Timeout;
 
 /**
@@ -35,6 +37,7 @@ public class MaintenanceWorker extends AbstractWorker {
 
 	private static final String EXPIRATION_AGE = "expiration-age";
 	private static final String INCLUDE_FAILED_JOBS = "include-failed-jobs";
+	private LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
 	@Override
 	public void doWork(Job job) throws Exception {
@@ -56,9 +59,10 @@ public class MaintenanceWorker extends AbstractWorker {
 		CleanupJobs cleanupJobs = new CleanupJobs(includeFailedJobs, expirationAge);
 
 		try {
-			Await.result(
+			Object object = Await.result(
 					ask(getContext().actorFor(settings.SCHEDULER_PATH), cleanupJobs, new Timeout(
 							settings.SCHEDULER_TIMEOUT)), settings.SCHEDULER_TIMEOUT);
+			log.info(object.toString());
 		} catch (TimeoutException e) {
 			throw new RuntimeException("Timeout waiting for scheduler to clean up jobs");
 		}
