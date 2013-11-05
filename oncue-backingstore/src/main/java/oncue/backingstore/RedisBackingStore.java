@@ -446,17 +446,20 @@ public class RedisBackingStore extends AbstractBackingStore {
 	}
 
 	@Override
-	public void cleanupJobs(boolean includeFailedJobs, Duration expirationAge) {
+	public int cleanupJobs(boolean includeFailedJobs, Duration expirationAge) {
+		int cleanedJobsCount = 0;
+
 		for (Job completedJob : getCompletedJobs()) {
 			DateTime expirationThreshold = DateTime.now().minus(expirationAge.getMillis());
 			boolean isExpired = completedJob.getCompletedAt().isBefore(expirationThreshold.toInstant());
 			if (isExpired) {
 				removeCompletedJob(completedJob);
+				cleanedJobsCount++;
 			}
 		}
 
 		if (!includeFailedJobs) {
-			return;
+			return cleanedJobsCount;
 		}
 
 		for (Job failedJob : getFailedJobs()) {
@@ -465,13 +468,16 @@ public class RedisBackingStore extends AbstractBackingStore {
 						+ failedJob.toString() + ")");
 				failedJob.setCompletedAt(DateTime.now());
 				persistJobFailure(failedJob);
-				return;
+				continue;
 			}
 			DateTime expirationThreshold = DateTime.now().minus(expirationAge.getMillis());
 			boolean isExpired = failedJob.getCompletedAt().isBefore(expirationThreshold.toInstant());
 			if (isExpired) {
 				removeFailedJob(failedJob);
+				cleanedJobsCount++;
 			}
 		}
+
+		return cleanedJobsCount;
 	}
 }

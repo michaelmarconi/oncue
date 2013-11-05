@@ -15,6 +15,8 @@
  ******************************************************************************/
 package oncue.scheduler;
 
+import static java.lang.String.format;
+
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -450,9 +452,9 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 		else if (message instanceof CleanupJobs) {
 			log.debug("Clean up jobs");
 			CleanupJobs cleanupJobs = (CleanupJobs) message;
-			backingStore.cleanupJobs(cleanupJobs.isIncludeFailedJobs(), cleanupJobs.getExpirationAge());
+			int numCleanedJobs = backingStore.cleanupJobs(cleanupJobs.isIncludeFailedJobs(), cleanupJobs.getExpirationAge());
 			getContext().system().eventStream().publish(new JobCleanupEvent());
-			getSender().tell(new Success("Job cleanup succeeded"), getSelf());
+			getSender().tell(new Success(format("Removed %d jobs", numCleanedJobs)), getSelf());
 		}
 
 		else if (message instanceof AbstractWorkRequest) {
