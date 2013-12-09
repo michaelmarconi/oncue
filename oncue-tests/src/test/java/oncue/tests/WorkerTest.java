@@ -28,11 +28,13 @@ import oncue.common.messages.JobProgress;
 import oncue.common.messages.WorkResponse;
 import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.JobEnqueueingTestWorker;
+import oncue.tests.workers.JobSummaryRequestTestWorker;
 import oncue.tests.workers.TestWorker;
 
 import org.junit.Ignore;
 import org.junit.Test;
 
+import redis.clients.jedis.Jedis;
 import akka.actor.Actor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
@@ -171,75 +173,105 @@ public class WorkerTest extends ActorSystemTest {
 	}
 
 	@Test
+	public void workerRequestsJobSummary() {
+		new JavaTestKit(system) {
+
+			{
+				final Jedis jedis = new Jedis("localhost");
+				jedis.del("oncue.tests.workers.JobSummaryRequestTestWorker");
+
+				// Create a scheduler
+				ActorRef scheduler = createScheduler(system);
+
+				// Create an agent
+				createAgent(system, new HashSet<String>(Arrays.asList(JobSummaryRequestTestWorker.class.getName())),
+						null);
+
+				// Enqueue a job
+				scheduler.tell(new EnqueueJob(JobSummaryRequestTestWorker.class.getName()), null);
+
+				// Ensure the worker got the right job
+				new AwaitCond(duration("5 seconds")) {
+
+					@Override
+					protected boolean cond() {
+						String result = jedis.get("oncue.tests.workers.JobSummaryRequestTestWorker");
+						if (result != null) {
+							return result.contains("Job 1") && result.contains("state=running")
+									&& result.contains("workerType=oncue.tests.workers.JobSummaryRequestTestWorker");
+						} else
+							return false;
+					}
+				};
+				jedis.disconnect();
+			}
+		};
+	}
+
+	@Test
 	@Ignore("Ignoring until MF has had a chance to review this")
 	// TODO MF: Please review this test
 	public void workerFailsWhenSchedulerCannotBeReached() {
-		// new JavaTestKit(system) {
-		//
-		// {
-		// // Create a probe
-		// final JavaTestKit schedulerProbe = new JavaTestKit(system) {
-		//
-		// {
-		// new IgnoreMsg() {
-		//
-		// protected boolean ignore(Object message) {
-		// if (message instanceof EnqueueJob || message instanceof JobFailed)
-		// return false;
-		//
-		// return true;
-		// }
-		// };
-		// }
-		// };
-		//
-		// // Create a naked simple scheduler with our probe
-		// @SuppressWarnings("serial")
-		// final Props schedulerProps = new Props(new UntypedActorFactory() {
-		//
-		// @Override
-		// public Actor create() throws Exception {
-		// SimpleQueuePopScheduler simpleQueuePopScheduler = new
-		// SimpleQueuePopScheduler(null);
-		// simpleQueuePopScheduler.injectProbe(schedulerProbe.getRef());
-		// return simpleQueuePopScheduler;
-		// }
-		// });
-		//
-		// final TestActorRef<SimpleQueuePopScheduler> schedulerRef =
-		// TestActorRef.create(system, schedulerProps,
-		// settings.SCHEDULER_NAME);
-		// final SimpleQueuePopScheduler scheduler =
-		// schedulerRef.underlyingActor();
-		// scheduler.pause();
-		//
-		// // Create an agent
-		// createAgent(
-		// system,
-		// new
-		// HashSet<String>(Arrays.asList(JobEnqueueingTestWorker.class.getName(),
-		// TestWorker.class.getName())), null);
-		//
-		// // Enqueue a job
-		// Map<String, String> params = new HashMap<String, String>();
-		// params.put("key", "value");
-		// scheduler.tell(new
-		// EnqueueJob(JobEnqueueingTestWorker.class.getName(), params), null);
-		//
-		// // Kill the queue manager, this should cause an exception as
-		// // soon as the scheduler
-		// // is unpaused and gives the agent the enqueued job
-		// scheduler.tell(PoisonPill.getInstance(), null);
-		// expectNoMsg(duration("1 second"));
-		//
-		// scheduler.unpause();
-		//
-		// // Expect a job failure message at the scheduler
-		// JobFailed jobFailed = schedulerProbe.expectMsgClass(JobFailed.class);
-		// assertEquals(JobEnqueueingTestWorker.class.getName(),
-		// jobFailed.getJob().getWorkerType());
-		// assertEquals(params, jobFailed.getJob().getParams());
-		// }
-		// };
+//		new JavaTestKit(system) {
+//
+//			{
+//				// Create a probe
+//				final JavaTestKit schedulerProbe = new JavaTestKit(system) {
+//
+//					{
+//						new IgnoreMsg() {
+//
+//							protected boolean ignore(Object message) {
+//								if (message instanceof EnqueueJob || message instanceof JobFailed)
+//									return false;
+//
+//								return true;
+//							}
+//						};
+//					}
+//				};
+//
+//				// Create a naked simple scheduler with our probe
+//				@SuppressWarnings("serial")
+//				final Props schedulerProps = new Props(new UntypedActorFactory() {
+//
+//					@Override
+//					public Actor create() throws Exception {
+//						SimpleQueuePopScheduler simpleQueuePopScheduler = new SimpleQueuePopScheduler(null);
+//						simpleQueuePopScheduler.injectProbe(schedulerProbe.getRef());
+//						return simpleQueuePopScheduler;
+//					}
+//				});
+//
+//				final TestActorRef<SimpleQueuePopScheduler> schedulerRef = TestActorRef.create(system, schedulerProps,
+//						settings.SCHEDULER_NAME);
+//				final SimpleQueuePopScheduler scheduler = schedulerRef.underlyingActor();
+//				scheduler.pause();
+//
+//				// Create an agent
+//				createAgent(
+//						system,
+//						new HashSet<String>(Arrays.asList(JobEnqueueingTestWorker.class.getName(),
+//								TestWorker.class.getName())), null);
+//
+//				// Enqueue a job
+//				Map<String, String> params = new HashMap<String, String>();
+//				params.put("key", "value");
+//				scheduler.tell(new EnqueueJob(JobEnqueueingTestWorker.class.getName(), params), null);
+//
+//				// Kill the queue manager, this should cause an exception as
+//				// soon as the scheduler
+//				// is unpaused and gives the agent the enqueued job
+//				scheduler.tell(PoisonPill.getInstance(), null);
+//				expectNoMsg(duration("1 second"));
+//
+//				scheduler.unpause();
+//
+//				// Expect a job failure message at the scheduler
+//				JobFailed jobFailed = schedulerProbe.expectMsgClass(JobFailed.class);
+//				assertEquals(JobEnqueueingTestWorker.class.getName(), jobFailed.getJob().getWorkerType());
+//				assertEquals(params, jobFailed.getJob().getParams());
+//			}
+//		};
 	}
 }

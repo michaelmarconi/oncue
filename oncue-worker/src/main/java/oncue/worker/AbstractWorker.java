@@ -18,10 +18,13 @@ import static akka.pattern.Patterns.ask;
 import java.util.Map;
 
 import oncue.common.exceptions.EnqueueJobException;
+import oncue.common.exceptions.RetrieveJobSummaryException;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.Job.State;
 import oncue.common.messages.JobProgress;
+import oncue.common.messages.JobSummary;
+import oncue.common.messages.SimpleMessages.SimpleMessage;
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
 
@@ -46,6 +49,48 @@ public abstract class AbstractWorker extends UntypedActor {
 	protected Settings settings = SettingsProvider.SettingsProvider.get(getContext().system());
 
 	/**
+	 * An implementation of the functionality available at the remote scheduler.
+	 * Workers should get hold of a reference to this by calling
+	 * 'getScheduler()'.
+	 */
+	private RemoteScheduler remoteScheduler = new RemoteScheduler() {
+
+		@Override
+		public void enqueueJob(String workerType, Map<String, String> jobParameters) throws EnqueueJobException {
+			try {
+				Await.result(
+						ask(getContext().actorFor(settings.SCHEDULER_PATH), new EnqueueJob(workerType, jobParameters),
+								new Timeout(settings.SCHEDULER_TIMEOUT)), settings.SCHEDULER_TIMEOUT);
+			} catch (Exception e) {
+				if (e instanceof AskTimeoutException) {
+					log.error(e, "Timeout waiting for scheduler to enqueue job");
+				} else {
+					log.error(e, "Failed to enqueue job");
+				}
+
+				throw new EnqueueJobException(e);
+			}
+		}
+
+		@Override
+		public JobSummary getJobSummary() throws RetrieveJobSummaryException {
+			try {
+				return (JobSummary) Await.result(
+						ask(getContext().actorFor(settings.SCHEDULER_PATH), SimpleMessage.JOB_SUMMARY, new Timeout(
+								settings.SCHEDULER_TIMEOUT)), settings.SCHEDULER_TIMEOUT);
+			} catch (Exception e) {
+				if (e instanceof AskTimeoutException) {
+					log.error(e, "Timeout waiting for scheduler to respond with job summary");
+				} else {
+					log.error(e, "Failed to retrieve job summary");
+				}
+
+				throw new RetrieveJobSummaryException(e);
+			}
+		}
+	};
+
+	/**
 	 * Begin working on a job immediately. Once the worker returns from this
 	 * method, we assume the work on the job is complete.
 	 * 
@@ -55,41 +100,13 @@ public abstract class AbstractWorker extends UntypedActor {
 	protected abstract void doWork(Job job) throws Exception;
 
 	/**
-	 * Re-do work that may or may not have completed successfully previously, so
-	 * the worker may need to take compensating action. Once the worker returns
-	 * from this method, we assume the work on the job is complete.
-	 * 
-	 * @param job
-	 *            is the specification for the work to be done
+	 * @return an implementation of {@linkplain RemoteScheduler}, which
+	 *         represents the functionality available on the remote scheduler
+	 *         component. This is useful if a worker wants to enqueue a job or
+	 *         ask for the list of jobs at the scheduler.
 	 */
-	protected abstract void redoWork(Job job) throws Exception;
-
-	/**
-	 * Submit the job to the scheduler.
-	 * 
-	 * @param workerType
-	 *            The qualified class name of the worker to instantiate
-	 * @param jobParameters
-	 *            The user-defined parameters map to pass to the job
-	 * @throws EnqueueJobException
-	 *             If the scheduler does not exist or the job is not accepted
-	 *             within the timeout
-	 */
-	protected void enqueueJob(String workerType, Map<String, String> jobParameters) throws EnqueueJobException {
-
-		try {
-			Await.result(
-					ask(getContext().actorFor(settings.SCHEDULER_PATH), new EnqueueJob(workerType, jobParameters),
-							new Timeout(settings.SCHEDULER_TIMEOUT)), settings.SCHEDULER_TIMEOUT);
-		} catch (Exception e) {
-			if (e instanceof AskTimeoutException) {
-				log.error(e, "Timeout waiting for scheduler to enqueue job");
-			} else {
-				log.error(e, "Failed to enqueue job");
-			}
-
-			throw new EnqueueJobException(e);
-		}
+	protected RemoteScheduler getScheduler() {
+		return remoteScheduler;
 	}
 
 	@Override
@@ -117,6 +134,16 @@ public abstract class AbstractWorker extends UntypedActor {
 		job.setStartedAt(DateTime.now());
 		getSender().tell(new JobProgress(job), getSelf());
 	}
+
+	/**
+	 * Re-do work that may or may not have completed successfully previously, so
+	 * the worker may need to take compensating action. Once the worker returns
+	 * from this method, we assume the work on the job is complete.
+	 * 
+	 * @param job
+	 *            is the specification for the work to be done
+	 */
+	protected abstract void redoWork(Job job) throws Exception;
 
 	/**
 	 * Report on the percentage progress made on this job.
