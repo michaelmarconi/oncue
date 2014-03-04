@@ -18,6 +18,8 @@ OnCue.module "Navbar.List", (List, OnCue, Backbone, Marionette, $, _) ->
           OnCue.trigger('jobs:list')
         else if url is 'agents'
           OnCue.trigger('agents:list')
+        else if url is 'schedule'
+          OnCue.trigger('timed_jobs:list')
         else
           throw 'No such module: ' + url
       )

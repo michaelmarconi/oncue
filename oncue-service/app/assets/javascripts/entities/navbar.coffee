@@ -36,6 +36,10 @@ OnCue.module 'Entities.Navbar', (Navbar, OnCue, Backbone, Marionette, $, _) ->
         name: 'Agents'
         url: 'agents'
       )
+      new Navbar.Item(
+        name: 'Schedule'
+        url: 'schedule'
+      )
     ])
 
     Navbar.controller = new Navbar.Controller()
