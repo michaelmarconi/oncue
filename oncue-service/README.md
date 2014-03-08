@@ -1,4 +1,4 @@
-oncue-ui
-========
+OnCue Service
+=============
 
-A web-based UI for the onCue job scheduling framework
+The OnCue Service hosts the job scheduler, HTTP API and Web UI components
