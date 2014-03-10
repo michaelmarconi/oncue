@@ -1,5 +1,6 @@
 package oncue.client;
 
+import java.util.Collection;
 import java.util.Map;
 
 import oncue.common.messages.Job;
@@ -30,5 +31,14 @@ public interface Client {
 	 * @throws ClientException
 	 */
 	public Job enqueueJob(String workerType, Map<String, String> jobParams) throws ClientException;
+
+	/**
+	 * Retrieve a list of all known jobs in the system,
+	 * including the complete and failed jobs.
+	 * 
+	 * @return a {@link Collection} of all {@linkplain Job}s
+	 * @throws ClientException
+	 */
+	public Collection<Job> getJobs() throws ClientException;
 
 }
