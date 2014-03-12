@@ -49,8 +49,9 @@ public interface BackingStore {
 	 *            eligible for cleanup, e.g. "24 hours" means that the job won't
 	 *            be cleaned up until at least 24 hours have elapsed since it
 	 *            completed.
+	 * @return the number of jobs that were cleaned up
 	 */
-	public void cleanupJobs(boolean includeFailedJobs, Duration expirationAge);
+	public int cleanupJobs(boolean includeFailedJobs, Duration expirationAge);
 
 	/**
 	 * The backing store makes a note of jobs that complete successfully. Get

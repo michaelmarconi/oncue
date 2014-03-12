@@ -13,28 +13,26 @@
  ******************************************************************************/
 package oncue.tests.workers;
 
-import oncue.common.messages.Job;
-import oncue.worker.AbstractWorker;
+import java.util.Collection;
 
-public class JobEnqueueingTestWorker extends AbstractWorker {
+import oncue.common.messages.Job;
+import oncue.common.messages.JobSummary;
+import oncue.worker.AbstractWorker;
+import redis.clients.jedis.Jedis;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+
+public class JobSummaryRequestTestWorker extends AbstractWorker {
 
 	@Override
-	public void doWork(Job job) {
-		processJob(job);
-	}
-
-	private void processJob(Job job) {
-		try {
-			// Give this job to a test worker
-			Thread.sleep(500);
-			getSchedulerClient().enqueueJob(TestWorker.class.getName(), job.getParams());
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+	public void doWork(Job job) throws Exception {
+		Collection<Job> jobs = getSchedulerClient().getJobs();
+		Jedis jedis = new Jedis("localhost");
+		JobSummary jobSummary = new JobSummary(jobs);
+		jedis.set("oncue.tests.workers.JobSummaryRequestTestWorker", jobSummary.toString());
 	}
 
 	@Override
 	protected void redoWork(Job job) throws Exception {
-		processJob(job);
+		throw new NotImplementedException();
 	}
 }

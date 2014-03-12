@@ -28,6 +28,7 @@ import java.util.Map;
 import oncue.backingstore.RedisBackingStore;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
+import oncue.common.messages.Job.State;
 import oncue.common.messages.JobFailed;
 import oncue.common.messages.JobProgress;
 import oncue.tests.base.ActorSystemTest;
@@ -35,6 +36,7 @@ import oncue.tests.workers.IncompetentTestWorker;
 import oncue.tests.workers.TestWorker;
 
 import org.joda.time.DateTime;
+import org.joda.time.Duration;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -396,6 +398,46 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 		assertEquals("Wrong number of parameters", 2, loadedJob.getParams().size());
 		assertEquals(job.getParams().get("month"), loadedJob.getParams().get("month"));
 		assertEquals(job.getParams().get("size"), loadedJob.getParams().get("size"));
+	}
+
+	@Test
+	public void cleanUpJobsReturnsCorrectCleanedUpJobCount() {
+		new JavaTestKit(system) {
+			private Jedis redis;
+			private RedisBackingStore backingStore;
+
+			{
+				redis = RedisBackingStore.getConnection();
+				backingStore = new RedisBackingStore(system, settings);
+
+				// Push expired jobs into redis
+				persistTestJob(1, DateTime.now().minusHours(2), false);
+				persistTestJob(2, DateTime.now().minusHours(2), true);
+				persistTestJob(3, DateTime.now().minusHours(2), true);
+
+				assertEquals(1, backingStore.cleanupJobs(false, Duration.standardHours(1)));
+				assertEquals(2, backingStore.cleanupJobs(true, Duration.standardHours(1)));
+
+				RedisBackingStore.releaseConnection(redis);
+			}
+
+			private void persistTestJob(int jobNumber, DateTime completionTime, boolean failed) {
+				Job job = new Job(jobNumber, TestWorker.class.getName());
+				job.setCompletedAt(completionTime);
+				RedisBackingStore.persistJob(job, RedisBackingStore.SCHEDULED_JOBS, redis);
+
+				if (failed) {
+					job.setState(State.FAILED);
+					job.setErrorMessage(new Exception("Test exception").toString());
+					backingStore.persistJobFailure(job);
+				} else {
+					// Record progress on the job
+					job.setProgress(1.0);
+					job.setState(Job.State.COMPLETE);
+					backingStore.persistJobProgress(job);
+				}
+			}
+		};
 	}
 
 	@Test

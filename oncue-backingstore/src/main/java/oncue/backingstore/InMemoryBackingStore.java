@@ -97,7 +97,7 @@ public class InMemoryBackingStore extends AbstractBackingStore {
 	}
 
 	@Override
-	public void cleanupJobs(boolean includeFailedJobs, Duration expirationAge) {
+	public int cleanupJobs(boolean includeFailedJobs, Duration expirationAge) {
 		List<Job> expiredCompletedJobs = new ArrayList<>();
 		for (Job completedJob : completedJobs) {
 			DateTime expirationThreshold = DateTime.now().minus(expirationAge.getMillis());
@@ -107,9 +107,9 @@ public class InMemoryBackingStore extends AbstractBackingStore {
 			}
 		}
 		completedJobs.removeAll(expiredCompletedJobs);
-		
+
 		if (!includeFailedJobs) {
-			return;
+			return expiredCompletedJobs.size();
 		}
 
 		List<Job> expiredFailedJobs = new ArrayList<>();
@@ -121,5 +121,7 @@ public class InMemoryBackingStore extends AbstractBackingStore {
 			}
 		}
 		expiredFailedJobs.removeAll(expiredFailedJobs);
+
+		return expiredFailedJobs.size() + expiredCompletedJobs.size();
 	}
 }

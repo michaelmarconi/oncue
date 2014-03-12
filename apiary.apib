@@ -1,0 +1,87 @@
+FORMAT: 1A
+
+# OnCue
+The OnCue API allows you to to interact programmatically with the [OnCue](https://github.com/michaelmarconi/oncue) *distributed job scheduling* service.
+
+# Group Agents
+Get information about all remote agents that are registered with the scheduler
+
+## Agents Collection [/api/agents]
+### List all Agents [GET]
++ Response 200 (application/json)
+
+        [{
+            "id": "akka://oncue-agent@localhost:55538/user/agent",
+            "url": "akka://oncue-agent@localhost:55538/user/agent"
+        }]
+    
+# Group Jobs
+Get information about the state of all Jobs that have been enqueued in the system
+
+## Jobs Collection [/api/jobs]
+### List all Jobs [GET]
++ Response 200 (application/json)
+
+        [{
+            "enqueued_at": "2014-03-09T22:23:01.833Z",
+            "started_at": "2014-03-09T22:23:05.995Z",
+            "completed_at": "2014-03-09T22:23:06.006Z",
+            "error_message": null,
+            "id": 1,
+            "params": {
+                "expiration-age": "24 hours",
+                "include-failed-jobs": "true"
+            },
+            "progress": 1.0,
+            "rerun": false,
+            "state": "complete",
+            "worker_type": "oncue.worker.MaintenanceWorker"
+        }]
+        
+### Create a Job [POST]
++ Request (application/json)
+
+        { "worker_type": "oncue.worker.TestWorker" }
+
++ Response 200 (application/json)
+
+        { 
+            "enqueued_at": "2014-03-09T22:28:12.508Z",
+            "started_at": null,
+            "completed_at": null,
+            "error_message": null,
+            "id": 2,
+            "params": {},
+            "progress": 0.0,
+            "rerun": false,
+            "state": "queued",
+            "worker_type": "oncue.worker.TestWorker"
+        }    
+
+## Job [/api/jobs/{id}]
+An individual job and all of its details
+
++ Parameters
+    + id (required, number, `1`) ... Numeric `id` of the Job to perform the action with.
+    
+### Retrieve a Job [GET]
++ Response 200 (application/json)
+
+        {
+            "enqueued_at": "2014-03-09T22:23:01.833Z",
+            "started_at": "2014-03-09T22:23:05.995Z",
+            "completed_at": "2014-03-09T22:23:06.006Z",
+            "error_message": null,
+            "id": 1,
+            "params": {
+                "expiration-age": "24 hours",
+                "include-failed-jobs": "true"
+            },
+            "progress": 1.0,
+            "rerun": false,
+            "state": "complete",
+            "worker_type": "oncue.worker.MaintenanceWorker"
+        }
+            
+### Remove a Job [DELETE]
++ Response 200

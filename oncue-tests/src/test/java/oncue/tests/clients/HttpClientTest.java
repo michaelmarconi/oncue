@@ -1,14 +1,20 @@
-package oncue.client;
+package oncue.tests.clients;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
+import oncue.client.Client;
+import oncue.client.ClientException;
+import oncue.client.HttpClient;
 import oncue.common.messages.Job;
 
 import org.joda.time.DateTime;
@@ -33,14 +39,16 @@ import com.google.api.client.util.StreamingContent;
 
 public class HttpClientTest {
 
-	private static String sampleResponse = "{\"enqueued_at\" : \"2013-03-23T12:13:14+00:00\",\"worker_type\" : \"com.example.ExampleWorker\",\"id\" : 2,\"params\" : {\"key1\" : \"Value 1\",\"key2\" : \"Value 2\"},\"progress\" : 0.5  }";
+	private static String samplePostJobsResponse = "{\"enqueued_at\" : \"2013-03-23T12:13:14+00:00\",\"worker_type\" : \"com.example.ExampleWorker\",\"id\" : 2,\"params\" : {\"key1\" : \"Value 1\",\"key2\" : \"Value 2\"},\"progress\" : 0.5}";
+
+	private static String sampleGetJobsResponse = "[{\"enqueued_at\" : \"2013-03-23T12:13:14+00:00\",\"worker_type\" : \"com.example.ExampleWorker\",\"id\" : 2,\"params\" : {\"key1\" : \"Value 1\",\"key2\" : \"Value 2\"},\"progress\" : 0.5 }]";
 
 	@Rule
 	public ExpectedException expectedException = ExpectedException.none();
 
 	@Test
 	public void clientPostsToConfiguredUrl() throws ClientException {
-		ClientMockTransport transport = new ClientMockTransport(200, sampleResponse);
+		ClientMockTransport transport = new ClientMockTransport(200, samplePostJobsResponse);
 		Client client = new HttpClient(transport);
 		client.enqueueJob("com.example.SubmittedJob");
 
@@ -49,7 +57,7 @@ public class HttpClientTest {
 
 	@Test
 	public void clientPostsWorkerNameInRequestBody() throws ClientException, IOException {
-		ClientMockTransport transport = new ClientMockTransport(200, sampleResponse);
+		ClientMockTransport transport = new ClientMockTransport(200, samplePostJobsResponse);
 		Client client = new HttpClient(transport);
 		client.enqueueJob("com.example.SubmittedJob");
 		Map<String, Object> requestMap = transport.getRequestContentAsMap();
@@ -60,7 +68,7 @@ public class HttpClientTest {
 	@SuppressWarnings("rawtypes")
 	@Test
 	public void clientPostsEmptyParamsInBody() throws ClientException, IOException {
-		ClientMockTransport transport = new ClientMockTransport(200, sampleResponse);
+		ClientMockTransport transport = new ClientMockTransport(200, samplePostJobsResponse);
 		Client client = new HttpClient(transport);
 		client.enqueueJob("com.example.SubmittedJob");
 		Map<String, Object> requestMap = transport.getRequestContentAsMap();
@@ -72,7 +80,7 @@ public class HttpClientTest {
 
 	@Test
 	public void clientPostsNonEmptyParamsInBody() throws ClientException, IOException {
-		ClientMockTransport transport = new ClientMockTransport(200, sampleResponse);
+		ClientMockTransport transport = new ClientMockTransport(200, samplePostJobsResponse);
 		Client client = new HttpClient(transport);
 
 		Map<String, String> params = new HashMap<>();
@@ -91,7 +99,7 @@ public class HttpClientTest {
 
 	@Test
 	public void clientParsesValidResponseIntoJob() throws ClientException {
-		ClientMockTransport transport = new ClientMockTransport(200, sampleResponse);
+		ClientMockTransport transport = new ClientMockTransport(200, samplePostJobsResponse);
 		Client client = new HttpClient(transport);
 
 		Job job = client.enqueueJob("com.example.SubmittedJob");
@@ -118,11 +126,59 @@ public class HttpClientTest {
 
 	@Test
 	public void clientThrowsExceptionWhenNon200ResponseCodeReturned() throws ClientException {
-		ClientMockTransport transport = new ClientMockTransport(404, sampleResponse);
+		ClientMockTransport transport = new ClientMockTransport(404, samplePostJobsResponse);
 		Client client = new HttpClient(transport);
 
 		expectedException.expect(ClientException.class);
 		client.enqueueJob("com.example.SubmittedJob");
+	}
+
+	@Test
+	public void getJobsParsesValidResponseIntoCollectionOfJobs() throws ClientException {
+		ClientMockTransport transport = new ClientMockTransport(200, sampleGetJobsResponse);
+		Client client = new HttpClient(transport);
+		
+		Collection<Job> jobs = client.getJobs();
+		
+		assertNotNull(jobs);
+		assertEquals(1, jobs.size());
+		
+		Iterator<Job> jobsIterator = jobs.iterator();
+		
+		assertNotNull(jobsIterator);
+		
+		assertTrue(jobsIterator.hasNext());
+		
+		Job job = jobsIterator.next();
+		
+		assertEquals(2, job.getId());
+		assertTrue(new DateTime(2013, 3, 23, 12, 13, 14, DateTimeZone.forID("+00:00")).compareTo(job.getEnqueuedAt()) == 0);
+		assertEquals(0.5, (double) job.getProgress(), 0);
+		assertEquals("com.example.ExampleWorker", job.getWorkerType());
+		assertNotNull(job.getParams());
+		assertEquals(2, job.getParams().size());
+		assertEquals("Value 1", job.getParams().get("key1"));
+		assertEquals("Value 2", job.getParams().get("key2"));
+		
+		assertFalse(jobsIterator.hasNext());
+	}
+
+	@Test
+	public void getJobsThrowsExceptionWhenInvalidResponseBodyReturned() throws ClientException {
+		ClientMockTransport transport = new ClientMockTransport(200, "nonsense");
+		Client client = new HttpClient(transport);
+		
+		expectedException.expect(ClientException.class);
+		client.getJobs();
+	}
+
+	@Test
+	public void getJobsThrowsExceptionWhenNon200ResponseCodeReturned() throws ClientException {
+		ClientMockTransport transport = new ClientMockTransport(404, sampleGetJobsResponse);
+		Client client = new HttpClient(transport);
+		
+		expectedException.expect(ClientException.class);
+		client.getJobs();
 	}
 
 	public class ClientMockTransport extends MockHttpTransport {
