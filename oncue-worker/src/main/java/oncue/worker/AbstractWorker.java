@@ -13,30 +13,20 @@
  ******************************************************************************/
 package oncue.worker;
 
-import static akka.pattern.Patterns.ask;
-
-import java.util.Map;
-
-import oncue.common.exceptions.EnqueueJobException;
-import oncue.common.exceptions.RetrieveJobSummaryException;
-import oncue.common.messages.EnqueueJob;
+import oncue.client.AkkaClient;
+import oncue.client.Client;
 import oncue.common.messages.Job;
 import oncue.common.messages.Job.State;
 import oncue.common.messages.JobProgress;
-import oncue.common.messages.JobSummary;
-import oncue.common.messages.SimpleMessages.SimpleMessage;
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
 
 import org.joda.time.DateTime;
 
-import scala.concurrent.Await;
 import akka.actor.ActorRef;
 import akka.actor.UntypedActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
-import akka.pattern.AskTimeoutException;
-import akka.util.Timeout;
 
 public abstract class AbstractWorker extends UntypedActor {
 
@@ -44,51 +34,14 @@ public abstract class AbstractWorker extends UntypedActor {
 
 	protected Job job;
 
-	protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
+	protected LoggingAdapter log = Logging.getLogger(getContext().system(),
+			this);
 
-	protected Settings settings = SettingsProvider.SettingsProvider.get(getContext().system());
+	protected Settings settings = SettingsProvider.SettingsProvider
+			.get(getContext().system());
 
-	/**
-	 * An implementation of the functionality available at the remote scheduler.
-	 * Workers should get hold of a reference to this by calling
-	 * 'getScheduler()'.
-	 */
-	private RemoteScheduler remoteScheduler = new RemoteScheduler() {
-
-		@Override
-		public void enqueueJob(String workerType, Map<String, String> jobParameters) throws EnqueueJobException {
-			try {
-				Await.result(
-						ask(getContext().actorFor(settings.SCHEDULER_PATH), new EnqueueJob(workerType, jobParameters),
-								new Timeout(settings.SCHEDULER_TIMEOUT)), settings.SCHEDULER_TIMEOUT);
-			} catch (Exception e) {
-				if (e instanceof AskTimeoutException) {
-					log.error(e, "Timeout waiting for scheduler to enqueue job");
-				} else {
-					log.error(e, "Failed to enqueue job");
-				}
-
-				throw new EnqueueJobException(e);
-			}
-		}
-
-		@Override
-		public JobSummary getJobSummary() throws RetrieveJobSummaryException {
-			try {
-				return (JobSummary) Await.result(
-						ask(getContext().actorFor(settings.SCHEDULER_PATH), SimpleMessage.JOB_SUMMARY, new Timeout(
-								settings.SCHEDULER_TIMEOUT)), settings.SCHEDULER_TIMEOUT);
-			} catch (Exception e) {
-				if (e instanceof AskTimeoutException) {
-					log.error(e, "Timeout waiting for scheduler to respond with job summary");
-				} else {
-					log.error(e, "Failed to retrieve job summary");
-				}
-
-				throw new RetrieveJobSummaryException(e);
-			}
-		}
-	};
+	private Client client = new AkkaClient(getContext().system(), getContext()
+			.actorFor(settings.SCHEDULER_PATH));
 
 	/**
 	 * Begin working on a job immediately. Once the worker returns from this
@@ -100,13 +53,13 @@ public abstract class AbstractWorker extends UntypedActor {
 	protected abstract void doWork(Job job) throws Exception;
 
 	/**
-	 * @return an implementation of {@linkplain RemoteScheduler}, which
-	 *         represents the functionality available on the remote scheduler
-	 *         component. This is useful if a worker wants to enqueue a job or
-	 *         ask for the list of jobs at the scheduler.
+	 * @return an implementation of {@linkplain Client}, which - * represents
+	 *         the functionality available on the remote scheduler - *
+	 *         component. This is useful if a worker wants to enqueue a job or -
+	 *         * ask for the list of jobs at the scheduler. -
 	 */
-	protected RemoteScheduler getScheduler() {
-		return remoteScheduler;
+	protected Client getSchedulerClient() {
+		return client;
 	}
 
 	@Override
@@ -153,7 +106,8 @@ public abstract class AbstractWorker extends UntypedActor {
 	 */
 	protected void reportProgress(double progress) {
 		if (progress < 0 || progress > 1)
-			throw new RuntimeException("Job progress must be reported as a double between 0 and 1");
+			throw new RuntimeException(
+					"Job progress must be reported as a double between 0 and 1");
 		job.setProgress(progress);
 		agent.tell(new JobProgress(job), getSelf());
 	}
