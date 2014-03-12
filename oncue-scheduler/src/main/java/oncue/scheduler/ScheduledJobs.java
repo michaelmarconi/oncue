@@ -23,7 +23,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import oncue.backingstore.BackingStore;
 import oncue.common.messages.Job;
 import oncue.scheduler.exceptions.RemoveScheduleJobException;
-import akka.actor.ActorRef;
 
 /**
  * An encapsulated map of {@linkplain Job}s to the {@linkplain Agent}s they have
@@ -36,7 +35,7 @@ public class ScheduledJobs {
 
 	// Map a list of scheduled jobs to logical agent address
 	private Map<String, List<Job>> scheduledJobs = new ConcurrentHashMap<String, List<Job>>();
-	
+
 	/**
 	 * @param backingStore
 	 *            is an instance of {@linkplain BackingStore}
@@ -53,12 +52,12 @@ public class ScheduledJobs {
 	 * @param jobs
 	 *            is the list of {@linkplain Jobs}s to assign to the agent
 	 */
-	public void addJobs(ActorRef agent, List<Job> jobs) {
+	public void addJobs(String agent, List<Job> jobs) {
 
 		List<Job> assignedJobs = scheduledJobs.get(agent);
 		if (assignedJobs == null) {
 			assignedJobs = new ArrayList<Job>();
-			scheduledJobs.put(agent.path().toString(), assignedJobs);
+			scheduledJobs.put(agent, assignedJobs);
 		}
 		assignedJobs.addAll(jobs);
 		backingStore.addScheduledJobs(jobs);
@@ -118,11 +117,14 @@ public class ScheduledJobs {
 	 * 
 	 * @throws RemoveScheduleJobException
 	 */
-	public void removeJob(Job job, String agent) throws RemoveScheduleJobException {
+	public void removeJob(Job job, String agent)
+			throws RemoveScheduleJobException {
 
 		if (!scheduledJobs.containsKey(agent))
-			throw new RemoveScheduleJobException("There is no registered agent " + agent
-					+ ".  It is possible the scheduler was restarted and this agent has not re-registered yet.");
+			throw new RemoveScheduleJobException(
+					"There is no registered agent "
+							+ agent
+							+ ".  It is possible the scheduler was restarted and this agent has not re-registered yet.");
 
 		Job jobToRemove = null;
 		for (Job scheduledJob : scheduledJobs.get(agent)) {
