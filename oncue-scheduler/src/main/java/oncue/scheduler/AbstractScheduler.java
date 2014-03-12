@@ -265,7 +265,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 
 			// Assign the jobs to the agent
 			unscheduledJobs.removeJobs(workResponse.getJobs());
-			scheduledJobs.addJobs(agent, workResponse.getJobs());
+			scheduledJobs.addJobs(agent.path().toString(), workResponse.getJobs());
 
 			// Tell the agent about the work
 			agent.tell(workResponse, getSelf());
