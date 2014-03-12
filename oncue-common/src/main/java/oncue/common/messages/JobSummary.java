@@ -2,6 +2,7 @@ package oncue.common.messages;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
@@ -21,7 +22,7 @@ public class JobSummary implements Serializable {
 	public JobSummary() {
 	}
 
-	public JobSummary(List<Job> jobs) {
+	public JobSummary(Collection<Job> jobs) {
 		super();
 		for (Job job : jobs) {
 			this.jobs.add((Job) job.clone());

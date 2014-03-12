@@ -27,7 +27,7 @@ public class JobEnqueueingTestWorker extends AbstractWorker {
 		try {
 			// Give this job to a test worker
 			Thread.sleep(500);
-			getScheduler().enqueueJob(TestWorker.class.getName(), job.getParams());
+			getSchedulerClient().enqueueJob(TestWorker.class.getName(), job.getParams());
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}

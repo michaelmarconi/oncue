@@ -13,7 +13,8 @@
  ******************************************************************************/
 package oncue.tests.workers;
 
-import oncue.common.exceptions.RetrieveJobSummaryException;
+import java.util.Collection;
+
 import oncue.common.messages.Job;
 import oncue.common.messages.JobSummary;
 import oncue.worker.AbstractWorker;
@@ -23,9 +24,10 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 public class JobSummaryRequestTestWorker extends AbstractWorker {
 
 	@Override
-	public void doWork(Job job) throws RetrieveJobSummaryException {
-		JobSummary jobSummary = getScheduler().getJobSummary();
+	public void doWork(Job job) throws Exception {
+		Collection<Job> jobs = getSchedulerClient().getJobs();
 		Jedis jedis = new Jedis("localhost");
+		JobSummary jobSummary = new JobSummary(jobs);
 		jedis.set("oncue.tests.workers.JobSummaryRequestTestWorker", jobSummary.toString());
 	}
 
