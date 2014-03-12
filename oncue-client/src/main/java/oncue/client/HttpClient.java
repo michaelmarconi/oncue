@@ -23,7 +23,7 @@ import com.google.api.client.http.HttpTransport;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
-class HttpClient implements Client {
+public class HttpClient implements Client {
 
 	private static GenericUrl jobsUrl;
 	private static ObjectMapper mapper;
@@ -40,7 +40,7 @@ class HttpClient implements Client {
 
 	private HttpRequestFactory requestFactory;
 
-	HttpClient(HttpTransport transport) {
+	public HttpClient(HttpTransport transport) {
 		requestFactory = transport.createRequestFactory();
 	}
 

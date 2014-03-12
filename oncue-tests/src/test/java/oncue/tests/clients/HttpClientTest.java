@@ -1,4 +1,4 @@
-package oncue.client;
+package oncue.tests.clients;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -12,6 +12,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import oncue.client.Client;
+import oncue.client.ClientException;
+import oncue.client.HttpClient;
 import oncue.common.messages.Job;
 
 import org.joda.time.DateTime;
