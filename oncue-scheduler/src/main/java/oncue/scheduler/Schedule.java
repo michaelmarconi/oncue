@@ -21,8 +21,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import oncue.common.messages.Agent;
 import oncue.common.messages.Job;
-import oncue.common.messages.Job.State;
+import oncue.common.messages.UnmodifiableJob.State;
 import oncue.common.messages.WorkResponse;
 import akka.actor.ActorRef;
 

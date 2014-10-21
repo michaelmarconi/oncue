@@ -1,17 +1,15 @@
 /*******************************************************************************
  * Copyright 2013 Michael Marconi
  * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  * 
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  ******************************************************************************/
 package oncue.common.messages;
 
@@ -22,53 +20,9 @@ import java.util.Map;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 
-public class Job implements Serializable, Cloneable {
+public class Job extends UnmodifiableJob implements Serializable, Cloneable {
 
-	public enum State {
-		COMPLETE {
-			public String toString() {
-				return "complete";
-			}
-		},
-		FAILED {
-			public String toString() {
-				return "failed";
-			}
-		},
-		QUEUED {
-			public String toString() {
-				return "queued";
-			}
-		},
-		RUNNING {
-			public String toString() {
-				return "running";
-			}
-		},
-		SCHEDULED {
-			public String toString() {
-				return "scheduled";
-			}
-		},
-		DELETED {
-			public String toString() {
-				return "deleted";
-			}
-		}
-	}
-
-	private static final long serialVersionUID = -2375588116753600617L;
-
-	private DateTime enqueuedAt;
-	private DateTime startedAt;
-	private DateTime completedAt;
-	private String errorMessage;
-	private long id;
-	private Map<String, String> params;
-	private Double progress;
-	private boolean rerun;
-	private State state;
-	private String workerType;
+	private static final long serialVersionUID = 1855878065709808580L;
 
 	/**
 	 * This default constructor required for Jackson JSON serialization
@@ -81,16 +35,12 @@ public class Job implements Serializable, Cloneable {
 	}
 
 	/**
-	 * Create a new job. Use this constructor when you are creating a job for
-	 * the first time. The job enqueued time will be set to now and the job
-	 * state will be set to queued.
+	 * Create a new job. Use this constructor when you are creating a job for the first time. The
+	 * job enqueued time will be set to now and the job state will be set to queued.
 	 * 
-	 * @param id
-	 *            is the unique identifier for this job
+	 * @param id is the unique identifier for this job
 	 * 
-	 * @param workerType
-	 *            determines which type of worker is capable of completing this
-	 *            job
+	 * @param workerType determines which type of worker is capable of completing this job
 	 */
 	public Job(long id, String workerType) {
 		this();
@@ -124,46 +74,6 @@ public class Job implements Serializable, Cloneable {
 		return clone;
 	}
 
-	public DateTime getCompletedAt() {
-		return completedAt;
-	}
-
-	public DateTime getEnqueuedAt() {
-		return enqueuedAt;
-	}
-
-	public String getErrorMessage() {
-		return errorMessage;
-	}
-
-	public long getId() {
-		return id;
-	}
-
-	public Map<String, String> getParams() {
-		return params;
-	}
-
-	public Double getProgress() {
-		return progress;
-	}
-
-	public DateTime getStartedAt() {
-		return startedAt;
-	}
-
-	public State getState() {
-		return state;
-	}
-
-	public String getWorkerType() {
-		return workerType;
-	}
-
-	public boolean isRerun() {
-		return rerun;
-	}
-
 	public void setCompletedAt(DateTime completedAt) {
 		this.completedAt = completedAt;
 	}
@@ -194,13 +104,6 @@ public class Job implements Serializable, Cloneable {
 
 	public void setState(State state) {
 		this.state = state;
-	}
-
-	@Override
-	public String toString() {
-		return String
-				.format("Job %s (state=%s, enqueuedAt=%s, startedAt=%s, completedAt=%s, workerType=%s, re-run=%s, progress=%s)",
-						id, state, getEnqueuedAt(), getStartedAt(), getCompletedAt(), workerType, rerun, progress);
 	}
 
 }

@@ -16,12 +16,17 @@
 package oncue.scheduler;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import oncue.backingstore.BackingStore;
+import oncue.common.messages.Agent;
 import oncue.common.messages.Job;
+import oncue.common.messages.UnmodifiableJob;
 import oncue.scheduler.exceptions.RemoveScheduleJobException;
 
 /**
@@ -134,5 +139,13 @@ public class ScheduledJobs {
 
 		scheduledJobs.get(agent).remove(jobToRemove);
 		backingStore.removeScheduledJob(job);
+	}
+
+	public List<UnmodifiableJob> getScheduledJobs() {
+		List<UnmodifiableJob> response = new ArrayList<>();
+		for(List<Job> jobs : scheduledJobs.values()) {
+			response.addAll(jobs);
+		}
+		return response;
 	}
 }

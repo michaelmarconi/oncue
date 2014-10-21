@@ -19,6 +19,7 @@ import static java.lang.String.format;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -27,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import oncue.backingstore.BackingStore;
+import oncue.common.comparators.JobComparator;
 import oncue.common.events.AgentStartedEvent;
 import oncue.common.events.AgentStoppedEvent;
 import oncue.common.events.JobCleanupEvent;
@@ -41,12 +43,13 @@ import oncue.common.messages.CleanupJobs;
 import oncue.common.messages.DeleteJob;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
-import oncue.common.messages.Job.State;
 import oncue.common.messages.JobFailed;
 import oncue.common.messages.JobProgress;
 import oncue.common.messages.JobSummary;
 import oncue.common.messages.RerunJob;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
+import oncue.common.messages.UnmodifiableJob;
+import oncue.common.messages.UnmodifiableJob.State;
 import oncue.common.messages.WorkAvailable;
 import oncue.common.messages.WorkResponse;
 import oncue.common.settings.Settings;
@@ -103,6 +106,10 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	// The queue of unscheduled jobs
 	protected UnscheduledJobs unscheduledJobs;
 
+	protected List<UnmodifiableJob> getScheduledJobs() {
+		return scheduledJobs.getScheduledJobs();
+	}
+
 	/**
 	 * @param backingStore
 	 *            is an implementation of {@linkplain BackingStore}
@@ -115,7 +122,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 		try {
 			this.backingStore = backingStore.getConstructor(ActorSystem.class, Settings.class).newInstance(
 					getContext().system(), settings);
-			unscheduledJobs = new UnscheduledJobs(this.backingStore, log);
+			unscheduledJobs = new UnscheduledJobs(this.backingStore, log, getComparator());
 			scheduledJobs = new ScheduledJobs(this.backingStore);
 			log.info("{} is running, backed by {}", getClass().getSimpleName(), backingStore.getSimpleName());
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
@@ -123,6 +130,10 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 			throw new ActorInitializationException(getSelf(), "Failed to create a backing store from class: "
 					+ backingStore.getName(), e);
 		}
+	}
+
+	protected Comparator<Job> getComparator() {
+		return new JobComparator();
 	}
 
 	/**

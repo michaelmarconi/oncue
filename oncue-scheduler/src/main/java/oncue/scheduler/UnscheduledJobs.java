@@ -1,20 +1,19 @@
 /*******************************************************************************
  * Copyright 2013 Michael Marconi
  * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  * 
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  ******************************************************************************/
 package oncue.scheduler;
 
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -22,13 +21,12 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 import oncue.backingstore.BackingStore;
-import oncue.common.comparators.JobComparator;
 import oncue.common.messages.Job;
 import akka.event.LoggingAdapter;
 
 /**
- * An encapsulated job queue of unscheduled {@linkplain Job}s that relies on a
- * backing store for persistence.
+ * An encapsulated job queue of unscheduled {@linkplain Job}s that relies on a backing store for
+ * persistence.
  */
 public class UnscheduledJobs {
 
@@ -38,14 +36,15 @@ public class UnscheduledJobs {
 	private LoggingAdapter log;
 
 	// The prioritised queue of unscheduled jobs
-	private ConcurrentSkipListSet<Job> unscheduledJobs = new ConcurrentSkipListSet<>(new JobComparator());
+	private final ConcurrentSkipListSet<Job> unscheduledJobs;
 
 	/**
-	 * @param backingStore
-	 *            is an instance of {@linkplain BackingStore}
+	 * @param backingStore is an instance of {@linkplain BackingStore}
 	 */
-	public UnscheduledJobs(BackingStore backingStore, LoggingAdapter log) {
+	public UnscheduledJobs(BackingStore backingStore, LoggingAdapter log,
+			Comparator<Job> jobComparator) {
 		this.backingStore = backingStore;
+		this.unscheduledJobs = new ConcurrentSkipListSet<>(jobComparator);
 		this.log = log;
 		restoreJobs();
 	}
@@ -54,7 +53,7 @@ public class UnscheduledJobs {
 	 * Add a job to the queue
 	 */
 	public void addJob(Job job) {
-		backingStore.addUnscheduledJob(job);		
+		backingStore.addUnscheduledJob(job);
 		unscheduledJobs.add(job);
 	}
 

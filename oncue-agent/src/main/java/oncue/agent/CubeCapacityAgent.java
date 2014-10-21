@@ -41,6 +41,5 @@ public class CubeCapacityAgent extends AbstractAgent {
 		}
 		getScheduler().tell(new CubeCapacityWorkRequest(getSelf(), getWorkerTypes(), TOTAL_MEMORY - usedMemory),
 				getSelf());
-
 	}
 }
