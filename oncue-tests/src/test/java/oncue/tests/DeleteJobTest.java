@@ -24,8 +24,8 @@ import oncue.common.exceptions.DeleteJobException;
 import oncue.common.messages.DeleteJob;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
+import oncue.common.messages.Job.State;
 import oncue.common.messages.JobProgress;
-import oncue.common.messages.UnmodifiableJob.State;
 import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.TestWorker;
 

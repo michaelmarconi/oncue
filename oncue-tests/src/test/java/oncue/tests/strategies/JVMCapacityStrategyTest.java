@@ -74,29 +74,11 @@ public class JVMCapacityStrategyTest extends ActorSystemTest {
 		new JavaTestKit(system) {
 
 			{
-				// Create a scheduler probe
-				final JavaTestKit schedulerProbe = new JavaTestKit(system) {
-					{
-						new IgnoreMsg() {
-
-							@Override
-							protected boolean ignore(Object message) {
-								return false;
-								// TODO Is this still needed?
-								// return !(message instanceof JobProgress ||
-								// message instanceof Job);
-							}
-						};
-					}
-				};
-
 				// Create a naked JVM capacity-aware scheduler
 				final Props schedulerProps = new Props(new UntypedActorFactory() {
 					@Override
-					public Actor create() throws Exception {
-						JVMCapacityScheduler scheduler = new JVMCapacityScheduler(null);
-						scheduler.injectProbe(schedulerProbe.getRef());
-						return scheduler;
+					public Actor create() {
+						return new JVMCapacityScheduler(null);
 					}
 				});
 				final TestActorRef<JVMCapacityScheduler> schedulerRef = TestActorRef.create(system, schedulerProps,

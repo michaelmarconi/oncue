@@ -23,14 +23,18 @@ import java.util.Set;
 import oncue.backingstore.BackingStore;
 import oncue.common.messages.CubeCapacityWorkRequest;
 import oncue.common.messages.Job;
-import oncue.common.messages.UnmodifiableJob;
 
 import com.google.common.collect.Sets;
 import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
 
 /**
- * TODO
+ * A barebones Cube scheduler.
+ * 
+ * Hands out jobs in priority order. This assumes a Job has a parameter value of "priority". If a
+ * job does not provide a priority, it is assumed to be 0 (low priority).
+ * 
+ * This scheduler will only provide
+ * 
  */
 public class CubeCapacityScheduler extends AbstractScheduler<CubeCapacityWorkRequest> {
 
@@ -42,20 +46,16 @@ public class CubeCapacityScheduler extends AbstractScheduler<CubeCapacityWorkReq
 		return new PriorityOrderedStableEnqueueDateJobComparator();
 	}
 
-	private boolean isRequiredWorkerType(UnmodifiableJob job) {
+	private boolean isRequiredWorkerType(Job job) {
 		Config config = getContext().system().settings().config();
-//		System.err.println(config.root().render());
-
 		return job.getWorkerType().equals(
-				config.getConfig("oncue.scheduler.cube_capacity_scheduler")
-						.getString("worker_type"));
-//		return job.getWorkerType().equals("com.modeltwozero.universal.oncue.workers.MatchingWorker");
+				config.getConfig("oncue.scheduler.cube_capacity_scheduler").getString(
+						"matching_worker_type"));
 	}
 
 	@Override
 	protected void scheduleJobs(CubeCapacityWorkRequest workRequest) {
-//		System.err.println(ConfigFactory.load().root().render());
-		Set<String> runningMatchingJobs = getRunningMatchingJobs();
+		Set<String> runningMatchingJobs = getScheduledMatchingJobCodes();
 		List<Job> jobs = new ArrayList<>();
 		int allocatedMemory = 0;
 
@@ -65,10 +65,7 @@ public class CubeCapacityScheduler extends AbstractScheduler<CubeCapacityWorkReq
 			Job job = iterator.next();
 			if (workRequest.getWorkerTypes().contains(job.getWorkerType())) {
 				Map<String, String> params = job.getParams();
-				int requiredMemory = 0;
-				if(params != null && params.get("memory") != null) { 
-					requiredMemory = Integer.parseInt(params.get("memory"));
-				}
+				int requiredMemory = getRequiredMemory(job);
 				if (requiredMemory + allocatedMemory <= workRequest.getAvailableMemory()) {
 					if (isRequiredWorkerType(job)) {
 						String processCode = params.get("process_code");
@@ -94,15 +91,26 @@ public class CubeCapacityScheduler extends AbstractScheduler<CubeCapacityWorkReq
 		dispatchJobs(schedule);
 	}
 
-	private Set<String> getRunningMatchingJobs() {
-		List<UnmodifiableJob> scheduledJobs = getScheduledJobs();
-		Set<String> runningMatchingJobs = Sets.newHashSet();
-		for (UnmodifiableJob job : scheduledJobs) {
+	private int getRequiredMemory(Job job) {
+		Map<String, String> params = job.getParams();
+		if (params == null || !params.containsKey("memory")) {
+			Config config = getContext().system().settings().config();
+			return config.getConfig("oncue.scheduler.cube_capacity_scheduler").getInt(
+					"default_requirements." + job.getWorkerType() + ".memory");
+		} else {
+			return Integer.parseInt(params.get("memory"));
+		}
+	}
+
+	private Set<String> getScheduledMatchingJobCodes() {
+		List<Job> scheduledJobs = getScheduledJobs();
+		Set<String> scheduledMatchingJobCodes = Sets.newHashSet();
+		for (Job job : scheduledJobs) {
 			if (isRequiredWorkerType(job)) {
-				runningMatchingJobs.add(job.getParams().get("process_code"));
+				scheduledMatchingJobCodes.add(job.getParams().get("process_code"));
 			}
 		}
-		return runningMatchingJobs;
+		return scheduledMatchingJobCodes;
 	}
 
 }

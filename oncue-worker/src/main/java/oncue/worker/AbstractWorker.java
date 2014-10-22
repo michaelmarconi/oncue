@@ -16,8 +16,8 @@ package oncue.worker;
 import oncue.client.AkkaClient;
 import oncue.client.Client;
 import oncue.common.messages.Job;
+import oncue.common.messages.Job.State;
 import oncue.common.messages.JobProgress;
-import oncue.common.messages.UnmodifiableJob.State;
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
 

@@ -43,13 +43,12 @@ import oncue.common.messages.CleanupJobs;
 import oncue.common.messages.DeleteJob;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
+import oncue.common.messages.Job.State;
 import oncue.common.messages.JobFailed;
 import oncue.common.messages.JobProgress;
 import oncue.common.messages.JobSummary;
 import oncue.common.messages.RerunJob;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
-import oncue.common.messages.UnmodifiableJob;
-import oncue.common.messages.UnmodifiableJob.State;
 import oncue.common.messages.WorkAvailable;
 import oncue.common.messages.WorkResponse;
 import oncue.common.settings.Settings;
@@ -106,8 +105,12 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	// The queue of unscheduled jobs
 	protected UnscheduledJobs unscheduledJobs;
 
-	protected List<UnmodifiableJob> getScheduledJobs() {
+	public List<Job> getScheduledJobs() {
 		return scheduledJobs.getScheduledJobs();
+	}
+
+	public int getUnscheduledJobsCount() {
+		return unscheduledJobs.getSize();
 	}
 
 	/**
@@ -699,4 +702,5 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 			}
 		}
 	}
+
 }

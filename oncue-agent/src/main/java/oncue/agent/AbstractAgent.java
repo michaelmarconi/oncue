@@ -25,10 +25,10 @@ import java.util.Set;
 
 import oncue.common.comparators.JobComparator;
 import oncue.common.messages.Job;
+import oncue.common.messages.Job.State;
 import oncue.common.messages.JobFailed;
 import oncue.common.messages.JobProgress;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
-import oncue.common.messages.UnmodifiableJob.State;
 import oncue.common.messages.WorkAvailable;
 import oncue.common.messages.WorkResponse;
 import oncue.common.settings.Settings;

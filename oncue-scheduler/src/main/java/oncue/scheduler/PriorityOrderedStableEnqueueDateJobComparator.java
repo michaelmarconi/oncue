@@ -20,6 +20,9 @@ public class PriorityOrderedStableEnqueueDateJobComparator implements Comparator
 	}
 
 	private int getPriority(Job j) {
+		if (j.getParams() == null) {
+			return 0;
+		}
 		String priority = j.getParams().get("priority");
 		if (priority == null) {
 			return 0;

@@ -40,7 +40,7 @@ public class CubeCapacityWorkRequest extends AbstractWorkRequest {
 
 	@Override
 	public String toString() {
-		return "Cube capacity work request for a maximum of " + availableMemory + " with of jobs";
+		return "Cube capacity work request for a maximum of " + availableMemory;
 	}
 
 }
