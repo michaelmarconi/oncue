@@ -62,8 +62,8 @@ public class ThrottledLoadTest extends ActorSystemTest {
 					}
 				};
 
-				// Create a throttled, Redis-backed scheduler with a probe
-				ActorRef scheduler = createScheduler(system, schedulerProbe.getRef());
+				// Create a throttled, memory-backed scheduler with a probe
+				final ActorRef scheduler = createScheduler(system, schedulerProbe.getRef());
 
 				log.info("Enqueing {} jobs...", JOB_COUNT);
 
@@ -73,41 +73,44 @@ public class ThrottledLoadTest extends ActorSystemTest {
 				}
 
 				// Wait for all jobs to be enqueued
-				for (int i = 0; i < JOB_COUNT; i++) {
-					schedulerProbe.expectMsgClass(Job.class);
-				}
+				new AwaitCond() {
+
+					@Override
+					protected boolean cond() {
+						scheduler.tell(SimpleMessage.JOB_SUMMARY, getRef());
+						JobSummary summary = expectMsgClass(JobSummary.class);
+						return summary.getJobs().size() == JOB_COUNT;
+					}
+				};
 
 				log.info("Jobs enqueued.");
 
 				// Create a throttled agent
-				createAgent(system, new HashSet<String>(Arrays.asList(SimpleLoadTestWorker.class.getName())), null);
+				createAgent(system,
+						new HashSet<String>(Arrays.asList(SimpleLoadTestWorker.class.getName())),
+						null);
 
 				// Wait until all the jobs have completed
-				final Jedis redis = RedisBackingStore.getConnection();
-				new AwaitCond(duration("5 minutes"), duration("10 seconds")) {
+				new AwaitCond(duration("60 seconds"), duration("5 seconds")) {
 
 					@Override
 					protected boolean cond() {
-						Job finalJob;
-						try {
-							finalJob = RedisBackingStore.loadJob(JOB_COUNT, redis);
-							return finalJob.getProgress() == 1.0;
-						} catch (RuntimeException e) {
-							// Job may not exist in Redis yet
-							return false;
+						scheduler.tell(SimpleMessage.JOB_SUMMARY, getRef());
+						@SuppressWarnings("cast")
+						JobSummary summary = (JobSummary) expectMsgClass(JobSummary.class);
+						int completed = 0;
+						for (Job job : summary.getJobs()) {
+							if (job.getState() == State.COMPLETE) {
+								completed++;
+							}
 						}
+						System.err.println("Completed jobs: " + completed + " out of "
+								+ summary.getJobs().size());
+						return completed == JOB_COUNT;
 					}
 				};
 
-				// Now, check all the jobs completed in Redis
-				for (int i = 0; i < JOB_COUNT; i++) {
-					Job job = RedisBackingStore.loadJob(i + 1, redis);
-					Assert.assertEquals(1.0, job.getProgress());
-				}
-
 				log.info("All jobs were processed!");
-
-				RedisBackingStore.releaseConnection(redis);
 			}
 		};
 	}

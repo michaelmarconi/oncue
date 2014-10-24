@@ -65,27 +65,34 @@ public class DistributedThrottledLoadTest extends DistributedActorSystemTest {
 
 					@Override
 					protected boolean ignore(Object message) {
-						return !(message instanceof JobProgress || message instanceof EnqueueJob);
+						return !(message instanceof JobProgress || message instanceof EnqueueJob || message instanceof JobSummary);
 					}
 				};
 			}
 		};
 
 		// Create a throttled, Redis-backed scheduler with a probe
-		ActorRef scheduler = createScheduler(schedulerProbe.getRef());
+		final ActorRef scheduler = createScheduler(schedulerProbe.getRef());
 
 		serviceLog.info("Enqueing {} jobs...", JOB_COUNT);
 
 		// Enqueue a stack of jobs
 		for (int i = 0; i < JOB_COUNT; i++) {
-			scheduler.tell(new EnqueueJob(SimpleLoadTestWorker.class.getName()), queueManagerProbe.getRef());
+			scheduler.tell(new EnqueueJob(SimpleLoadTestWorker.class.getName()),
+					queueManagerProbe.getRef());
 			queueManagerProbe.expectMsgClass(Job.class);
 		}
 
 		// Wait for all jobs to be enqueued
-		for (int i = 0; i < JOB_COUNT; i++) {
-			schedulerProbe.expectMsgClass(EnqueueJob.class);
-		}
+		new AwaitCond(duration("60 seconds"), duration("5 seconds")) {
+
+			@Override
+			protected boolean cond() {
+				scheduler.tell(SimpleMessage.JOB_SUMMARY, queueManagerProbe.getRef());
+				JobSummary summary = queueManagerProbe.expectMsgClass(JobSummary.class);
+				return summary.getJobs().size() == JOB_COUNT;
+			}
+		};
 
 		serviceLog.info("Jobs enqueued.");
 
@@ -93,36 +100,25 @@ public class DistributedThrottledLoadTest extends DistributedActorSystemTest {
 		createAgent(new HashSet<String>(Arrays.asList(SimpleLoadTestWorker.class.getName())), null);
 
 		// Wait until all the jobs have completed
-		final Jedis redis = RedisBackingStore.getConnection();
+		new AwaitCond(duration("5 minutes"), duration("5 seconds")) {
 
-		new JavaTestKit(serviceSystem) {
-			{
-				new AwaitCond(new FiniteDuration(5, TimeUnit.MINUTES), new FiniteDuration(10, TimeUnit.SECONDS)) {
-
-					@Override
-					protected boolean cond() {
-						Job finalJob;
-						try {
-							finalJob = RedisBackingStore.loadJob(JOB_COUNT, redis);
-							return finalJob.getProgress() == 1.0;
-						} catch (RuntimeException e) {
-							// Job may not exist in Redis yet
-							return false;
-						}
+			@Override
+			protected boolean cond() {
+				scheduler.tell(SimpleMessage.JOB_SUMMARY, queueManagerProbe.getRef());
+				@SuppressWarnings("cast")
+				JobSummary summary = (JobSummary) queueManagerProbe.expectMsgClass(JobSummary.class);
+				int completed = 0;
+				for (Job job : summary.getJobs()) {
+					if (job.getState() == State.COMPLETE) {
+						completed++;
 					}
-				};
+				}
+				return completed == JOB_COUNT;
 			}
 		};
 
-		// Now, check all the jobs completed in Redis
-		for (int i = 0; i < JOB_COUNT; i++) {
-			Job job = RedisBackingStore.loadJob(i + 1, redis);
-			Assert.assertEquals(1.0, job.getProgress());
-		}
-
 		serviceLog.info("All jobs were processed!");
 
-		RedisBackingStore.releaseConnection(redis);
 	}
 
 }
