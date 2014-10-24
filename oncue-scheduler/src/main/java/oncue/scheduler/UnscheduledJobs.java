@@ -19,7 +19,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import oncue.backingstore.BackingStore;
 import oncue.common.comparators.JobComparator;
@@ -38,7 +39,7 @@ public class UnscheduledJobs {
 	private LoggingAdapter log;
 
 	// The prioritised queue of unscheduled jobs
-	private ConcurrentSkipListSet<Job> unscheduledJobs = new ConcurrentSkipListSet<>(new JobComparator());
+	private SortedSet<Job> unscheduledJobs = new TreeSet<>(new JobComparator());
 
 	/**
 	 * @param backingStore
@@ -54,7 +55,7 @@ public class UnscheduledJobs {
 	 * Add a job to the queue
 	 */
 	public void addJob(Job job) {
-		backingStore.addUnscheduledJob(job);		
+		backingStore.addUnscheduledJob(job);
 		unscheduledJobs.add(job);
 	}
 

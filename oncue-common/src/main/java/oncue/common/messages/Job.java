@@ -59,25 +59,21 @@ public class Job implements Serializable, Cloneable {
 
 	private static final long serialVersionUID = -2375588116753600617L;
 
-	private DateTime enqueuedAt;
+	private DateTime enqueuedAt = new DateTime(DateTimeUtils.currentTimeMillis());
 	private DateTime startedAt;
 	private DateTime completedAt;
 	private String errorMessage;
 	private long id;
 	private Map<String, String> params;
-	private Double progress;
-	private boolean rerun;
-	private State state;
+	private double progress = 0.0;
+	private boolean rerun = false;
+	private State state = State.QUEUED;
 	private String workerType;
 
 	/**
 	 * This default constructor required for Jackson JSON serialization
 	 */
 	public Job() {
-		this.setEnqueuedAt(new DateTime(DateTimeUtils.currentTimeMillis()));
-		this.state = State.QUEUED;
-		this.progress = 0.0;
-		this.setRerun(false);
 	}
 
 	/**
@@ -144,7 +140,7 @@ public class Job implements Serializable, Cloneable {
 		return params;
 	}
 
-	public Double getProgress() {
+	public double getProgress() {
 		return progress;
 	}
 

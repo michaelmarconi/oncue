@@ -249,8 +249,7 @@ public class RedisBackingStore extends AbstractBackingStore {
 		if (job.getState() != null)
 			transaction.hset(jobKey, JOB_STATE, job.getState().toString());
 
-		if (job.getProgress() != null)
-			transaction.hset(jobKey, JOB_PROGRESS, job.getProgress().toString());
+		transaction.hset(jobKey, JOB_PROGRESS, String.valueOf(job.getProgress()));
 
 		if (job.getErrorMessage() != null)
 			transaction.hset(jobKey, JOB_ERROR_MESSAGE, job.getErrorMessage());
@@ -367,7 +366,7 @@ public class RedisBackingStore extends AbstractBackingStore {
 		Jedis redis = getConnection();
 
 		String jobKey = String.format(JOB_KEY, job.getId());
-		redis.hset(jobKey, JOB_PROGRESS, job.getProgress().toString());
+		redis.hset(jobKey, JOB_PROGRESS, String.valueOf(job.getProgress()));
 		redis.hset(jobKey, JOB_STATE, job.getState().toString());
 		if (job.getStartedAt() != null)
 			redis.hset(jobKey, JOB_STARTED_AT, job.getStartedAt().toString());

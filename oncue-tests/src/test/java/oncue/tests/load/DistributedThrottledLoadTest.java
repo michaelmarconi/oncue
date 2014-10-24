@@ -20,14 +20,15 @@ import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
 
 import junit.framework.Assert;
+import oncue.agent.ThrottledAgent;
 import oncue.backingstore.RedisBackingStore;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobProgress;
+import oncue.scheduler.ThrottledScheduler;
 import oncue.tests.base.DistributedActorSystemTest;
 import oncue.tests.load.workers.SimpleLoadTestWorker;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import redis.clients.jedis.Jedis;
@@ -42,17 +43,12 @@ import akka.testkit.JavaTestKit;
  * 
  * This test sets up two separate actor systems and uses Netty to remote between
  * them.
- * 
- * TODO Re-instate this test
- * This may cause a mvn:test exception.  Use this command to try an isolate the issue:
- * "mvn -Dtest=DistributedThrottledLoadTest,MissingWorkerTest,RedisBackingStoreTest test"
  */
 public class DistributedThrottledLoadTest extends DistributedActorSystemTest {
 
-	private static final int JOB_COUNT = 20000;
+	private static final int JOB_COUNT = 2000;
 
 	@Test
-	@Ignore("Performance issues need to be cured before we get this running again.")
 	public void distributedThrottledLoadTest() {
 
 		// Create a queue manager probe
