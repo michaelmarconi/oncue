@@ -23,12 +23,10 @@ import oncue.agent.ThrottledAgent;
 import oncue.backingstore.RedisBackingStore;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
-import oncue.common.messages.JobProgress;
 import oncue.scheduler.ThrottledScheduler;
 import oncue.tests.base.ActorSystemTest;
 import oncue.tests.load.workers.SimpleLoadTestWorker;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import redis.clients.jedis.Jedis;
@@ -42,10 +40,9 @@ import akka.testkit.JavaTestKit;
  */
 public class ThrottledLoadTest extends ActorSystemTest {
 
-	private static final int JOB_COUNT = 100000;
+	private static final int JOB_COUNT = 10000;
 
 	@Test
-	@Ignore("Performance issues need to be cured before we get this running again.")
 	public void throttledLoadTest() {
 		new JavaTestKit(system) {
 			{
@@ -56,7 +53,7 @@ public class ThrottledLoadTest extends ActorSystemTest {
 
 							@Override
 							protected boolean ignore(Object message) {
-								return !(message instanceof JobProgress || message instanceof Job);
+								return !(message instanceof EnqueueJob);
 							}
 						};
 					}
@@ -74,7 +71,7 @@ public class ThrottledLoadTest extends ActorSystemTest {
 
 				// Wait for all jobs to be enqueued
 				for (int i = 0; i < JOB_COUNT; i++) {
-					schedulerProbe.expectMsgClass(Job.class);
+					schedulerProbe.expectMsgClass(EnqueueJob.class);
 				}
 
 				log.info("Jobs enqueued.");
