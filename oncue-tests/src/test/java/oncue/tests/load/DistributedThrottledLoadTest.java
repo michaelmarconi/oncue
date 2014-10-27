@@ -15,24 +15,24 @@
  ******************************************************************************/
 package oncue.tests.load;
 
+import static akka.testkit.JavaTestKit.duration;
+
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.concurrent.TimeUnit;
 
-import junit.framework.Assert;
 import oncue.agent.ThrottledAgent;
-import oncue.backingstore.RedisBackingStore;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
+import oncue.common.messages.Job.State;
 import oncue.common.messages.JobProgress;
+import oncue.common.messages.JobSummary;
+import oncue.common.messages.SimpleMessages.SimpleMessage;
 import oncue.scheduler.ThrottledScheduler;
 import oncue.tests.base.DistributedActorSystemTest;
 import oncue.tests.load.workers.SimpleLoadTestWorker;
 
 import org.junit.Test;
 
-import redis.clients.jedis.Jedis;
-import scala.concurrent.duration.FiniteDuration;
 import akka.actor.ActorRef;
 import akka.testkit.JavaTestKit;
 
@@ -61,27 +61,34 @@ public class DistributedThrottledLoadTest extends DistributedActorSystemTest {
 
 					@Override
 					protected boolean ignore(Object message) {
-						return !(message instanceof JobProgress || message instanceof EnqueueJob);
+						return !(message instanceof JobProgress || message instanceof EnqueueJob || message instanceof JobSummary);
 					}
 				};
 			}
 		};
 
 		// Create a throttled, Redis-backed scheduler with a probe
-		ActorRef scheduler = createScheduler(schedulerProbe.getRef());
+		final ActorRef scheduler = createScheduler(schedulerProbe.getRef());
 
 		serviceLog.info("Enqueing {} jobs...", JOB_COUNT);
 
 		// Enqueue a stack of jobs
 		for (int i = 0; i < JOB_COUNT; i++) {
-			scheduler.tell(new EnqueueJob(SimpleLoadTestWorker.class.getName()), queueManagerProbe.getRef());
+			scheduler.tell(new EnqueueJob(SimpleLoadTestWorker.class.getName()),
+					queueManagerProbe.getRef());
 			queueManagerProbe.expectMsgClass(Job.class);
 		}
 
 		// Wait for all jobs to be enqueued
-		for (int i = 0; i < JOB_COUNT; i++) {
-			schedulerProbe.expectMsgClass(EnqueueJob.class);
-		}
+		queueManagerProbe.new AwaitCond(duration("60 seconds"), duration("2 seconds")) {
+
+			@Override
+			protected boolean cond() {
+				scheduler.tell(SimpleMessage.JOB_SUMMARY, queueManagerProbe.getRef());
+				JobSummary summary = queueManagerProbe.expectMsgClass(JobSummary.class);
+				return summary.getJobs().size() == JOB_COUNT;
+			}
+		};
 
 		serviceLog.info("Jobs enqueued.");
 
@@ -89,36 +96,25 @@ public class DistributedThrottledLoadTest extends DistributedActorSystemTest {
 		createAgent(new HashSet<String>(Arrays.asList(SimpleLoadTestWorker.class.getName())), null);
 
 		// Wait until all the jobs have completed
-		final Jedis redis = RedisBackingStore.getConnection();
+		queueManagerProbe.new AwaitCond(duration("5 minutes"), duration("2 seconds")) {
 
-		new JavaTestKit(serviceSystem) {
-			{
-				new AwaitCond(new FiniteDuration(5, TimeUnit.MINUTES), new FiniteDuration(10, TimeUnit.SECONDS)) {
-
-					@Override
-					protected boolean cond() {
-						Job finalJob;
-						try {
-							finalJob = RedisBackingStore.loadJob(JOB_COUNT, redis);
-							return finalJob.getProgress() == 1.0;
-						} catch (RuntimeException e) {
-							// Job may not exist in Redis yet
-							return false;
-						}
+			@Override
+			protected boolean cond() {
+				scheduler.tell(SimpleMessage.JOB_SUMMARY, queueManagerProbe.getRef());
+				@SuppressWarnings("cast")
+				JobSummary summary = (JobSummary) queueManagerProbe.expectMsgClass(JobSummary.class);
+				int completed = 0;
+				for (Job job : summary.getJobs()) {
+					if (job.getState() == State.COMPLETE) {
+						completed++;
 					}
-				};
+				}
+				return completed == JOB_COUNT;
 			}
 		};
 
-		// Now, check all the jobs completed in Redis
-		for (int i = 0; i < JOB_COUNT; i++) {
-			Job job = RedisBackingStore.loadJob(i + 1, redis);
-			Assert.assertEquals(1.0, job.getProgress());
-		}
-
 		serviceLog.info("All jobs were processed!");
 
-		RedisBackingStore.releaseConnection(redis);
 	}
 
 }

@@ -157,17 +157,14 @@ public abstract class AbstractAgent extends UntypedActor {
 
 		else if (message instanceof WorkAvailable) {
 			WorkAvailable workAvailable = (WorkAvailable) message;
-			log.debug("Agent {} found work available for the following worker types: {}", getSelf().path().toString(),
-					workAvailable.getWorkerTypes());
-			boolean canDoWork = false;
+			log.debug("Agent {} found work available for the following worker types: {}", getSelf()
+					.path().toString(), workAvailable.getWorkerTypes());
 			for (String workerTypeRequired : workAvailable.getWorkerTypes()) {
 				if (workerTypes.contains(workerTypeRequired)) {
-					canDoWork = true;
+					requestWork();
 					break;
 				}
 			}
-			if (canDoWork)
-				requestWork();
 		}
 
 		else if (message instanceof JobProgress) {
