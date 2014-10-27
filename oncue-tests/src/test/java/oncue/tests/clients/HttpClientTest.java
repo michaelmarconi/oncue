@@ -62,7 +62,7 @@ public class HttpClientTest {
 		client.enqueueJob("com.example.SubmittedJob");
 		Map<String, Object> requestMap = transport.getRequestContentAsMap();
 
-		Assert.assertEquals("com.example.SubmittedJob", (String) requestMap.get("worker_type"));
+		Assert.assertEquals("com.example.SubmittedJob", requestMap.get("worker_type"));
 	}
 
 	@SuppressWarnings("rawtypes")
@@ -107,7 +107,7 @@ public class HttpClientTest {
 		assertNotNull(job);
 		assertEquals(2, job.getId());
 		assertTrue(new DateTime(2013, 3, 23, 12, 13, 14, DateTimeZone.forID("+00:00")).compareTo(job.getEnqueuedAt()) == 0);
-		assertEquals(0.5, (double) job.getProgress(), 0);
+		assertEquals(0.5, job.getProgress(), 0);
 		assertEquals("com.example.ExampleWorker", job.getWorkerType());
 		assertNotNull(job.getParams());
 		assertEquals(2, job.getParams().size());
@@ -153,7 +153,7 @@ public class HttpClientTest {
 		
 		assertEquals(2, job.getId());
 		assertTrue(new DateTime(2013, 3, 23, 12, 13, 14, DateTimeZone.forID("+00:00")).compareTo(job.getEnqueuedAt()) == 0);
-		assertEquals(0.5, (double) job.getProgress(), 0);
+		assertEquals(0.5, job.getProgress(), 0);
 		assertEquals("com.example.ExampleWorker", job.getWorkerType());
 		assertNotNull(job.getParams());
 		assertEquals(2, job.getParams().size());
