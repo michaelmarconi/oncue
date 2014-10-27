@@ -23,25 +23,21 @@ import oncue.common.settings.SettingsProvider;
 
 import org.joda.time.DateTime;
 
-import akka.actor.ActorRef;
 import akka.actor.UntypedActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
 public abstract class AbstractWorker extends UntypedActor {
 
-	protected ActorRef agent;
+	protected String agent;
 
 	protected Job job;
 
-	protected LoggingAdapter log = Logging.getLogger(getContext().system(),
-			this);
+	protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
-	protected Settings settings = SettingsProvider.SettingsProvider
-			.get(getContext().system());
+	protected Settings settings = SettingsProvider.SettingsProvider.get(getContext().system());
 
-	private Client client = new AkkaClient(getContext().system(), getContext()
-			.actorFor(settings.SCHEDULER_PATH));
+	private Client client = new AkkaClient(getContext().system(), getContext().actorFor(settings.SCHEDULER_PATH));
 
 	/**
 	 * Begin working on a job immediately. Once the worker returns from this
@@ -65,7 +61,7 @@ public abstract class AbstractWorker extends UntypedActor {
 	@Override
 	public void onReceive(Object message) throws Exception {
 		if (agent == null)
-			agent = getSender();
+			agent = getSender().path().toString();
 
 		if (message instanceof Job) {
 			this.job = (Job) message;
@@ -106,10 +102,9 @@ public abstract class AbstractWorker extends UntypedActor {
 	 */
 	protected void reportProgress(double progress) {
 		if (progress < 0 || progress > 1)
-			throw new RuntimeException(
-					"Job progress must be reported as a double between 0 and 1");
+			throw new RuntimeException("Job progress must be reported as a double between 0 and 1");
 		job.setProgress(progress);
-		agent.tell(new JobProgress(job), getSelf());
+		getContext().actorFor(agent).tell(new JobProgress(job), getSelf());
 	}
 
 	/**
@@ -120,7 +115,7 @@ public abstract class AbstractWorker extends UntypedActor {
 		job.setProgress(1);
 		job.setCompletedAt(DateTime.now());
 		log.debug("Work on {} is complete.", job);
-		agent.tell(new JobProgress(job), getSelf());
+		getContext().actorFor(agent).tell(new JobProgress(job), getSelf());
 		getContext().stop(getSelf());
 	}
 }

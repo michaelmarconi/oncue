@@ -59,34 +59,21 @@ public class Job implements Serializable, Cloneable {
 
 	private static final long serialVersionUID = 1855878065709808580L;
 
-	protected DateTime enqueuedAt;
-
-	protected DateTime startedAt;
-
-	protected DateTime completedAt;
-
-	protected String errorMessage;
-
-	protected long id;
-
-	protected Map<String, String> params;
-
-	protected Double progress;
-
-	protected boolean rerun;
-
-	protected State state;
-
-	protected String workerType;
+	private DateTime enqueuedAt = new DateTime(DateTimeUtils.currentTimeMillis());
+	private DateTime startedAt;
+	private DateTime completedAt;
+	private String errorMessage;
+	private long id;
+	private Map<String, String> params;
+	private double progress = 0.0;
+	private boolean rerun = false;
+	private State state = State.QUEUED;
+	private String workerType;
 
 	/**
 	 * This default constructor required for Jackson JSON serialization
 	 */
 	public Job() {
-		this.setEnqueuedAt(new DateTime(DateTimeUtils.currentTimeMillis()));
-		this.state = State.QUEUED;
-		this.progress = 0.0;
-		this.setRerun(false);
 	}
 
 	/**
@@ -149,7 +136,7 @@ public class Job implements Serializable, Cloneable {
 		return params;
 	}
 
-	public Double getProgress() {
+	public double getProgress() {
 		return progress;
 	}
 
@@ -204,9 +191,8 @@ public class Job implements Serializable, Cloneable {
 	@Override
 	public String toString() {
 		return String
-				.format("Job %s (state=%s, enqueuedAt=%s, startedAt=%s, completedAt=%s, workerType=%s, re-run=%s, progress=%s)",
-						id, state, getEnqueuedAt(), getStartedAt(), getCompletedAt(), workerType,
-						rerun, progress);
+				.format("Job %s (state=%s, enqueuedAt=%s, startedAt=%s, completedAt=%s, workerType=%s, re-run=%s, progress=%s params=%s)",
+						id, state, getEnqueuedAt(), getStartedAt(), getCompletedAt(), workerType, rerun, progress, params);
 	}
 
 	@Override

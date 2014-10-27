@@ -23,6 +23,7 @@ import java.util.HashSet;
 import oncue.common.messages.AbstractWorkRequest;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
+import oncue.common.messages.SimpleMessages.SimpleMessage;
 import oncue.common.messages.WorkAvailable;
 import oncue.common.messages.WorkResponse;
 import oncue.tests.base.ActorSystemTest;
@@ -44,8 +45,20 @@ public class BroadcastWorkTest extends ActorSystemTest {
 	public void oneJobToScheduleButNoAgents() {
 		new JavaTestKit(system) {
 			{
-				// Create a scheduler with a probe
-				final JavaTestKit schedulerProbe = new JavaTestKit(system);
+				// Create a scheduler probe
+				final JavaTestKit schedulerProbe = new JavaTestKit(system) {
+					{
+						new IgnoreMsg() {
+							protected boolean ignore(Object message) {
+								if (message.equals(SimpleMessage.BROADCAST_JOBS))
+									return true;
+								else
+									return false;
+							}
+						};
+					}
+				};
+
 				ActorRef scheduler = createScheduler(system, schedulerProbe.getRef());
 
 				// Enqueue a job

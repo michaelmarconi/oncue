@@ -20,12 +20,12 @@ import static java.lang.String.format;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import oncue.backingstore.BackingStore;
 import oncue.common.comparators.JobComparator;
@@ -78,10 +78,10 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	private Cancellable agentMonitor;
 
 	// Map an agent to a deadline for deregistration
-	private Map<String, Deadline> agents = new ConcurrentHashMap<>();
+	private Map<String, Deadline> agents = new HashMap<>();
 
 	// Map an agent to a the set of worker types it can process
-	private Map<String, Set<String>> agentWorkers = new ConcurrentHashMap<>();
+	private Map<String, Set<String>> agentWorkers = new HashMap<>();
 
 	// The persistent backing store
 	protected BackingStore backingStore;
@@ -172,7 +172,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 
 						@Override
 						public void run() {
-							broadcastJobs();
+							getSelf().tell(SimpleMessage.BROADCAST_JOBS, getSelf());
 						}
 					}, getContext().dispatcher());
 		}
@@ -466,7 +466,8 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 		else if (message instanceof CleanupJobs) {
 			log.debug("Clean up jobs");
 			CleanupJobs cleanupJobs = (CleanupJobs) message;
-			int numCleanedJobs = backingStore.cleanupJobs(cleanupJobs.isIncludeFailedJobs(), cleanupJobs.getExpirationAge());
+			int numCleanedJobs = backingStore.cleanupJobs(cleanupJobs.isIncludeFailedJobs(),
+					cleanupJobs.getExpirationAge());
 			getContext().system().eventStream().publish(new JobCleanupEvent());
 			getSender().tell(new Success(format("Removed %d jobs", numCleanedJobs)), getSelf());
 		}
@@ -503,6 +504,11 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 		else if (message == SimpleMessage.LIST_AGENTS) {
 			log.debug("Received a request for a the list of registered agents from {}", getSender());
 			replyWithAgentSummary();
+		}
+
+		else if (message.equals(SimpleMessage.BROADCAST_JOBS)) {
+			log.debug("Teeing up a job broadcast...");
+			broadcastJobs();
 		}
 
 		else {
@@ -665,7 +671,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 
 					@Override
 					public void run() {
-						broadcastJobs();
+						getSelf().tell(SimpleMessage.BROADCAST_JOBS, getSelf());
 					}
 				}, getContext().dispatcher());
 	}

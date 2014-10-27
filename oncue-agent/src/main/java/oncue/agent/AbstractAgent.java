@@ -58,7 +58,7 @@ public abstract class AbstractAgent extends UntypedActor {
 	private Cancellable heartbeat;
 
 	// Map jobs in progress to their workers
-	protected Map<ActorRef, Job> jobsInProgress = new HashMap<ActorRef, Job>();
+	protected Map<String, Job> jobsInProgress = new HashMap<String, Job>();
 
 	protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
@@ -93,24 +93,25 @@ public abstract class AbstractAgent extends UntypedActor {
 
 	/**
 	 * Try to load the Class for the worker of type workerType.
+	 * 
 	 * @param workerType
 	 * @return
-	 * @throws MissingWorkerException	If the class cannot be instantiated or the class does not extend AbstractWorker
+	 * @throws MissingWorkerException
+	 *             If the class cannot be instantiated or the class does not
+	 *             extend AbstractWorker
 	 */
 	@SuppressWarnings("unchecked")
 	private static Class<? extends AbstractWorker> fetchWorkerClass(String workerType) throws MissingWorkerException {
 		try {
-			Class<? extends AbstractWorker> workerClass = (Class<? extends AbstractWorker>) Class
-					.forName(workerType);
+			Class<? extends AbstractWorker> workerClass = (Class<? extends AbstractWorker>) Class.forName(workerType);
 
 			return workerClass;
 		} catch (ClassNotFoundException e) {
-			throw new MissingWorkerException(String.format("Cannot find a class for the worker type '%s'",
-					workerType), e);
+			throw new MissingWorkerException(String.format("Cannot find a class for the worker type '%s'", workerType),
+					e);
 		} catch (ClassCastException e) {
 			throw new MissingWorkerException(String.format(
-					"The class for worker type '%s' doesn't extend the AbstractWorker base class",
-					workerType), e);
+					"The class for worker type '%s' doesn't extend the AbstractWorker base class", workerType), e);
 		}
 	}
 
@@ -121,7 +122,7 @@ public abstract class AbstractAgent extends UntypedActor {
 		try {
 			return getContext().actorFor(settings.SCHEDULER_PATH);
 		} catch (NullPointerException e) {
-			throw new RuntimeException("Could not get a reference to the Scheduler.  Is the system shutting down?", e);
+			throw new RuntimeException("Could not get a reference to the Scheduler. Is the system shutting down?", e);
 		}
 	}
 
@@ -159,17 +160,14 @@ public abstract class AbstractAgent extends UntypedActor {
 
 		else if (message instanceof WorkAvailable) {
 			WorkAvailable workAvailable = (WorkAvailable) message;
-			log.debug("Agent {} found work available for the following worker types: {}", getSelf().path().toString(),
-					workAvailable.getWorkerTypes());
-			boolean canDoWork = false;
+			log.debug("Agent {} found work available for the following worker types: {}", getSelf()
+					.path().toString(), workAvailable.getWorkerTypes());
 			for (String workerTypeRequired : workAvailable.getWorkerTypes()) {
 				if (workerTypes.contains(workerTypeRequired)) {
-					canDoWork = true;
+					requestWork();
 					break;
 				}
 			}
-			if (canDoWork)
-				requestWork();
 		}
 
 		else if (message instanceof JobProgress) {
@@ -219,7 +217,7 @@ public abstract class AbstractAgent extends UntypedActor {
 	private void recordProgress(JobProgress jobProgress, ActorRef worker) {
 		getScheduler().tell(jobProgress, getSelf());
 		if (jobProgress.getJob().getProgress() == 1.0) {
-			jobsInProgress.remove(worker);
+			jobsInProgress.remove(worker.path().toString());
 			scheduleWorkRequest();
 		}
 	}
@@ -263,7 +261,7 @@ public abstract class AbstractAgent extends UntypedActor {
 					return workerClass.newInstance();
 				}
 			}), "job-" + job.getId());
-			jobsInProgress.put(worker, job);
+			jobsInProgress.put(worker.path().toString(), job);
 			worker.tell(job, getSelf());
 		} catch (MissingWorkerException e) {
 			log.error(e, e.getMessage());
@@ -272,7 +270,9 @@ public abstract class AbstractAgent extends UntypedActor {
 	}
 
 	/**
-	 * Extract the job failure reason and notify the scheduler that the job failed
+	 * Extract the job failure reason and notify the scheduler that the job
+	 * failed
+	 * 
 	 * @param job
 	 */
 	private void sendFailure(Job job, String message) {
@@ -282,11 +282,13 @@ public abstract class AbstractAgent extends UntypedActor {
 	}
 
 	/**
-	 * Allows handling of a worker death. Called when a worker that is owned by this agent
-	 * has thrown an exception.
+	 * Allows handling of a worker death. Called when a worker that is owned by
+	 * this agent has thrown an exception.
 	 * 
-	 * @param job	The job that was in progress
-	 * @param error	The Throwable from the worker
+	 * @param job
+	 *            The job that was in progress
+	 * @param error
+	 *            The Throwable from the worker
 	 */
 	protected void onWorkerDeath(Job job, Throwable error) {
 		// Do nothing by default
@@ -304,7 +306,7 @@ public abstract class AbstractAgent extends UntypedActor {
 			@Override
 			public Directive apply(Throwable error) throws Exception {
 				log.error(error, "The worker {} has died a horrible death!", getSender());
-				Job job = jobsInProgress.remove(getSender());
+				Job job = jobsInProgress.remove(getSender().path().toString());
 				onWorkerDeath(job, error);
 				sendFailure(job, error.toString());
 				return stop();

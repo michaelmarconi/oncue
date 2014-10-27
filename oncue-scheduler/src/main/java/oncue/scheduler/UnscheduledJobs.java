@@ -18,7 +18,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import oncue.backingstore.BackingStore;
 import oncue.common.messages.Job;
@@ -31,20 +32,19 @@ import akka.event.LoggingAdapter;
 public class UnscheduledJobs {
 
 	// The persistent backing store
-	private BackingStore backingStore;
+	private final BackingStore backingStore;
 
-	private LoggingAdapter log;
+	private final LoggingAdapter log;
 
 	// The prioritised queue of unscheduled jobs
-	private final ConcurrentSkipListSet<Job> unscheduledJobs;
+	private final SortedSet<Job> unscheduledJobs;
 
 	/**
 	 * @param backingStore is an instance of {@linkplain BackingStore}
 	 */
-	public UnscheduledJobs(BackingStore backingStore, LoggingAdapter log,
-			Comparator<Job> jobComparator) {
+	public UnscheduledJobs(BackingStore backingStore, LoggingAdapter log, Comparator<Job> jobComparator) {
+		this.unscheduledJobs = new TreeSet<>(jobComparator);
 		this.backingStore = backingStore;
-		this.unscheduledJobs = new ConcurrentSkipListSet<>(jobComparator);
 		this.log = log;
 		restoreJobs();
 	}

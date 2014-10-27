@@ -16,9 +16,9 @@
 package oncue.scheduler;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import oncue.backingstore.BackingStore;
 import oncue.common.messages.Agent;
@@ -35,7 +35,7 @@ public class ScheduledJobs {
 	private BackingStore backingStore;
 
 	// Map a list of scheduled jobs to logical agent address
-	private Map<String, List<Job>> scheduledJobs = new ConcurrentHashMap<String, List<Job>>();
+	private Map<String, List<Job>> scheduledJobs = new HashMap<String, List<Job>>();
 
 	/**
 	 * @param backingStore
@@ -60,7 +60,9 @@ public class ScheduledJobs {
 			assignedJobs = new ArrayList<Job>();
 			scheduledJobs.put(agent, assignedJobs);
 		}
-		assignedJobs.addAll(jobs);
+		for (Job job : jobs) {
+			assignedJobs.add((Job) job.clone());
+		}
 		backingStore.addScheduledJobs(jobs);
 	}
 
@@ -118,14 +120,11 @@ public class ScheduledJobs {
 	 * 
 	 * @throws RemoveScheduleJobException
 	 */
-	public void removeJob(Job job, String agent)
-			throws RemoveScheduleJobException {
+	public void removeJob(Job job, String agent) throws RemoveScheduleJobException {
 
 		if (!scheduledJobs.containsKey(agent))
-			throw new RemoveScheduleJobException(
-					"There is no registered agent "
-							+ agent
-							+ ".  It is possible the scheduler was restarted and this agent has not re-registered yet.");
+			throw new RemoveScheduleJobException("There is no registered agent " + agent
+					+ ".  It is possible the scheduler was restarted and this agent has not re-registered yet.");
 
 		Job jobToRemove = null;
 		for (Job scheduledJob : scheduledJobs.get(agent)) {

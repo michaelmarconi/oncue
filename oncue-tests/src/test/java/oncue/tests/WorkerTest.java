@@ -197,7 +197,7 @@ public class WorkerTest extends ActorSystemTest {
 					protected boolean cond() {
 						String result = jedis.get("oncue.tests.workers.JobSummaryRequestTestWorker");
 						if (result != null) {
-							return result.contains("Job 1") && result.contains("state=running")
+							return result.contains("Job 1")
 									&& result.contains("workerType=oncue.tests.workers.JobSummaryRequestTestWorker");
 						} else
 							return false;
