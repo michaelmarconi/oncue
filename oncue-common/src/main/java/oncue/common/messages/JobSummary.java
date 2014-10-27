@@ -3,9 +3,8 @@ package oncue.common.messages;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
-
-import com.google.common.base.Joiner;
 
 /**
  * A scheduler will send this message in response to a simple job summary
@@ -36,6 +35,14 @@ public class JobSummary implements Serializable {
 
 	@Override
 	public String toString() {
-		return Joiner.on('|').join(jobs).toString();
+		StringBuilder builder = new StringBuilder();
+		Iterator<Job> iterator = jobs.iterator();
+		while (iterator.hasNext()) {
+			Job job = iterator.next();
+			builder.append(job.toString());
+			if (iterator.hasNext())
+				builder.append("|");
+		}
+		return builder.toString();
 	}
 }

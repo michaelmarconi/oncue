@@ -15,24 +15,24 @@
  ******************************************************************************/
 package oncue.tests.load;
 
+import static akka.testkit.JavaTestKit.duration;
+
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.concurrent.TimeUnit;
 
-import junit.framework.Assert;
 import oncue.agent.ThrottledAgent;
-import oncue.backingstore.RedisBackingStore;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
+import oncue.common.messages.Job.State;
 import oncue.common.messages.JobProgress;
+import oncue.common.messages.JobSummary;
+import oncue.common.messages.SimpleMessages.SimpleMessage;
 import oncue.scheduler.ThrottledScheduler;
 import oncue.tests.base.DistributedActorSystemTest;
 import oncue.tests.load.workers.SimpleLoadTestWorker;
 
 import org.junit.Test;
 
-import redis.clients.jedis.Jedis;
-import scala.concurrent.duration.FiniteDuration;
 import akka.actor.ActorRef;
 import akka.testkit.JavaTestKit;
 
@@ -80,7 +80,7 @@ public class DistributedThrottledLoadTest extends DistributedActorSystemTest {
 		}
 
 		// Wait for all jobs to be enqueued
-		new AwaitCond(duration("60 seconds"), duration("5 seconds")) {
+		queueManagerProbe.new AwaitCond(duration("60 seconds"), duration("2 seconds")) {
 
 			@Override
 			protected boolean cond() {
@@ -96,7 +96,7 @@ public class DistributedThrottledLoadTest extends DistributedActorSystemTest {
 		createAgent(new HashSet<String>(Arrays.asList(SimpleLoadTestWorker.class.getName())), null);
 
 		// Wait until all the jobs have completed
-		new AwaitCond(duration("5 minutes"), duration("5 seconds")) {
+		queueManagerProbe.new AwaitCond(duration("5 minutes"), duration("2 seconds")) {
 
 			@Override
 			protected boolean cond() {
