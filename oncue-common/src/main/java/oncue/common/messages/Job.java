@@ -195,8 +195,8 @@ public class Job implements Serializable, Cloneable {
 	@Override
 	public String toString() {
 		return String
-				.format("Job %s (state=%s, enqueuedAt=%s, startedAt=%s, completedAt=%s, workerType=%s, re-run=%s, progress=%s)",
-						id, state, getEnqueuedAt(), getStartedAt(), getCompletedAt(), workerType, rerun, progress);
+				.format("Job %s (state=%s, enqueuedAt=%s, startedAt=%s, completedAt=%s, workerType=%s, re-run=%s, progress=%s params=%s)",
+						id, state, getEnqueuedAt(), getStartedAt(), getCompletedAt(), workerType, rerun, progress, params);
 	}
 
 }
