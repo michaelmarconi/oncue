@@ -14,13 +14,13 @@
 package oncue.common.messages;
 
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 
 import com.google.common.base.Objects;
+import com.google.common.collect.Maps;
 
 public class Job implements Serializable, Cloneable {
 
@@ -57,17 +57,18 @@ public class Job implements Serializable, Cloneable {
 		}
 	}
 
-	private static final long serialVersionUID = 1855878065709808580L;
+	private static final long serialVersionUID = -2375588116753600617L;
 
 	private DateTime enqueuedAt = new DateTime(DateTimeUtils.currentTimeMillis());
+	private Map<String, String> params = Maps.newHashMap();
+	private double progress = 0.0;
+	private boolean rerun = false;
+	private State state = State.QUEUED;
+
 	private DateTime startedAt;
 	private DateTime completedAt;
 	private String errorMessage;
 	private long id;
-	private Map<String, String> params;
-	private double progress = 0.0;
-	private boolean rerun = false;
-	private State state = State.QUEUED;
 	private String workerType;
 
 	/**
@@ -105,12 +106,8 @@ public class Job implements Serializable, Cloneable {
 		clone.setState(this.getState());
 		clone.setRerun(this.isRerun());
 
-		if (this.getParams() != null) {
-			Map<String, String> paramsClone = new HashMap<>();
-			for (String key : this.getParams().keySet()) {
-				paramsClone.put(key, this.params.get(key));
-			}
-			clone.setParams(paramsClone);
+		for (String key : this.getParams().keySet()) {
+			clone.getParams().put(key, this.params.get(key));
 		}
 
 		return clone;
@@ -192,7 +189,8 @@ public class Job implements Serializable, Cloneable {
 	public String toString() {
 		return String
 				.format("Job %s (state=%s, enqueuedAt=%s, startedAt=%s, completedAt=%s, workerType=%s, re-run=%s, progress=%s params=%s)",
-						id, state, getEnqueuedAt(), getStartedAt(), getCompletedAt(), workerType, rerun, progress, params);
+						id, state, getEnqueuedAt(), getStartedAt(), getCompletedAt(), workerType,
+						rerun, progress, params);
 	}
 
 	@Override
