@@ -35,8 +35,6 @@ import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
 import oncue.worker.AbstractWorker;
 
-import org.jboss.netty.channel.socket.Worker;
-
 import scala.concurrent.duration.Duration;
 import akka.actor.Actor;
 import akka.actor.ActorRef;
