@@ -15,7 +15,7 @@ public class JobEnqueuedEvent implements Serializable {
 
 	public JobEnqueuedEvent(Job job) {
 		super();
-		this.setJob(job);
+		this.setJob((Job) job.clone());
 	}
 
 	public Job getJob() {
