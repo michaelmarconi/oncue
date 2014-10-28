@@ -15,20 +15,17 @@ package oncue.agent;
 
 import java.util.Set;
 
-import com.typesafe.config.Config;
-
 import oncue.common.messages.CubeCapacityWorkRequest;
 import oncue.common.messages.Job;
 
 public class CubeCapacityAgent extends AbstractAgent {
 
-	// The amount of total memory
-	private final int TOTAL_MEMORY;
+	// The amount of total memory. Will fail if not defined.
+	private final int TOTAL_MEMORY = getContext().system().settings().config()
+			.getInt("oncue.agent.cube_capacity_agent.total_memory");
 
 	public CubeCapacityAgent(Set<String> workerTypes) throws MissingWorkerException {
 		super(workerTypes);
-		Config config = getContext().system().settings().config();
-		TOTAL_MEMORY = config.getInt("oncue.agent.cube_capacity_agent.total_memory");
 		log.info("This Cube capacity agent has total memory of {} to work with.", TOTAL_MEMORY);
 	}
 
@@ -38,8 +35,11 @@ public class CubeCapacityAgent extends AbstractAgent {
 		for (Job job : jobsInProgress.values()) {
 			usedMemory += Integer.parseInt(job.getParams().get("memory"));
 		}
-		getScheduler()
-				.tell(new CubeCapacityWorkRequest(getSelf(), getWorkerTypes(), TOTAL_MEMORY
-						- usedMemory), getSelf());
+		int availableMemory = TOTAL_MEMORY - usedMemory;
+		log.debug("Requesting work with memory capacity of {}", availableMemory);
+		getScheduler().tell(
+				new CubeCapacityWorkRequest(getSelf(), getWorkerTypes(), availableMemory),
+				getSelf());
 	}
+
 }

@@ -81,7 +81,8 @@ public class CubeCapacityScheduler extends AbstractScheduler<CubeCapacityWorkReq
 				}
 			}
 		}
-		// TODO: Log this
+
+		log.debug("Scheduling {} job(s) with a total memory of {}", jobs.size(), allocatedMemory);
 
 		// Create the schedule
 		Schedule schedule = new Schedule();
@@ -91,9 +92,23 @@ public class CubeCapacityScheduler extends AbstractScheduler<CubeCapacityWorkReq
 		dispatchJobs(schedule);
 	}
 
+	@Override
+	protected void augmentJob(Job job) {
+		ensureRequiredMemory(job);
+	}
+
+	private void ensureRequiredMemory(Job job) {
+		Map<String, String> params = job.getParams();
+		if(!params.containsKey("memory")) {
+			Config config = getContext().system().settings().config();
+			params.put("memory", String.valueOf(config.getConfig("oncue.scheduler.cube_capacity_scheduler").getInt(
+					"default_requirements." + job.getWorkerType() + ".memory")));
+		}
+	}
+
 	private int getRequiredMemory(Job job) {
 		Map<String, String> params = job.getParams();
-		if (params == null || !params.containsKey("memory")) {
+		if (!params.containsKey("memory")) {
 			Config config = getContext().system().settings().config();
 			return config.getConfig("oncue.scheduler.cube_capacity_scheduler").getInt(
 					"default_requirements." + job.getWorkerType() + ".memory");

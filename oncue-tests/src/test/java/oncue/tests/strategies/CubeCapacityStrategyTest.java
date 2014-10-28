@@ -97,11 +97,17 @@ public class CubeCapacityStrategyTest extends ActorSystemTest {
 				scheduler.pause();
 
 				// Enqueue jobs
-				schedulerRef.tell(new EnqueueJob(TEST_WORKER, withParams(requiredMemory("2600"), processCode("foo1"))), getRef());
+				schedulerRef.tell(
+						new EnqueueJob(TEST_WORKER, withParams(requiredMemory("2600"),
+								processCode("foo1"))), getRef());
 				expectMsgClass(Job.class);
-				schedulerRef.tell(new EnqueueJob(TEST_WORKER, withParams(requiredMemory("2600"), processCode("foo2"))), getRef());
+				schedulerRef.tell(
+						new EnqueueJob(TEST_WORKER, withParams(requiredMemory("2600"),
+								processCode("foo2"))), getRef());
 				expectMsgClass(Job.class);
-				schedulerRef.tell(new EnqueueJob(TEST_WORKER, withParams(requiredMemory("1"), processCode("foo3"))), getRef());
+				schedulerRef.tell(
+						new EnqueueJob(TEST_WORKER, withParams(requiredMemory("1"),
+								processCode("foo3"))), getRef());
 				expectMsgClass(Job.class);
 
 				new AwaitCond(duration("60 seconds"), duration("1 second")) {
@@ -110,7 +116,6 @@ public class CubeCapacityStrategyTest extends ActorSystemTest {
 					protected boolean cond() {
 						schedulerRef.tell(SimpleMessage.JOB_SUMMARY, getRef());
 						JobSummary summary = expectMsgClass(JobSummary.class);
-						System.err.println(summary.getJobs().size());
 						return summary.getJobs().size() == 3;
 					}
 				};
@@ -121,7 +126,7 @@ public class CubeCapacityStrategyTest extends ActorSystemTest {
 						new IgnoreMsg() {
 							protected boolean ignore(Object message) {
 								if (message instanceof WorkResponse) {
-									if(((WorkResponse)message).getJobs().isEmpty()) {
+									if (((WorkResponse) message).getJobs().isEmpty()) {
 										return true;
 									}
 									return false;
@@ -236,6 +241,10 @@ public class CubeCapacityStrategyTest extends ActorSystemTest {
 						new EnqueueJob(TestWorker2.class.getName(), withParams(processCode("FOO"),
 								memory("200"))), getRef());
 				expectMsgClass(Job.class);
+				scheduler.tell(
+						new EnqueueJob(TestWorker2.class.getName(), withParams(processCode("FOO2"),
+								memory("200"))), getRef());
+				expectMsgClass(Job.class);
 
 				// ---
 
@@ -257,24 +266,31 @@ public class CubeCapacityStrategyTest extends ActorSystemTest {
 						new HashSet<String>(Arrays.asList(TestWorker2.class.getName())),
 						agentProbe.getRef());
 
-				// Expect a work response with only one job for that process
+				// Expect a work response with two jobs - one for each process
 				WorkResponse workResponse = agentProbe.expectMsgClass(WorkResponse.class);
-				assertEquals(1, workResponse.getJobs().size());
+				assertEquals(2, workResponse.getJobs().size());
 				assertEquals(1, workResponse.getJobs().get(0).getId());
+				assertEquals(3, workResponse.getJobs().get(1).getId());
 
 				// Expect worker to ask for more work
 				schedulerProbe.expectMsgClass(new FiniteDuration(5, TimeUnit.SECONDS),
 						AbstractWorkRequest.class);
-				//
-				// long startTime = System.currentTimeMillis();
-				// while(System.currentTimeMillis() < startTime + 5000) {
-				// // Expect another work response with only the second job once the first is
-				// complete
-				// workResponse = agentProbe.expectMsgClass(WorkResponse.class);
-				//
-				// }
-				// assertEquals(1, workResponse.getJobs().size());
 
+				new AwaitCond() {
+					@Override
+					protected boolean cond() {
+						// Expect a new work response after those jobs complete containing the
+						// second worker for that. Uses an await condition because multiple work
+						// responses could come back in the case of job 3 finishing before job 1.
+						WorkResponse workResponse = agentProbe.expectMsgClass(WorkResponse.class);
+						if (workResponse.getJobs().size() == 1
+								&& workResponse.getJobs().get(0).getId() == 2) {
+							return true;
+						}
+
+						return false;
+					}
+				};
 			}
 
 		};
