@@ -25,10 +25,10 @@ import scala.concurrent.duration.FiniteDuration;
 import akka.actor.Extension;
 
 import com.typesafe.config.Config;
-import com.typesafe.config.ConfigException;
 
 public class Settings implements Extension {
 
+	private static final String SCHEDULER_BACKING_STORE_PATH = "scheduler.backing-store.class";
 	public final String SCHEDULER_NAME;
 	public final String SCHEDULER_PATH;
 	public final String SCHEDULER_CLASS;
@@ -59,9 +59,9 @@ public class Settings implements Extension {
 		SCHEDULER_TIMEOUT = Duration
 				.create(config.getMilliseconds("scheduler.response-timeout"), TimeUnit.MILLISECONDS);
 
-		try {
-			SCHEDULER_BACKING_STORE_CLASS = config.getString("scheduler.backing-store.class");
-		} catch (ConfigException.Missing e) {
+		if(config.hasPath(SCHEDULER_BACKING_STORE_PATH)) {
+			SCHEDULER_BACKING_STORE_CLASS = config.getString(SCHEDULER_BACKING_STORE_PATH);
+		} else {
 			SCHEDULER_BACKING_STORE_CLASS = null;
 		}
 
