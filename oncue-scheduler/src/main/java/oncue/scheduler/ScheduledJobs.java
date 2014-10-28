@@ -136,6 +136,9 @@ public class ScheduledJobs {
 		backingStore.removeScheduledJob(job);
 	}
 
+	/**
+	 * Get a list of all scheduled jobs for all agents.
+	 */
 	public List<Job> getScheduledJobs() {
 		List<Job> response = new ArrayList<>();
 		for(List<Job> jobs : scheduledJobs.values()) {
