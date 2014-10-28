@@ -99,22 +99,16 @@ public class CubeCapacityScheduler extends AbstractScheduler<CubeCapacityWorkReq
 
 	private void ensureRequiredMemory(Job job) {
 		Map<String, String> params = job.getParams();
-		if(!params.containsKey("memory")) {
+		if (!params.containsKey("memory")) {
 			Config config = getContext().system().settings().config();
-			params.put("memory", String.valueOf(config.getConfig("oncue.scheduler.cube_capacity_scheduler").getInt(
+			params.put("memory", String.valueOf(config.getConfig(
+					"oncue.scheduler.cube_capacity_scheduler").getInt(
 					"default_requirements." + job.getWorkerType() + ".memory")));
 		}
 	}
 
 	private int getRequiredMemory(Job job) {
-		Map<String, String> params = job.getParams();
-		if (!params.containsKey("memory")) {
-			Config config = getContext().system().settings().config();
-			return config.getConfig("oncue.scheduler.cube_capacity_scheduler").getInt(
-					"default_requirements." + job.getWorkerType() + ".memory");
-		} else {
-			return Integer.parseInt(params.get("memory"));
-		}
+		return Integer.parseInt(job.getParams().get("memory"));
 	}
 
 	private Set<String> getScheduledMatchingJobCodes() {
