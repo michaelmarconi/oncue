@@ -50,7 +50,7 @@ public class Jobs extends Controller {
 				ask(scheduler, SimpleMessage.JOB_SUMMARY, new Timeout(settings.SCHEDULER_TIMEOUT)).recover(
 						new Recover<Object>() {
 							@Override
-							public Object recover(Throwable t) throws Throwable {
+							public Object recover(Throwable t) {
 								if (t instanceof AskTimeoutException) {
 									Logger.error("Timeout waiting for scheduler to respond to job summary request", t);
 									return internalServerError("Timeout");
@@ -84,7 +84,7 @@ public class Jobs extends Controller {
 				ask(scheduler, SimpleMessage.JOB_SUMMARY, new Timeout(settings.SCHEDULER_TIMEOUT)).recover(
 						new Recover<Object>() {
 							@Override
-							public Object recover(Throwable t) throws Throwable {
+							public Object recover(Throwable t) {
 								if (t instanceof AskTimeoutException) {
 									Logger.error("Timeout waiting for scheduler to respond to job summary request", t);
 									return internalServerError("Timeout");
@@ -135,7 +135,7 @@ public class Jobs extends Controller {
 		return async(Akka.asPromise(
 				ask(scheduler, enqueueJob, new Timeout(settings.SCHEDULER_TIMEOUT)).recover(new Recover<Object>() {
 					@Override
-					public Object recover(Throwable t) throws Throwable {
+					public Object recover(Throwable t) {
 						if (t instanceof AskTimeoutException) {
 							Logger.error("Timeout waiting for scheduler to enqueue job", t);
 							return internalServerError("Timeout");
@@ -168,7 +168,7 @@ public class Jobs extends Controller {
 		return async(Akka.asPromise(
 				ask(scheduler, deleteJob, new Timeout(settings.SCHEDULER_TIMEOUT)).recover(new Recover<Object>() {
 					@Override
-					public Object recover(Throwable t) throws Throwable {
+					public Object recover(Throwable t) {
 						if (t instanceof AskTimeoutException) {
 							Logger.error("Timeout waiting for scheduler to delete job", t);
 							return internalServerError("Timeout");
@@ -201,7 +201,7 @@ public class Jobs extends Controller {
 		return async(Akka.asPromise(
 				ask(scheduler, rerunJob, new Timeout(settings.SCHEDULER_TIMEOUT)).recover(new Recover<Object>() {
 					@Override
-					public Object recover(Throwable t) throws Throwable {
+					public Object recover(Throwable t) {
 						if (t instanceof AskTimeoutException) {
 							Logger.error("Timeout waiting for queue manager to enqueue a job to re-run", t);
 							return internalServerError("Timeout");

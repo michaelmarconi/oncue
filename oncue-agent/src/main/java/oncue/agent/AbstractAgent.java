@@ -302,7 +302,7 @@ public abstract class AbstractAgent extends UntypedActor {
 		return new OneForOneStrategy(0, Duration.Zero(), new Function<Throwable, Directive>() {
 
 			@Override
-			public Directive apply(Throwable error) throws Exception {
+			public Directive apply(Throwable error) {
 				log.error(error, "The worker {} has died a horrible death!", getSender());
 				Job job = jobsInProgress.remove(getSender().path().toString());
 				onWorkerDeath(job, error);

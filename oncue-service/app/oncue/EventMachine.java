@@ -68,14 +68,14 @@ public class EventMachine extends UntypedActor {
 		in.onClose(new Callback0() {
 
 			@Override
-			public void invoke() throws Throwable {
+			public void invoke() {
 				clients.remove(out);
 			}
 		});
 	}
 
 	@Override
-	public void onReceive(Object message) throws Exception {
+	public void onReceive(Object message) {
 		if (message.equals("PING")) {
 			log.debug("Pinging websocket clients...");
 			for (WebSocket.Out<JsonNode> client : clients) {

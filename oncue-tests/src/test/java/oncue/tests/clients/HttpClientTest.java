@@ -195,12 +195,12 @@ public class HttpClientTest {
 		}
 
 		@Override
-		public LowLevelHttpRequest buildRequest(String method, String url) throws IOException {
+		public LowLevelHttpRequest buildRequest(String method, String url) {
 			this.method = method;
 			this.url = url;
 			request = new MockLowLevelHttpRequest() {
 				@Override
-				public LowLevelHttpResponse execute() throws IOException {
+				public LowLevelHttpResponse execute() {
 					MockLowLevelHttpResponse response = new MockLowLevelHttpResponse();
 					response.setStatusCode(responseCode);
 					response.setContentType(Json.MEDIA_TYPE);
