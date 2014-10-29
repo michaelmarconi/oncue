@@ -4,6 +4,11 @@ import java.util.Comparator;
 
 import oncue.common.messages.Job;
 
+/**
+ * This Comparator will allow sorting Collections based on their priority. If two jobs have the same
+ * priority, the older job will be higher up the sorted result than the newer job. If two jobs have
+ * the same priority AND enqueueing time, the one with the lower ID will appear first.
+ */
 public class PriorityJobComparator implements Comparator<Job> {
 
 	@Override

@@ -33,8 +33,14 @@ import com.typesafe.config.Config;
  * Hands out jobs in priority order. This assumes a Job has a parameter value of "priority". If a
  * job does not provide a priority, it is assumed to be 0 (low priority).
  * 
- * This scheduler will only provide
+ * This scheduler will only provide as many jobs to an agent as it declares it has free memory. See
+ * the documentation for {@link CubeCapacityAgent} for more information.
  * 
+ * This scheduler also allows specification of a job that cannot be run in parallel. The worker type
+ * must be specified with "oncue.scheduler.cube-capacity-scheduler.matching-worker-type" and the
+ * parameter for jobs of this type that enforces uniqueness is "process_code". I.e. two jobs with
+ * the worker type specified by "matching-worker-type" with the same parameter value for the
+ * "process_code" parameter will not run at the same time.
  */
 public class CubeCapacityScheduler extends AbstractScheduler<CubeCapacityWorkRequest> {
 

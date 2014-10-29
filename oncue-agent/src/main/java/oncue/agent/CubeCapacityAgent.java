@@ -18,6 +18,21 @@ import java.util.Set;
 import oncue.common.messages.CubeCapacityWorkRequest;
 import oncue.common.messages.Job;
 
+/**
+ * This class is intended to be used with the {@link CubeCapacityScheduler}. It models an agent as a
+ * hole of a certain size, indicated by the "memory" priorty. Each job that is sent to the agent
+ * will have a "memory" value, and the agent will continuously bite off work to do until it has no
+ * more "memory" capacity left, and will execute all jobs in parallel. It will always consume as
+ * many jobs as possible and it will do it in the order specified by the
+ * {@link PriorityJobComparator}. This means that a larger job that cannot be completed at the time
+ * may be skipped in favour of a lower priority lower "memory" job. Users must be careful not to
+ * provide a continuous stream of low "memory" jobs that could prevent the timely execution of a
+ * high "memory" job.
+ * 
+ * The total "memory" available to the agent must be configured with the configuration propery
+ * "oncue.agent.cube-capacity-agent.total-memory". The Agent will crash on startup if this is not
+ * provided.
+ */
 public class CubeCapacityAgent extends AbstractAgent {
 
 	// The amount of total memory. Will fail if not defined.
