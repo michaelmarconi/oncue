@@ -19,7 +19,7 @@ import java.util.Set;
 
 import akka.actor.ActorRef;
 
-public class CubeCapacityWorkRequest extends AbstractWorkRequest {
+public class CapacityWorkRequest extends AbstractWorkRequest {
 
 	private static final long serialVersionUID = 8422903458993615943L;
 
@@ -29,7 +29,7 @@ public class CubeCapacityWorkRequest extends AbstractWorkRequest {
 	 * @param availableMemory
 	 *            is the amount of free memory the agent has.
 	 */
-	public CubeCapacityWorkRequest(ActorRef agent, Set<String> workerTypes, int availableMemory) {
+	public CapacityWorkRequest(ActorRef agent, Set<String> workerTypes, int availableMemory) {
 		super(agent, workerTypes);
 		this.availableMemory = availableMemory;
 	}

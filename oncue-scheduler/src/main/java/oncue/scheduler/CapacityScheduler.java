@@ -21,31 +21,38 @@ import java.util.Map;
 import java.util.Set;
 
 import oncue.backingstore.BackingStore;
-import oncue.common.messages.CubeCapacityWorkRequest;
+import oncue.common.messages.CapacityWorkRequest;
 import oncue.common.messages.Job;
 
 import com.google.common.collect.Sets;
 import com.typesafe.config.Config;
 
 /**
- * A barebones Cube scheduler.
+ * A capacity-based scheduler.
  * 
  * Hands out jobs in priority order. This assumes a Job has a parameter value of "priority". If a
  * job does not provide a priority, it is assumed to be 0 (low priority).
  * 
  * This scheduler will only provide as many jobs to an agent as it declares it has free memory. See
- * the documentation for {@link CubeCapacityAgent} for more information.
+ * the documentation for {@link CapacityAgent} for more information.
  * 
  * This scheduler also allows specification of a job that cannot be run in parallel. The worker type
- * must be specified with "oncue.scheduler.cube-capacity-scheduler.matching-worker-type" and the
- * parameter for jobs of this type that enforces uniqueness is "process_code". I.e. two jobs with
- * the worker type specified by "matching-worker-type" with the same parameter value for the
- * "process_code" parameter will not run at the same time.
+ * must be specified with "oncue.scheduler.capacity-scheduler.worker-type" and the parameter for
+ * jobs of this type that enforces uniqueness is configurable by
+ * "oncue.scheduler.capacity-scheduler.uniqueness-parameter". I.e. two jobs with the worker type
+ * specified by "worker-type" with the same parameter value for the property described by
+ * "uniqueness-parameter" will not run at the same time.
  */
-public class CubeCapacityScheduler extends AbstractScheduler<CubeCapacityWorkRequest> {
+public class CapacityScheduler extends AbstractScheduler<CapacityWorkRequest> {
 
-	public CubeCapacityScheduler(Class<? extends BackingStore> backingStore) {
+	private static final String UNIQUENESS_PARAMETER = "uniqueness-parameter";
+
+	private final Config config;
+
+	public CapacityScheduler(Class<? extends BackingStore> backingStore) {
 		super(backingStore);
+		config = getContext().system().settings().config()
+				.getConfig("oncue.scheduler.capacity-scheduler");
 	}
 
 	protected Comparator<Job> getComparator() {
@@ -53,15 +60,12 @@ public class CubeCapacityScheduler extends AbstractScheduler<CubeCapacityWorkReq
 	}
 
 	private boolean isRequiredWorkerType(Job job) {
-		Config config = getContext().system().settings().config();
-		return job.getWorkerType().equals(
-				config.getConfig("oncue.scheduler.cube-capacity-scheduler").getString(
-						"matching-worker-type"));
+		return job.getWorkerType().equals(config.getString("worker-type"));
 	}
 
 	@Override
-	protected void scheduleJobs(CubeCapacityWorkRequest workRequest) {
-		Set<String> runningMatchingJobs = getScheduledMatchingJobCodes();
+	protected void scheduleJobs(CapacityWorkRequest workRequest) {
+		Set<String> runningUniquenessConstrainedJobs = getScheduledUniquenessConstrainedParams();
 		List<Job> jobs = new ArrayList<>();
 		int allocatedMemory = 0;
 
@@ -74,11 +78,12 @@ public class CubeCapacityScheduler extends AbstractScheduler<CubeCapacityWorkReq
 				int requiredMemory = getRequiredMemory(job);
 				if (requiredMemory + allocatedMemory <= workRequest.getAvailableMemory()) {
 					if (isRequiredWorkerType(job)) {
-						String processCode = params.get("process_code");
-						if (runningMatchingJobs.contains(processCode)) {
+						String uniquenessParameter = config.getString(UNIQUENESS_PARAMETER);
+						String processCode = params.get(uniquenessParameter);
+						if (runningUniquenessConstrainedJobs.contains(processCode)) {
 							continue;
 						} else {
-							runningMatchingJobs.add(processCode);
+							runningUniquenessConstrainedJobs.add(processCode);
 						}
 					}
 
@@ -107,9 +112,10 @@ public class CubeCapacityScheduler extends AbstractScheduler<CubeCapacityWorkReq
 		Map<String, String> params = job.getParams();
 		if (!params.containsKey("memory")) {
 			Config config = getContext().system().settings().config();
-			params.put("memory", String.valueOf(config.getConfig(
-					"oncue.scheduler.cube-capacity-scheduler").getInt(
-					"default-requirements." + job.getWorkerType() + ".memory")));
+			params.put(
+					"memory",
+					String.valueOf(config.getConfig("oncue.scheduler.capacity-scheduler").getInt(
+							"default-requirements." + job.getWorkerType() + ".memory")));
 		}
 	}
 
@@ -117,15 +123,16 @@ public class CubeCapacityScheduler extends AbstractScheduler<CubeCapacityWorkReq
 		return Integer.parseInt(job.getParams().get("memory"));
 	}
 
-	private Set<String> getScheduledMatchingJobCodes() {
+	private Set<String> getScheduledUniquenessConstrainedParams() {
 		List<Job> scheduledJobs = getScheduledJobs();
-		Set<String> scheduledMatchingJobCodes = Sets.newHashSet();
+		Set<String> scheduledUniquenessConstrainedParams = Sets.newHashSet();
 		for (Job job : scheduledJobs) {
 			if (isRequiredWorkerType(job)) {
-				scheduledMatchingJobCodes.add(job.getParams().get("process_code"));
+				scheduledUniquenessConstrainedParams.add(job.getParams().get(
+						config.getString(UNIQUENESS_PARAMETER)));
 			}
 		}
-		return scheduledMatchingJobCodes;
+		return scheduledUniquenessConstrainedParams;
 	}
 
 }
