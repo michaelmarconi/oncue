@@ -25,7 +25,7 @@ public class JobEnqueueingTestWorker extends AbstractWorker {
 
 	private void processJob(Job job) {
 		try {
-			// Give this job to a test worker
+			// Enqueue a TestWorker job
 			Thread.sleep(500);
 			getSchedulerClient().enqueueJob(TestWorker.class.getName(), job.getParams());
 		} catch (Exception e) {
@@ -34,7 +34,7 @@ public class JobEnqueueingTestWorker extends AbstractWorker {
 	}
 
 	@Override
-	protected void redoWork(Job job) throws Exception {
+	protected void redoWork(Job job) {
 		processJob(job);
 	}
 }
