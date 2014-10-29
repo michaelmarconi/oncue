@@ -24,8 +24,10 @@ import oncue.backingstore.BackingStore;
 import oncue.common.messages.CapacityWorkRequest;
 import oncue.common.messages.Job;
 
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.typesafe.config.Config;
+import com.typesafe.config.ConfigObject;
 
 /**
  * A capacity-based scheduler.
@@ -45,27 +47,34 @@ import com.typesafe.config.Config;
  */
 public class CapacityScheduler extends AbstractScheduler<CapacityWorkRequest> {
 
-	private static final String UNIQUENESS_PARAMETER = "uniqueness-parameter";
-
 	private final Config config;
+	private final Map<String, Set<String>> workerTypesToUniqueParameters;
 
+	@SuppressWarnings("unchecked")
 	public CapacityScheduler(Class<? extends BackingStore> backingStore) {
 		super(backingStore);
 		config = getContext().system().settings().config()
 				.getConfig("oncue.scheduler.capacity-scheduler");
+
+		List<? extends ConfigObject> uniquenessConstraints = config
+				.getObjectList("uniqueness-constraints");
+		workerTypesToUniqueParameters = Maps.newHashMap();
+		for (ConfigObject value : uniquenessConstraints) {
+			Set<String> keys = Sets.newHashSet();
+			for (String key : (List<String>) value.get("uniqueness-keys").unwrapped()) {
+				keys.add(key);
+			}
+			workerTypesToUniqueParameters.put((String) value.get("worker-type").unwrapped(), keys);
+		}
 	}
 
 	protected Comparator<Job> getComparator() {
 		return new PriorityJobComparator();
 	}
 
-	private boolean isRequiredWorkerType(Job job) {
-		return job.getWorkerType().equals(config.getString("worker-type"));
-	}
-
 	@Override
 	protected void scheduleJobs(CapacityWorkRequest workRequest) {
-		Set<String> runningUniquenessConstrainedJobs = getScheduledUniquenessConstrainedParams();
+		Map<String, Set<Map<String, String>>> runningUniquenessConstrainedJobTypes = getScheduledUniquenessConstrainedParams();
 		List<Job> jobs = new ArrayList<>();
 		int allocatedMemory = 0;
 
@@ -73,22 +82,48 @@ public class CapacityScheduler extends AbstractScheduler<CapacityWorkRequest> {
 
 		while (iterator.hasNext()) {
 			Job job = iterator.next();
+			if (job.getId() == 6) {
+				System.out.println("foo");
+			}
 			if (workRequest.getWorkerTypes().contains(job.getWorkerType())) {
 				Map<String, String> params = job.getParams();
 				int requiredMemory = getRequiredMemory(job);
 				if (requiredMemory + allocatedMemory <= workRequest.getAvailableMemory()) {
-					if (isRequiredWorkerType(job)) {
-						String uniquenessParameter = config.getString(UNIQUENESS_PARAMETER);
-						String processCode = params.get(uniquenessParameter);
-						if (runningUniquenessConstrainedJobs.contains(processCode)) {
-							continue;
+					if (workerTypesToUniqueParameters.containsKey(job.getWorkerType())) {
+						if (runningUniquenessConstrainedJobTypes.containsKey(job.getWorkerType())) {
+							boolean foundIdentical = false;
+							for (Map<String, String> parameterKeyValues : runningUniquenessConstrainedJobTypes
+									.get(job.getWorkerType())) {
+								if(foundIdentical) {
+									break;
+								}
+								boolean identical = true;
+								for (String parameter : parameterKeyValues.keySet()) {
+									if (!params.get(parameter).equals(
+											parameterKeyValues.get(parameter))) {
+										identical = false;
+										break;
+									}
+								}
+								if (identical) {
+									foundIdentical = true;
+									break;
+								}
+							}
+							if(!foundIdentical) {
+								addJob(job, runningUniquenessConstrainedJobTypes);
+								jobs.add(job);
+								allocatedMemory += requiredMemory;
+							}
 						} else {
-							runningUniquenessConstrainedJobs.add(processCode);
+							addJob(job, runningUniquenessConstrainedJobTypes);
+							jobs.add(job);
+							allocatedMemory += requiredMemory;
 						}
+					} else {
+						jobs.add(job);
+						allocatedMemory += requiredMemory;
 					}
-
-					jobs.add(job);
-					allocatedMemory += requiredMemory;
 				}
 			}
 		}
@@ -101,6 +136,23 @@ public class CapacityScheduler extends AbstractScheduler<CapacityWorkRequest> {
 
 		// Dispatch the schedule
 		dispatchJobs(schedule);
+	}
+
+	private void addJob(Job job,
+			Map<String, Set<Map<String, String>>> runningUniquenessConstrainedJobTypes) {
+		Set<String> uniqueParams = workerTypesToUniqueParameters.get(job.getWorkerType());
+		Map<String, String> uniqueParamValues = Maps.newHashMap();
+		for (String key : job.getParams().keySet()) {
+			if (uniqueParams.contains(key)) {
+				uniqueParamValues.put(key, job.getParams().get(key));
+			}
+		}
+		if (!runningUniquenessConstrainedJobTypes.containsKey(job.getWorkerType())) {
+			Set<Map<String, String>> params = Sets.newHashSet();
+			runningUniquenessConstrainedJobTypes.put(job.getWorkerType(), params);
+		}
+
+		runningUniquenessConstrainedJobTypes.get(job.getWorkerType()).add(uniqueParamValues);
 	}
 
 	@Override
@@ -123,13 +175,26 @@ public class CapacityScheduler extends AbstractScheduler<CapacityWorkRequest> {
 		return Integer.parseInt(job.getParams().get("memory"));
 	}
 
-	private Set<String> getScheduledUniquenessConstrainedParams() {
+	@SuppressWarnings("unchecked")
+	private Map<String, Set<Map<String, String>>> getScheduledUniquenessConstrainedParams() {
 		List<Job> scheduledJobs = getScheduledJobs();
-		Set<String> scheduledUniquenessConstrainedParams = Sets.newHashSet();
+		Map<String, Set<Map<String, String>>> scheduledUniquenessConstrainedParams = Maps
+				.newHashMap();
 		for (Job job : scheduledJobs) {
-			if (isRequiredWorkerType(job)) {
-				scheduledUniquenessConstrainedParams.add(job.getParams().get(
-						config.getString(UNIQUENESS_PARAMETER)));
+			if (workerTypesToUniqueParameters.containsKey(job.getWorkerType())) {
+				Set<String> uniqueParams = workerTypesToUniqueParameters.get(job.getWorkerType());
+				Map<String, String> parameters = Maps.newHashMap();
+				for (String parameter : job.getParams().keySet()) {
+					if (uniqueParams.contains(parameter)) {
+						parameters.put(parameter, job.getParams().get(parameter));
+					}
+				}
+				if (scheduledUniquenessConstrainedParams.containsKey(job.getWorkerType())) {
+					scheduledUniquenessConstrainedParams.get(job.getWorkerType()).add(parameters);
+				} else {
+					scheduledUniquenessConstrainedParams.put(job.getWorkerType(),
+							Sets.newHashSet(parameters));
+				}
 			}
 		}
 		return scheduledUniquenessConstrainedParams;
