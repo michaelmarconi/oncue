@@ -22,7 +22,7 @@ public class CubeCapacityAgent extends AbstractAgent {
 
 	// The amount of total memory. Will fail if not defined.
 	private final int TOTAL_MEMORY = getContext().system().settings().config()
-			.getInt("oncue.agent.cube_capacity_agent.total_memory");
+			.getInt("oncue.agent.cube-capacity-agent.total-memory");
 
 	public CubeCapacityAgent(Set<String> workerTypes) throws MissingWorkerException {
 		super(workerTypes);

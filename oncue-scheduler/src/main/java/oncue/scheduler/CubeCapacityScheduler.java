@@ -49,8 +49,8 @@ public class CubeCapacityScheduler extends AbstractScheduler<CubeCapacityWorkReq
 	private boolean isRequiredWorkerType(Job job) {
 		Config config = getContext().system().settings().config();
 		return job.getWorkerType().equals(
-				config.getConfig("oncue.scheduler.cube_capacity_scheduler").getString(
-						"matching_worker_type"));
+				config.getConfig("oncue.scheduler.cube-capacity-scheduler").getString(
+						"matching-worker-type"));
 	}
 
 	@Override
@@ -102,8 +102,8 @@ public class CubeCapacityScheduler extends AbstractScheduler<CubeCapacityWorkReq
 		if (!params.containsKey("memory")) {
 			Config config = getContext().system().settings().config();
 			params.put("memory", String.valueOf(config.getConfig(
-					"oncue.scheduler.cube_capacity_scheduler").getInt(
-					"default_requirements." + job.getWorkerType() + ".memory")));
+					"oncue.scheduler.cube-capacity-scheduler").getInt(
+					"default-requirements." + job.getWorkerType() + ".memory")));
 		}
 	}
 

@@ -161,7 +161,7 @@ public class CubeCapacityStrategyTest extends ActorSystemTest {
 	public void memoryParameterOverridesConfigProvidedMemoryDefault() {
 		assertEquals(
 				500,
-				config.getInt("oncue.scheduler.cube_capacity_scheduler.default_requirements.oncue.tests.workers.TestWorker2.memory"));
+				config.getInt("oncue.scheduler.cube-capacity-scheduler.default-requirements.oncue.tests.workers.TestWorker2.memory"));
 		new JavaTestKit(system) {
 			{
 				// Create an agent that can run "TestWorker" workers
