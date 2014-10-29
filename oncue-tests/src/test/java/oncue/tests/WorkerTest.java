@@ -14,14 +14,13 @@
 package oncue.tests;
 
 import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertFalse;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
-import oncue.agent.UnlimitedCapacityAgent;
+import oncue.agent.ThrottledAgent;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobProgress;
@@ -31,7 +30,6 @@ import oncue.tests.workers.JobEnqueueingTestWorker;
 import oncue.tests.workers.JobSummaryRequestTestWorker;
 import oncue.tests.workers.TestWorker;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import redis.clients.jedis.Jedis;
@@ -43,8 +41,8 @@ import akka.testkit.JavaTestKit;
 import akka.testkit.TestActorRef;
 
 /**
- * When an agent receives a {@linkplain WorkResponse}, it will attempt to spawn
- * an instance of an {@linkplain IWorker} for each {@linkplain Job} in the list.
+ * When an agent receives a {@linkplain WorkResponse}, it will attempt to spawn an instance of an
+ * {@linkplain IWorker} for each {@linkplain Job} in the list.
  */
 public class WorkerTest extends ActorSystemTest {
 
@@ -60,7 +58,8 @@ public class WorkerTest extends ActorSystemTest {
 						new IgnoreMsg() {
 
 							protected boolean ignore(Object message) {
-								if (message instanceof WorkResponse || message instanceof JobProgress)
+								if (message instanceof WorkResponse
+										|| message instanceof JobProgress)
 									return false;
 
 								return true;
@@ -74,25 +73,25 @@ public class WorkerTest extends ActorSystemTest {
 
 				// Create and expose an agent
 				@SuppressWarnings("serial")
-				TestActorRef<UnlimitedCapacityAgent> agentRef = TestActorRef.create(system, new Props(
-						new UntypedActorFactory() {
-
+				final TestActorRef<ThrottledAgent> agentRef = TestActorRef.create(system,
+						new Props(new UntypedActorFactory() {
 							@Override
 							public Actor create() throws Exception {
-								UnlimitedCapacityAgent agent = new UnlimitedCapacityAgent(new HashSet<>(Arrays
+								ThrottledAgent agent = new ThrottledAgent(new HashSet<>(Arrays
 										.asList(TestWorker.class.getName())));
 								agent.injectProbe(agentProbe.getRef());
 								return agent;
 							}
 						}), settings.AGENT_NAME);
-				UnlimitedCapacityAgent agent = agentRef.underlyingActor();
 
 				// Wait until the agent receives an empty work response
-				WorkResponse workResponse = agentProbe.expectMsgClass(WorkResponse.class);
-				assertEquals(0, workResponse.getJobs().size());
+				new AwaitCond() {
 
-				// Check that there are no workers
-				assertFalse("Expected no child workers", agent.getContext().getChildren().iterator().hasNext());
+					@Override
+					protected boolean cond() {
+						return agentProbe.expectMsgClass(WorkResponse.class).getJobs().isEmpty();
+					}
+				};
 
 				// Enqueue a job
 				scheduler.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
@@ -102,9 +101,12 @@ public class WorkerTest extends ActorSystemTest {
 
 				// Expect a Job Progress message, showing no progress
 				JobProgress jobProgress = agentProbe.expectMsgClass(JobProgress.class);
-				assertEquals("Expected no progress on the job", 0.0, jobProgress.getJob().getProgress());
+				assertEquals("Expected no progress on the job", 0.0, jobProgress.getJob()
+						.getProgress());
 
-				final ActorRef worker = agent.getContext().getChildren().iterator().next();
+				// Pull out the worker that was created
+				final ActorRef worker = agentRef.underlyingActor().getContext().getChildren()
+						.iterator().next();
 
 				// Wait for the job to complete
 				new AwaitCond(duration("5 seconds")) {
@@ -120,7 +122,7 @@ public class WorkerTest extends ActorSystemTest {
 
 					@Override
 					protected boolean cond() {
-						return worker.isTerminated() == true;
+						return worker.isTerminated();
 					}
 				};
 			}
@@ -157,7 +159,8 @@ public class WorkerTest extends ActorSystemTest {
 				// Enqueue a job
 				Map<String, String> params = new HashMap<String, String>();
 				params.put("key", "value");
-				scheduler.tell(new EnqueueJob(JobEnqueueingTestWorker.class.getName(), params), null);
+				scheduler.tell(new EnqueueJob(JobEnqueueingTestWorker.class.getName(), params),
+						null);
 
 				// Expect the first job
 				EnqueueJob enqueueJob1 = schedulerProbe.expectMsgClass(EnqueueJob.class);
@@ -184,8 +187,10 @@ public class WorkerTest extends ActorSystemTest {
 				ActorRef scheduler = createScheduler(system);
 
 				// Create an agent
-				createAgent(system, new HashSet<String>(Arrays.asList(JobSummaryRequestTestWorker.class.getName())),
-						null);
+				createAgent(
+						system,
+						new HashSet<String>(Arrays.asList(JobSummaryRequestTestWorker.class
+								.getName())), null);
 
 				// Enqueue a job
 				scheduler.tell(new EnqueueJob(JobSummaryRequestTestWorker.class.getName()), null);
@@ -195,10 +200,12 @@ public class WorkerTest extends ActorSystemTest {
 
 					@Override
 					protected boolean cond() {
-						String result = jedis.get("oncue.tests.workers.JobSummaryRequestTestWorker");
+						String result = jedis
+								.get("oncue.tests.workers.JobSummaryRequestTestWorker");
 						if (result != null) {
 							return result.contains("Job 1")
-									&& result.contains("workerType=oncue.tests.workers.JobSummaryRequestTestWorker");
+									&& result
+											.contains("workerType=oncue.tests.workers.JobSummaryRequestTestWorker");
 						} else
 							return false;
 					}
@@ -208,70 +215,4 @@ public class WorkerTest extends ActorSystemTest {
 		};
 	}
 
-	@Test
-	@Ignore("Ignoring until MF has had a chance to review this")
-	// TODO MF: Please review this test
-	public void workerFailsWhenSchedulerCannotBeReached() {
-//		new JavaTestKit(system) {
-//
-//			{
-//				// Create a probe
-//				final JavaTestKit schedulerProbe = new JavaTestKit(system) {
-//
-//					{
-//						new IgnoreMsg() {
-//
-//							protected boolean ignore(Object message) {
-//								if (message instanceof EnqueueJob || message instanceof JobFailed)
-//									return false;
-//
-//								return true;
-//							}
-//						};
-//					}
-//				};
-//
-//				// Create a naked simple scheduler with our probe
-//				@SuppressWarnings("serial")
-//				final Props schedulerProps = new Props(new UntypedActorFactory() {
-//
-//					@Override
-//					public Actor create() throws Exception {
-//						SimpleQueuePopScheduler simpleQueuePopScheduler = new SimpleQueuePopScheduler(null);
-//						simpleQueuePopScheduler.injectProbe(schedulerProbe.getRef());
-//						return simpleQueuePopScheduler;
-//					}
-//				});
-//
-//				final TestActorRef<SimpleQueuePopScheduler> schedulerRef = TestActorRef.create(system, schedulerProps,
-//						settings.SCHEDULER_NAME);
-//				final SimpleQueuePopScheduler scheduler = schedulerRef.underlyingActor();
-//				scheduler.pause();
-//
-//				// Create an agent
-//				createAgent(
-//						system,
-//						new HashSet<String>(Arrays.asList(JobEnqueueingTestWorker.class.getName(),
-//								TestWorker.class.getName())), null);
-//
-//				// Enqueue a job
-//				Map<String, String> params = new HashMap<String, String>();
-//				params.put("key", "value");
-//				scheduler.tell(new EnqueueJob(JobEnqueueingTestWorker.class.getName(), params), null);
-//
-//				// Kill the queue manager, this should cause an exception as
-//				// soon as the scheduler
-//				// is unpaused and gives the agent the enqueued job
-//				scheduler.tell(PoisonPill.getInstance(), null);
-//				expectNoMsg(duration("1 second"));
-//
-//				scheduler.unpause();
-//
-//				// Expect a job failure message at the scheduler
-//				JobFailed jobFailed = schedulerProbe.expectMsgClass(JobFailed.class);
-//				assertEquals(JobEnqueueingTestWorker.class.getName(), jobFailed.getJob().getWorkerType());
-//				assertEquals(params, jobFailed.getJob().getParams());
-//			}
-//		};
-	}
 }
