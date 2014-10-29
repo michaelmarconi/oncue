@@ -136,7 +136,7 @@ public abstract class AbstractAgent extends UntypedActor {
 	}
 
 	@Override
-	public void onReceive(Object message) throws Exception {
+	public void onReceive(Object message) {
 
 		if (testProbe != null)
 			testProbe.forward(message, getContext());
