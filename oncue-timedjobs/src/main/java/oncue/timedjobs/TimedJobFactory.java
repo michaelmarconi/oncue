@@ -50,9 +50,8 @@ public class TimedJobFactory {
 
 		system.actorOf(new Props(new UntypedActorFactory() {
 			@Override
-			public Actor create() throws Exception {
+			public Actor create() {
 				return new TimedJob(workerType, endpointUri, parameters, failureRetryCount, testProbe);
-
 			}
 		}), "job-timer-" + jobName);
 	}

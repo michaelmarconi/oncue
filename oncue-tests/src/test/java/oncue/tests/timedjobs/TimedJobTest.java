@@ -3,6 +3,7 @@ package oncue.tests.timedjobs;
 import static org.junit.Assert.assertEquals;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -218,7 +219,7 @@ public class TimedJobTest extends ActorSystemTest {
 				response = agentProbe.expectMsgClass(duration("5 seconds"), WorkResponse.class);
 				Job job = response.getJobs().get(0);
 				assertEquals(TestWorker.class.getName(), job.getWorkerType());
-				assertEquals(null, job.getParams());
+				assertEquals(Collections.emptyMap(), job.getParams());
 			}
 		};
 	}

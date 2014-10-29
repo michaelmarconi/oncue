@@ -34,6 +34,7 @@ import oncue.common.messages.WorkResponse;
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
 import oncue.worker.AbstractWorker;
+
 import scala.concurrent.duration.Duration;
 import akka.actor.Actor;
 import akka.actor.ActorRef;
@@ -301,7 +302,7 @@ public abstract class AbstractAgent extends UntypedActor {
 		return new OneForOneStrategy(0, Duration.Zero(), new Function<Throwable, Directive>() {
 
 			@Override
-			public Directive apply(Throwable error) throws Exception {
+			public Directive apply(Throwable error) {
 				log.error(error, "The worker {} has died a horrible death!", getSender());
 				Job job = jobsInProgress.remove(getSender().path().toString());
 				onWorkerDeath(job, error);
