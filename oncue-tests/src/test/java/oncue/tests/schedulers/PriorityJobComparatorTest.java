@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import oncue.common.messages.Job;
-import oncue.scheduler.PriorityOrderedStableEnqueueDateJobComparator;
+import oncue.scheduler.PriorityJobComparator;
 
 import org.joda.time.DateTime;
 import org.junit.Test;
@@ -16,8 +16,8 @@ import org.junit.Test;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 
-public class PriorityOrderedStableEnqueueDateJobComparatorTest {
-	private final PriorityOrderedStableEnqueueDateJobComparator comparator = new PriorityOrderedStableEnqueueDateJobComparator();
+public class PriorityJobComparatorTest {
+	private final PriorityJobComparator comparator = new PriorityJobComparator();
 
 	@Test
 	public void returnsJobsWithOldestFirstWhenPriorityIsTheSame() {

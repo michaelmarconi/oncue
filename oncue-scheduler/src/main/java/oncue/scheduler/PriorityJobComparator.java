@@ -4,7 +4,7 @@ import java.util.Comparator;
 
 import oncue.common.messages.Job;
 
-public class PriorityOrderedStableEnqueueDateJobComparator implements Comparator<Job> {
+public class PriorityJobComparator implements Comparator<Job> {
 
 	@Override
 	public int compare(Job j1, Job j2) {

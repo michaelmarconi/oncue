@@ -43,7 +43,7 @@ public class CubeCapacityScheduler extends AbstractScheduler<CubeCapacityWorkReq
 	}
 
 	protected Comparator<Job> getComparator() {
-		return new PriorityOrderedStableEnqueueDateJobComparator();
+		return new PriorityJobComparator();
 	}
 
 	private boolean isRequiredWorkerType(Job job) {
