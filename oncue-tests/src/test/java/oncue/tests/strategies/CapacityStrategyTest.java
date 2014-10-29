@@ -14,7 +14,7 @@ import oncue.common.messages.Job;
 import oncue.common.messages.JobSummary;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
 import oncue.common.messages.WorkResponse;
-import oncue.scheduler.CubeCapacityScheduler;
+import oncue.scheduler.CapacityScheduler;
 import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.TestWorker;
 import oncue.tests.workers.TestWorker2;
@@ -32,7 +32,7 @@ import akka.testkit.TestActorRef;
 import com.google.api.client.util.Maps;
 import com.google.common.collect.Sets;
 
-public class CubeCapacityStrategyTest extends ActorSystemTest {
+public class CapacityStrategyTest extends ActorSystemTest {
 
 	private static final String TEST_WORKER = TestWorker.class.getName();
 
@@ -84,30 +84,30 @@ public class CubeCapacityStrategyTest extends ActorSystemTest {
 					@SuppressWarnings("unchecked")
 					@Override
 					public Actor create() throws ClassNotFoundException {
-						return new CubeCapacityScheduler(
+						return new CapacityScheduler(
 								(Class<? extends BackingStore>) Class
 										.forName(settings.SCHEDULER_BACKING_STORE_CLASS));
 					}
 				});
 
 				// Wait until the scheduler has three unscheduled jobs
-				final TestActorRef<CubeCapacityScheduler> schedulerRef = TestActorRef.create(
+				final TestActorRef<CapacityScheduler> schedulerRef = TestActorRef.create(
 						system, schedulerProps, settings.SCHEDULER_NAME);
-				final CubeCapacityScheduler scheduler = schedulerRef.underlyingActor();
+				final CapacityScheduler scheduler = schedulerRef.underlyingActor();
 				scheduler.pause();
 
 				// Enqueue jobs
 				schedulerRef.tell(
 						new EnqueueJob(TEST_WORKER, withParams(requiredMemory("2600"),
-								processCode("foo1"))), getRef());
+								code("foo1"))), getRef());
 				expectMsgClass(Job.class);
 				schedulerRef.tell(
 						new EnqueueJob(TEST_WORKER, withParams(requiredMemory("2600"),
-								processCode("foo2"))), getRef());
+								code("foo2"))), getRef());
 				expectMsgClass(Job.class);
 				schedulerRef.tell(
 						new EnqueueJob(TEST_WORKER, withParams(requiredMemory("1"),
-								processCode("foo3"))), getRef());
+								code("foo3"))), getRef());
 				expectMsgClass(Job.class);
 
 				new AwaitCond(duration("60 seconds"), duration("1 second")) {
@@ -161,7 +161,7 @@ public class CubeCapacityStrategyTest extends ActorSystemTest {
 	public void memoryParameterOverridesConfigProvidedMemoryDefault() {
 		assertEquals(
 				500,
-				config.getInt("oncue.scheduler.cube-capacity-scheduler.default-requirements.oncue.tests.workers.TestWorker2.memory"));
+				config.getInt("oncue.scheduler.capacity-scheduler.default-requirements.oncue.tests.workers.TestWorker2.memory"));
 		new JavaTestKit(system) {
 			{
 				// Create an agent that can run "TestWorker" workers
@@ -234,15 +234,15 @@ public class CubeCapacityStrategyTest extends ActorSystemTest {
 
 				// Enqueue jobs
 				scheduler.tell(
-						new EnqueueJob(TestWorker2.class.getName(), withParams(processCode("FOO"),
+						new EnqueueJob(TestWorker2.class.getName(), withParams(code("FOO"),
 								memory("200"))), getRef());
 				expectMsgClass(Job.class);
 				scheduler.tell(
-						new EnqueueJob(TestWorker2.class.getName(), withParams(processCode("FOO"),
+						new EnqueueJob(TestWorker2.class.getName(), withParams(code("FOO"),
 								memory("200"))), getRef());
 				expectMsgClass(Job.class);
 				scheduler.tell(
-						new EnqueueJob(TestWorker2.class.getName(), withParams(processCode("FOO2"),
+						new EnqueueJob(TestWorker2.class.getName(), withParams(code("FOO2"),
 								memory("200"))), getRef());
 				expectMsgClass(Job.class);
 
@@ -311,9 +311,9 @@ public class CubeCapacityStrategyTest extends ActorSystemTest {
 		return jobParams;
 	}
 
-	private Map<String, String> processCode(String code) {
+	private Map<String, String> code(String code) {
 		Map<String, String> jobParams = Maps.newHashMap();
-		jobParams.put("process_code", code);
+		jobParams.put("code", code);
 		return jobParams;
 	}
 

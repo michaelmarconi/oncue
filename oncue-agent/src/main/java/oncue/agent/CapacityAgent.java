@@ -15,11 +15,11 @@ package oncue.agent;
 
 import java.util.Set;
 
-import oncue.common.messages.CubeCapacityWorkRequest;
+import oncue.common.messages.CapacityWorkRequest;
 import oncue.common.messages.Job;
 
 /**
- * This class is intended to be used with the {@link CubeCapacityScheduler}. It models an agent as a
+ * This class is intended to be used with the {@link CapacityScheduler}. It models an agent as a
  * hole of a certain size, indicated by the "memory" priorty. Each job that is sent to the agent
  * will have a "memory" value, and the agent will continuously bite off work to do until it has no
  * more "memory" capacity left, and will execute all jobs in parallel. It will always consume as
@@ -30,18 +30,18 @@ import oncue.common.messages.Job;
  * high "memory" job.
  * 
  * The total "memory" available to the agent must be configured with the configuration propery
- * "oncue.agent.cube-capacity-agent.total-memory". The Agent will crash on startup if this is not
+ * "oncue.agent.capacity-agent.total-memory". The Agent will crash on startup if this is not
  * provided.
  */
-public class CubeCapacityAgent extends AbstractAgent {
+public class CapacityAgent extends AbstractAgent {
 
 	// The amount of total memory. Will fail if not defined.
 	private final int TOTAL_MEMORY = getContext().system().settings().config()
-			.getInt("oncue.agent.cube-capacity-agent.total-memory");
+			.getInt("oncue.agent.capacity-agent.total-memory");
 
-	public CubeCapacityAgent(Set<String> workerTypes) throws MissingWorkerException {
+	public CapacityAgent(Set<String> workerTypes) throws MissingWorkerException {
 		super(workerTypes);
-		log.info("This Cube capacity agent has total memory of {} to work with.", TOTAL_MEMORY);
+		log.info("This capacity agent has total memory of {} to work with.", TOTAL_MEMORY);
 	}
 
 	@Override
@@ -53,7 +53,7 @@ public class CubeCapacityAgent extends AbstractAgent {
 		int availableMemory = TOTAL_MEMORY - usedMemory;
 		log.debug("Requesting work with memory capacity of {}", availableMemory);
 		getScheduler().tell(
-				new CubeCapacityWorkRequest(getSelf(), getWorkerTypes(), availableMemory),
+				new CapacityWorkRequest(getSelf(), getWorkerTypes(), availableMemory),
 				getSelf());
 	}
 
