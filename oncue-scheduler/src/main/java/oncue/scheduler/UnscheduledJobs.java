@@ -136,7 +136,7 @@ public class UnscheduledJobs {
 	 */
 	private void restoreJobs() {
 		List<Job> restoredJobs = backingStore.restoreJobs();
-		if (restoredJobs != null && restoredJobs.size() > 0)
+		if (restoredJobs != null && !restoredJobs.isEmpty())
 			log.info("Restoring {} jobs from the backing store", restoredJobs.size());
 
 		unscheduledJobs.addAll(restoredJobs);

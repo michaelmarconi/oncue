@@ -148,7 +148,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 		 * Don't broadcast jobs if there are no agents, no more jobs on the unscheduled queue or
 		 * scheduling is paused
 		 */
-		if (agents.size() == 0 || unscheduledJobs.isEmpty() || paused)
+		if (agents.isEmpty() || unscheduledJobs.isEmpty() || paused)
 			return;
 
 		log.debug("Broadcasting jobs");
@@ -160,7 +160,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 		}
 
 		// Tee-up another broadcast if necessary
-		if (unscheduledJobs.getSize() > 0) {
+		if (!unscheduledJobs.isEmpty()) {
 
 			// Cancel any scheduled broadcast
 			if (jobsBroadcast != null)
