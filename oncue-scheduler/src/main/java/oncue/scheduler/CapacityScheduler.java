@@ -61,8 +61,10 @@ public class CapacityScheduler extends AbstractScheduler<CapacityWorkRequest> {
 		workerTypesToUniqueParameters = Maps.newHashMap();
 		for (ConfigObject value : uniquenessConstraints) {
 			Set<String> keys = Sets.newHashSet();
-			for (String key : (List<String>) value.get("uniqueness-keys").unwrapped()) {
-				keys.add(key);
+			if (value.containsKey("uniqueness-keys")) {
+				for (String key : (List<String>) value.get("uniqueness-keys").unwrapped()) {
+					keys.add(key);
+				}
 			}
 			workerTypesToUniqueParameters.put((String) value.get("worker-type").unwrapped(), keys);
 		}
@@ -82,35 +84,14 @@ public class CapacityScheduler extends AbstractScheduler<CapacityWorkRequest> {
 
 		while (iterator.hasNext()) {
 			Job job = iterator.next();
-			if (job.getId() == 6) {
-				System.out.println("foo");
-			}
 			if (workRequest.getWorkerTypes().contains(job.getWorkerType())) {
-				Map<String, String> params = job.getParams();
 				int requiredMemory = getRequiredMemory(job);
 				if (requiredMemory + allocatedMemory <= workRequest.getAvailableMemory()) {
 					if (workerTypesToUniqueParameters.containsKey(job.getWorkerType())) {
 						if (runningUniquenessConstrainedJobTypes.containsKey(job.getWorkerType())) {
-							boolean foundIdentical = false;
-							for (Map<String, String> parameterKeyValues : runningUniquenessConstrainedJobTypes
-									.get(job.getWorkerType())) {
-								if(foundIdentical) {
-									break;
-								}
-								boolean identical = true;
-								for (String parameter : parameterKeyValues.keySet()) {
-									if (!params.get(parameter).equals(
-											parameterKeyValues.get(parameter))) {
-										identical = false;
-										break;
-									}
-								}
-								if (identical) {
-									foundIdentical = true;
-									break;
-								}
-							}
-							if(!foundIdentical) {
+							boolean blockedByRunningUniquenessConstrainedJob = findRunningUniquenessConstraintedJobConflicts(
+									runningUniquenessConstrainedJobTypes, job);
+							if (!blockedByRunningUniquenessConstrainedJob) {
 								addJob(job, runningUniquenessConstrainedJobTypes);
 								jobs.add(job);
 								allocatedMemory += requiredMemory;
@@ -138,6 +119,99 @@ public class CapacityScheduler extends AbstractScheduler<CapacityWorkRequest> {
 		dispatchJobs(schedule);
 	}
 
+	/**
+	 * Check if the uniqueness parameters for the given job conflict with any existing running job's
+	 * uniqueness parameters. I.e., given a map of worker type -> (set of (map of uniqueness key ->
+	 * parameter value for that uniqueness key)), ensure that for each defined uniqueness key for
+	 * the job's worker type there are no entries in the running job's uniquness key/value pairs
+	 * that are identical.
+	 * 
+	 * @param runningUniquenessConstrainedJobTypes Information on the currently running jobs and
+	 * their parameter values for all uniqueness constrained parameters
+	 * @param job The job
+	 * @return
+	 */
+	private boolean findRunningUniquenessConstraintedJobConflicts(
+			Map<String, Set<Map<String, String>>> runningUniquenessConstrainedJobTypes, Job job) {
+		boolean foundIdentical = false;
+		for (Map<String, String> parameterKeyValues : runningUniquenessConstrainedJobTypes.get(job
+				.getWorkerType())) {
+			if (foundIdentical) {
+				break;
+			}
+			boolean identical = true;
+			for (String parameter : parameterKeyValues.keySet()) {
+				if (!job.getParams().get(parameter).equals(parameterKeyValues.get(parameter))) {
+					identical = false;
+					break;
+				}
+			}
+			if (identical) {
+				foundIdentical = true;
+				break;
+			}
+		}
+		return foundIdentical;
+	}
+
+	@Override
+	protected void augmentJob(Job job) {
+		ensureRequiredMemory(job);
+	}
+
+	/**
+	 * Ensure that a job has a "memory" parameter. If it exists, leave it as it is. If it does not,
+	 * attempt to populate it from the configuration. This will crash if both the job does not have
+	 * the parameter and the configuration does not define a default value for this type of job.
+	 * 
+	 * @param job The job
+	 */
+	private void ensureRequiredMemory(Job job) {
+		Map<String, String> params = job.getParams();
+		if (!params.containsKey("memory")) {
+			Config config = getContext().system().settings().config();
+			params.put(
+					"memory",
+					String.valueOf(config.getConfig("oncue.scheduler.capacity-scheduler").getInt(
+							"default-requirements." + job.getWorkerType() + ".memory")));
+		}
+	}
+
+	/**
+	 * Get an integer representation of the memory key for a job. Caller should ensure jobs has a
+	 * memory parameter.
+	 * 
+	 * @param job The job
+	 * @return
+	 */
+	private int getRequiredMemory(Job job) {
+		return Integer.parseInt(job.getParams().get("memory"));
+	}
+
+	/**
+	 * Return a list of all scheduled jobs that have uniqueness constraints and the parameter
+	 * key/values for keys defined in those uniqueness constraints
+	 * 
+	 * @return
+	 */
+	private Map<String, Set<Map<String, String>>> getScheduledUniquenessConstrainedParams() {
+		List<Job> scheduledJobs = getScheduledJobs();
+		Map<String, Set<Map<String, String>>> scheduledUniquenessConstrainedParams = Maps
+				.newHashMap();
+		for (Job job : scheduledJobs) {
+			if (workerTypesToUniqueParameters.containsKey(job.getWorkerType())) {
+				addJob(job, scheduledUniquenessConstrainedParams);
+			}
+		}
+		return scheduledUniquenessConstrainedParams;
+	}
+
+	/**
+	 * Add a job and it's uniqueness parameters to a list of active uniqueness constrained jobs.
+	 * 
+	 * @param job
+	 * @param runningUniquenessConstrainedJobTypes
+	 */
 	private void addJob(Job job,
 			Map<String, Set<Map<String, String>>> runningUniquenessConstrainedJobTypes) {
 		Set<String> uniqueParams = workerTypesToUniqueParameters.get(job.getWorkerType());
@@ -153,51 +227,6 @@ public class CapacityScheduler extends AbstractScheduler<CapacityWorkRequest> {
 		}
 
 		runningUniquenessConstrainedJobTypes.get(job.getWorkerType()).add(uniqueParamValues);
-	}
-
-	@Override
-	protected void augmentJob(Job job) {
-		ensureRequiredMemory(job);
-	}
-
-	private void ensureRequiredMemory(Job job) {
-		Map<String, String> params = job.getParams();
-		if (!params.containsKey("memory")) {
-			Config config = getContext().system().settings().config();
-			params.put(
-					"memory",
-					String.valueOf(config.getConfig("oncue.scheduler.capacity-scheduler").getInt(
-							"default-requirements." + job.getWorkerType() + ".memory")));
-		}
-	}
-
-	private int getRequiredMemory(Job job) {
-		return Integer.parseInt(job.getParams().get("memory"));
-	}
-
-	@SuppressWarnings("unchecked")
-	private Map<String, Set<Map<String, String>>> getScheduledUniquenessConstrainedParams() {
-		List<Job> scheduledJobs = getScheduledJobs();
-		Map<String, Set<Map<String, String>>> scheduledUniquenessConstrainedParams = Maps
-				.newHashMap();
-		for (Job job : scheduledJobs) {
-			if (workerTypesToUniqueParameters.containsKey(job.getWorkerType())) {
-				Set<String> uniqueParams = workerTypesToUniqueParameters.get(job.getWorkerType());
-				Map<String, String> parameters = Maps.newHashMap();
-				for (String parameter : job.getParams().keySet()) {
-					if (uniqueParams.contains(parameter)) {
-						parameters.put(parameter, job.getParams().get(parameter));
-					}
-				}
-				if (scheduledUniquenessConstrainedParams.containsKey(job.getWorkerType())) {
-					scheduledUniquenessConstrainedParams.get(job.getWorkerType()).add(parameters);
-				} else {
-					scheduledUniquenessConstrainedParams.put(job.getWorkerType(),
-							Sets.newHashSet(parameters));
-				}
-			}
-		}
-		return scheduledUniquenessConstrainedParams;
 	}
 
 }

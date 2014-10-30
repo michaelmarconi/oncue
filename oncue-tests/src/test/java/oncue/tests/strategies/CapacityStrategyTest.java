@@ -17,6 +17,7 @@ import oncue.common.messages.SimpleMessages.SimpleMessage;
 import oncue.common.messages.WorkResponse;
 import oncue.scheduler.CapacityScheduler;
 import oncue.tests.base.ActorSystemTest;
+import oncue.tests.load.workers.SimpleLoadTestWorker;
 import oncue.tests.workers.TestWorker;
 import oncue.tests.workers.TestWorker2;
 
@@ -376,17 +377,20 @@ public class CapacityStrategyTest extends ActorSystemTest {
 
 					@Override
 					protected boolean cond() {
+						// Expect worker to ask for more work and get an empty response while it's
+						// processing those jobs.
 						WorkResponse workResponse = agentProbe.expectMsgClass(WorkResponse.class);
 						if (workResponse.getJobs().size() == 0) {
 							return false;
 						}
 
-						// Expect worker to ask for more work and get an empty response while it's processing those jobs.
 						schedulerProbe.expectMsgClass(new FiniteDuration(5, TimeUnit.SECONDS),
 								AbstractWorkRequest.class);
 
-						// There's three possible scenarios here: the TestWorker and TestWorker2 jobs finish
-						// at the same time and there's a work response with two new jobs, or one of the
+						// There's three possible scenarios here: the TestWorker and TestWorker2
+						// jobs finish
+						// at the same time and there's a work response with two new jobs, or one of
+						// the
 						// jobs finishes first and the other appears
 						if (workResponse.getJobs().size() == 2) {
 							assertEquals(2, workResponse.getJobs().get(0).getId());
@@ -394,7 +398,7 @@ public class CapacityStrategyTest extends ActorSystemTest {
 						} else {
 							assertEquals(1, workResponse.getJobs().size());
 							long id = workResponse.getJobs().get(0).getId();
-							if(id != 0 && id != 6) {
+							if (id != 0 && id != 6) {
 								fail();
 							}
 							int expectedJobID = id == 6 ? 2 : 6;
@@ -402,6 +406,91 @@ public class CapacityStrategyTest extends ActorSystemTest {
 							assertEquals(1, workResponse.getJobs().size());
 							assertEquals(expectedJobID, workResponse.getJobs().get(0).getId());
 						}
+
+						return true;
+					}
+				};
+			}
+
+		};
+	}
+
+	@Test
+	public void uniquenessConstrainedWorkerTypeWithNoConstrainedParametersUsesOnlyWorkerTypeAsUniquenessConstraint() {
+		// i.e. if no parameters are defined, simply adding a worker type with no parameters will
+		// enforce that only one of that worker type can happen at a time, ignoring the parameters
+		// of any job with that worker type.
+		new JavaTestKit(system) {
+			{
+				// Create an agent that can run "SimpleLoadTestWorker" workers
+				final JavaTestKit schedulerProbe = new JavaTestKit(system) {
+					{
+						new IgnoreMsg() {
+							protected boolean ignore(Object message) {
+								if (message instanceof AbstractWorkRequest)
+									return false;
+								else
+									return true;
+							}
+						};
+					}
+				};
+
+				// Create a scheduler
+				ActorRef scheduler = createScheduler(system, schedulerProbe.getRef());
+
+				// Enqueue jobs
+				scheduler.tell(
+						new EnqueueJob(SimpleLoadTestWorker.class.getName(), withParams(
+								code("FOO"), memory("200"))), getRef());
+				expectMsgClass(Job.class);
+				scheduler.tell(
+						new EnqueueJob(SimpleLoadTestWorker.class.getName(), withParams(
+								code("FOO2"), memory("200"))), getRef());
+				expectMsgClass(Job.class);
+
+				// ---
+
+				// Create an agent that can run "SimpleLoadTestWorker" workers
+				final JavaTestKit agentProbe = new JavaTestKit(system) {
+					{
+						new IgnoreMsg() {
+							protected boolean ignore(Object message) {
+								if (message instanceof WorkResponse)
+									return false;
+								else
+									return true;
+							}
+						};
+					}
+				};
+
+				createAgent(system,
+						new HashSet<String>(Arrays.asList(SimpleLoadTestWorker.class.getName())),
+						agentProbe.getRef());
+
+				// Expect a work response with only one SimpleLoadTestWorker job
+				WorkResponse workResponse = agentProbe.expectMsgClass(WorkResponse.class);
+				assertEquals(1, workResponse.getJobs().size());
+				assertEquals(1, workResponse.getJobs().get(0).getId());
+
+				schedulerProbe.expectMsgClass(new FiniteDuration(5, TimeUnit.SECONDS),
+						AbstractWorkRequest.class);
+
+				new AwaitCond() {
+
+					@Override
+					protected boolean cond() {
+						// Expect worker to ask for more work and get an empty response while it's
+						// processing those jobs.
+						WorkResponse workResponse = agentProbe.expectMsgClass(
+								duration("5 seconds"), WorkResponse.class);
+						if (workResponse.getJobs().size() == 0) {
+							return false;
+						}
+
+						assertEquals(1, workResponse.getJobs().size());
+						assertEquals(2, workResponse.getJobs().get(0).getId());
 
 						return true;
 					}

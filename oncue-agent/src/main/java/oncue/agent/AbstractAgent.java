@@ -137,7 +137,7 @@ public abstract class AbstractAgent extends UntypedActor {
 	}
 
 	@Override
-	public void onReceive(Object message) throws Exception {
+	public void onReceive(Object message) {
 
 		if (testProbe != null)
 			testProbe.forward(message, getContext());
@@ -260,7 +260,7 @@ public abstract class AbstractAgent extends UntypedActor {
 				}
 			}), "job-" + job.getId());
 			jobsInProgress.put(worker.path().toString(), job);
-			worker.tell(job, getSelf());
+			worker.tell(job.clone(), getSelf());
 		} catch (MissingWorkerException e) {
 			log.error(e, e.getMessage());
 			sendFailure(job, e.getMessage());
