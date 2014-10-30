@@ -13,4 +13,7 @@ public class ClientFactory {
 		return httpClient;
 	}
 
+	private ClientFactory() {
+	}
+
 }

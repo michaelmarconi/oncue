@@ -19,6 +19,9 @@ public class ObjectMapperFactory {
 		mapper.setPropertyNamingStrategy(PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES);
 	}
 
+	private ObjectMapperFactory() {
+	}
+
 	public static ObjectMapper getInstance() {
 		return mapper;
 	}
