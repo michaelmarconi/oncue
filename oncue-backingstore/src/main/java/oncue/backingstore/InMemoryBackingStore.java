@@ -12,9 +12,12 @@ import org.joda.time.Duration;
 
 import akka.actor.ActorSystem;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
+
 /**
- * A simple in-memory backing store, which is not persistent across restarts.
- * Use this for testing only!
+ * A simple in-memory backing store, which is not persistent across restarts. Use this for testing
+ * only!
  */
 public class InMemoryBackingStore extends AbstractBackingStore {
 
@@ -63,8 +66,8 @@ public class InMemoryBackingStore extends AbstractBackingStore {
 		for (Job scheduledJob : scheduledJobs) {
 			if (scheduledJob.getId() == job.getId()) {
 				scheduledJob.setProgress(job.getProgress());
-				if (scheduledJob.getState() == Job.State.COMPLETE) {
-					completedJobs.add(scheduledJob);
+				if (job.getState() == Job.State.COMPLETE) {
+					completedJobs.add(job);
 				}
 				break;
 			}
@@ -72,13 +75,13 @@ public class InMemoryBackingStore extends AbstractBackingStore {
 	}
 
 	@Override
-	public void removeScheduledJob(Job job) {
-		scheduledJobs.remove(job);
+	public void removeScheduledJob(final Job job) {
+		removeJobById(scheduledJobs, job);
 	}
 
 	@Override
 	public void removeUnscheduledJob(Job job) {
-		unscheduledJobs.remove(job);
+		removeJobById(unscheduledJobs, job);
 	}
 
 	@Override
@@ -88,12 +91,12 @@ public class InMemoryBackingStore extends AbstractBackingStore {
 
 	@Override
 	public void removeCompletedJob(Job job) {
-		completedJobs.remove(job);
+		removeJobById(completedJobs, job);
 	}
 
 	@Override
 	public void removeFailedJob(Job job) {
-		failedJobs.remove(job);
+		removeJobById(failedJobs, job);
 	}
 
 	@Override
@@ -101,7 +104,8 @@ public class InMemoryBackingStore extends AbstractBackingStore {
 		List<Job> expiredCompletedJobs = new ArrayList<>();
 		for (Job completedJob : completedJobs) {
 			DateTime expirationThreshold = DateTime.now().minus(expirationAge.getMillis());
-			boolean isExpired = completedJob.getCompletedAt().isBefore(expirationThreshold.toInstant());
+			boolean isExpired = completedJob.getCompletedAt().isBefore(
+					expirationThreshold.toInstant());
 			if (isExpired) {
 				expiredCompletedJobs.add(completedJob);
 			}
@@ -115,7 +119,8 @@ public class InMemoryBackingStore extends AbstractBackingStore {
 		List<Job> expiredFailedJobs = new ArrayList<>();
 		for (Job failedJob : failedJobs) {
 			DateTime expirationThreshold = DateTime.now().minus(expirationAge.getMillis());
-			boolean isExpired = failedJob.getCompletedAt().isBefore(expirationThreshold.toInstant());
+			boolean isExpired = failedJob.getCompletedAt()
+					.isBefore(expirationThreshold.toInstant());
 			if (isExpired) {
 				expiredFailedJobs.add(failedJob);
 			}
@@ -124,4 +129,21 @@ public class InMemoryBackingStore extends AbstractBackingStore {
 
 		return expiredFailedJobs.size() + expiredCompletedJobs.size();
 	}
+
+	/**
+	 * Remove jobs from collections by ID rather than object equality.
+	 * @param jobList
+	 * @param job
+	 */
+	private void removeJobById(List<Job> jobList, final Job job) {
+		Iterables.removeIf(jobList, new Predicate<Job>() {
+
+			@Override
+			public boolean apply(Job input) {
+				return job.getId() == input.getId();
+			}
+
+		});
+	}
+
 }

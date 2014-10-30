@@ -15,6 +15,7 @@ package oncue.scheduler;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +48,10 @@ import com.typesafe.config.ConfigObject;
  */
 public class CapacityScheduler extends AbstractScheduler<CapacityWorkRequest> {
 
+	private class WorkerUniquenessParameters extends HashMap<String, Set<Map<String, String>>> {
+		private static final long serialVersionUID = -2463700325426716368L;
+	}
+
 	private final Config config;
 	private final Map<String, Set<String>> workerTypesToUniqueParameters;
 
@@ -76,7 +81,7 @@ public class CapacityScheduler extends AbstractScheduler<CapacityWorkRequest> {
 
 	@Override
 	protected void scheduleJobs(CapacityWorkRequest workRequest) {
-		Map<String, Set<Map<String, String>>> runningUniquenessConstrainedJobTypes = getScheduledUniquenessConstrainedParams();
+		WorkerUniquenessParameters runningUniquenessConstrainedJobTypes = getScheduledUniquenessConstrainedParams();
 		List<Job> jobs = new ArrayList<>();
 		int allocatedMemory = 0;
 
@@ -132,13 +137,10 @@ public class CapacityScheduler extends AbstractScheduler<CapacityWorkRequest> {
 	 * @return
 	 */
 	private boolean findRunningUniquenessConstraintedJobConflicts(
-			Map<String, Set<Map<String, String>>> runningUniquenessConstrainedJobTypes, Job job) {
+			WorkerUniquenessParameters runningUniquenessConstrainedJobTypes, Job job) {
 		boolean foundIdentical = false;
 		for (Map<String, String> parameterKeyValues : runningUniquenessConstrainedJobTypes.get(job
 				.getWorkerType())) {
-			if (foundIdentical) {
-				break;
-			}
 			boolean identical = true;
 			for (String parameter : parameterKeyValues.keySet()) {
 				if (!job.getParams().get(parameter).equals(parameterKeyValues.get(parameter))) {
@@ -194,10 +196,9 @@ public class CapacityScheduler extends AbstractScheduler<CapacityWorkRequest> {
 	 * 
 	 * @return
 	 */
-	private Map<String, Set<Map<String, String>>> getScheduledUniquenessConstrainedParams() {
+	private WorkerUniquenessParameters getScheduledUniquenessConstrainedParams() {
 		List<Job> scheduledJobs = getScheduledJobs();
-		Map<String, Set<Map<String, String>>> scheduledUniquenessConstrainedParams = Maps
-				.newHashMap();
+		WorkerUniquenessParameters scheduledUniquenessConstrainedParams = new WorkerUniquenessParameters();
 		for (Job job : scheduledJobs) {
 			if (workerTypesToUniqueParameters.containsKey(job.getWorkerType())) {
 				addJob(job, scheduledUniquenessConstrainedParams);
@@ -212,8 +213,7 @@ public class CapacityScheduler extends AbstractScheduler<CapacityWorkRequest> {
 	 * @param job
 	 * @param runningUniquenessConstrainedJobTypes
 	 */
-	private void addJob(Job job,
-			Map<String, Set<Map<String, String>>> runningUniquenessConstrainedJobTypes) {
+	private void addJob(Job job, WorkerUniquenessParameters runningUniquenessConstrainedJobTypes) {
 		Set<String> uniqueParams = workerTypesToUniqueParameters.get(job.getWorkerType());
 		Map<String, String> uniqueParamValues = Maps.newHashMap();
 		for (String key : job.getParams().keySet()) {
