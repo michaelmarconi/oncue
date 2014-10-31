@@ -429,7 +429,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 
 		else if (message instanceof RemoteClientShutdown) {
 			String system = ((RemoteClientShutdown) message).getRemoteAddress().system();
-			if (system.equals("oncue-agent")) {
+			if ("oncue-agent".equals(system)) {
 				String agent = ((RemoteClientShutdown) message).getRemoteAddress().toString()
 						+ settings.AGENT_PATH;
 				log.info("Agent '{}' has shut down", agent);
