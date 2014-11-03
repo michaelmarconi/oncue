@@ -25,6 +25,12 @@ import oncue.backingstore.BackingStore;
 import oncue.common.messages.Job;
 import akka.event.LoggingAdapter;
 
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Sets;
+
 /**
  * An encapsulated job queue of unscheduled {@linkplain Job}s that relies on a backing store for
  * persistence.
@@ -42,7 +48,8 @@ public class UnscheduledJobs {
 	/**
 	 * @param backingStore is an instance of {@linkplain BackingStore}
 	 */
-	public UnscheduledJobs(BackingStore backingStore, LoggingAdapter log, Comparator<Job> jobComparator) {
+	public UnscheduledJobs(BackingStore backingStore, LoggingAdapter log,
+			Comparator<Job> jobComparator) {
 		this.unscheduledJobs = new TreeSet<>(jobComparator);
 		this.backingStore = backingStore;
 		this.log = log;
@@ -109,10 +116,18 @@ public class UnscheduledJobs {
 	 * 
 	 * @return a boolean, indicating if the removal was successful
 	 */
-	public boolean removeJob(Job job) {
-		boolean removed = unscheduledJobs.remove(job);
+	public boolean removeJobById(final long jobId) {
+		boolean removed = Iterables.removeIf(unscheduledJobs, new Predicate<Job>() {
+
+			@Override
+			public boolean apply(Job input) {
+				return input.getId() == jobId;
+			}
+
+		});
+
 		if (removed)
-			backingStore.removeUnscheduledJob(job);
+			backingStore.removeUnscheduledJobById(jobId);
 
 		return removed;
 	}
@@ -123,11 +138,28 @@ public class UnscheduledJobs {
 	 * @return a boolean, indicating if the removal was successful
 	 */
 	public boolean removeJobs(List<Job> jobs) {
-		boolean removed = unscheduledJobs.removeAll(jobs);
+		final Set<Long> jobIds = Sets.newHashSet(Iterators.transform(jobs.iterator(),
+				new Function<Job, Long>() {
+
+					@Override
+					public Long apply(Job input) {
+						return input.getId();
+					}
+
+				}));
+
+		boolean removed = Iterables.removeIf(unscheduledJobs, new Predicate<Job>() {
+			@Override
+			public boolean apply(Job input) {
+				return jobIds.contains(input.getId());
+			}
+		});
+
 		if (backingStore != null && removed)
 			for (Job job : jobs) {
-				backingStore.removeUnscheduledJob(job);
+				backingStore.removeUnscheduledJobById(job.getId());
 			}
+
 		return removed;
 	}
 

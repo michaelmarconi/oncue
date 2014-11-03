@@ -75,13 +75,13 @@ public class InMemoryBackingStore extends AbstractBackingStore {
 	}
 
 	@Override
-	public void removeScheduledJob(final Job job) {
-		removeJobById(scheduledJobs, job);
+	public void removeScheduledJobById(long jobId) {
+		removeJobById(scheduledJobs, jobId);
 	}
 
 	@Override
-	public void removeUnscheduledJob(Job job) {
-		removeJobById(unscheduledJobs, job);
+	public void removeUnscheduledJobById(long jobId) {
+		removeJobById(unscheduledJobs, jobId);
 	}
 
 	@Override
@@ -90,13 +90,13 @@ public class InMemoryBackingStore extends AbstractBackingStore {
 	}
 
 	@Override
-	public void removeCompletedJob(Job job) {
-		removeJobById(completedJobs, job);
+	public void removeCompletedJobById(long jobId) {
+		removeJobById(completedJobs, jobId);
 	}
 
 	@Override
-	public void removeFailedJob(Job job) {
-		removeJobById(failedJobs, job);
+	public void removeFailedJobById(long jobId) {
+		removeJobById(failedJobs, jobId);
 	}
 
 	@Override
@@ -135,12 +135,12 @@ public class InMemoryBackingStore extends AbstractBackingStore {
 	 * @param jobList
 	 * @param job
 	 */
-	private void removeJobById(List<Job> jobList, final Job job) {
+	private void removeJobById(List<Job> jobList, final long jobId) {
 		Iterables.removeIf(jobList, new Predicate<Job>() {
 
 			@Override
 			public boolean apply(Job input) {
-				return job.getId() == input.getId();
+				return jobId == input.getId();
 			}
 
 		});
