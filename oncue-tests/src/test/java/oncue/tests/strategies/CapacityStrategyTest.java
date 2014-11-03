@@ -214,7 +214,7 @@ public class CapacityStrategyTest extends ActorSystemTest {
 	}
 
 	@Test
-	public void doesNotScheduleMultipleJobsForTheSameMatchingProcess() {
+	public void doesNotScheduleMultipleJobsForTheSameConstrainedWorker() {
 		new JavaTestKit(system) {
 			{
 				// Create an agent that can run "TestWorker" workers
