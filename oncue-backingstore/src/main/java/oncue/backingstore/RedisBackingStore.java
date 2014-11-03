@@ -381,37 +381,37 @@ public class RedisBackingStore extends AbstractBackingStore {
 	}
 
 	@Override
-	public void removeCompletedJob(Job job) {
+	public void removeCompletedJobById(long jobId) {
 		Jedis redis = RedisBackingStore.getConnection();
 
-		redis.lrem(COMPLETED_JOBS, 0, Long.toString(job.getId()));
+		redis.lrem(COMPLETED_JOBS, 0, Long.toString(jobId));
 
 		RedisBackingStore.releaseConnection(redis);
 	}
 
 	@Override
-	public void removeFailedJob(Job job) {
+	public void removeFailedJobById(long jobId) {
 		Jedis redis = RedisBackingStore.getConnection();
 
-		redis.lrem(FAILED_JOBS, 0, Long.toString(job.getId()));
+		redis.lrem(FAILED_JOBS, 0, Long.toString(jobId));
 
 		RedisBackingStore.releaseConnection(redis);
 	}
 
 	@Override
-	public void removeScheduledJob(Job job) {
+	public void removeScheduledJobById(long jobId) {
 		Jedis redis = RedisBackingStore.getConnection();
 
-		redis.lrem(SCHEDULED_JOBS, 0, Long.toString(job.getId()));
+		redis.lrem(SCHEDULED_JOBS, 0, Long.toString(jobId));
 
 		RedisBackingStore.releaseConnection(redis);
 	}
 
 	@Override
-	public void removeUnscheduledJob(Job job) {
+	public void removeUnscheduledJobById(long jobId) {
 		Jedis redis = RedisBackingStore.getConnection();
 
-		redis.lrem(UNSCHEDULED_JOBS, 0, Long.toString(job.getId()));
+		redis.lrem(UNSCHEDULED_JOBS, 0, Long.toString(jobId));
 
 		RedisBackingStore.releaseConnection(redis);
 	}
@@ -452,7 +452,7 @@ public class RedisBackingStore extends AbstractBackingStore {
 			DateTime expirationThreshold = DateTime.now().minus(expirationAge.getMillis());
 			boolean isExpired = completedJob.getCompletedAt().isBefore(expirationThreshold.toInstant());
 			if (isExpired) {
-				removeCompletedJob(completedJob);
+				removeCompletedJobById(completedJob.getId());
 				cleanedJobsCount++;
 			}
 		}
@@ -472,7 +472,7 @@ public class RedisBackingStore extends AbstractBackingStore {
 			DateTime expirationThreshold = DateTime.now().minus(expirationAge.getMillis());
 			boolean isExpired = failedJob.getCompletedAt().isBefore(expirationThreshold.toInstant());
 			if (isExpired) {
-				removeFailedJob(failedJob);
+				removeFailedJobById(failedJob.getId());
 				cleanedJobsCount++;
 			}
 		}

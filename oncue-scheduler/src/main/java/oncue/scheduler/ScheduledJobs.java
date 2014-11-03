@@ -122,7 +122,7 @@ public class ScheduledJobs {
 	 * 
 	 * @throws RemoveScheduleJobException
 	 */
-	public void removeJob(final Job job, String agent) throws RemoveScheduleJobException {
+	public void removeJobById(final long jobId, String agent) throws RemoveScheduleJobException {
 
 		if (!scheduledJobs.containsKey(agent))
 			throw new RemoveScheduleJobException("There is no registered agent " + agent
@@ -132,11 +132,11 @@ public class ScheduledJobs {
 
 			@Override
 			public boolean apply(Job input) {
-				return input.getId() == job.getId();
+				return input.getId() == jobId;
 			}
 		});
 
-		backingStore.removeScheduledJob(job);
+		backingStore.removeScheduledJobById(jobId);
 	}
 
 	/**

@@ -94,7 +94,7 @@ public class ThrottledLoadTest extends ActorSystemTest {
 					protected boolean cond() {
 						scheduler.tell(SimpleMessage.JOB_SUMMARY, getRef());
 						@SuppressWarnings("cast")
-						JobSummary summary = (JobSummary) expectMsgClass(JobSummary.class);
+						JobSummary summary = (JobSummary) expectMsgClass(duration("5 seconds"), JobSummary.class);
 						int completed = 0;
 						for (Job job : summary.getJobs()) {
 							if (job.getState() == State.COMPLETE) {

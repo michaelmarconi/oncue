@@ -203,7 +203,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	 */
 	private void cleanupJob(Job job, String agent) {
 		log.debug("Cleaning up {} for agent {}", job, agent);
-		scheduledJobs.removeJob(job, agent);
+		scheduledJobs.removeJobById(job.getId(), agent);
 	}
 
 	/**
@@ -225,16 +225,16 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 		case RUNNING:
 			throw new DeleteJobException("This job cannot be deleted as it is currently running");
 		case QUEUED:
-			boolean removed = unscheduledJobs.removeJob(job);
+			boolean removed = unscheduledJobs.removeJobById(job.getId());
 			if (!removed)
 				throw new DeleteJobException(
 						"Failed to remove the job from the unscheduled jobs queue");
 			break;
 		case COMPLETE:
-			backingStore.removeCompletedJob(job);
+			backingStore.removeCompletedJobById(job.getId());
 			break;
 		case FAILED:
-			backingStore.removeFailedJob(job);
+			backingStore.removeFailedJobById(job.getId());
 			break;
 		default:
 			throw new DeleteJobException(job.getState().toString()
@@ -429,7 +429,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 
 		else if (message instanceof RemoteClientShutdown) {
 			String system = ((RemoteClientShutdown) message).getRemoteAddress().system();
-			if (system.equals("oncue-agent")) {
+			if ("oncue-agent".equals(system)) {
 				String agent = ((RemoteClientShutdown) message).getRemoteAddress().toString()
 						+ settings.AGENT_PATH;
 				log.info("Agent '{}' has shut down", agent);
@@ -570,7 +570,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 			for (Job job : agentJobs) {
 
 				// Remove job from the agent
-				scheduledJobs.removeJob(job, agent);
+				scheduledJobs.removeJobById(job.getId(), agent);
 
 				// Reset job state and progress
 				job.setState(State.QUEUED);
@@ -641,9 +641,9 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 		// TODO Find a way to make this transactional
 		unscheduledJobs.addJob(rerunJob);
 		if (job.getState() == Job.State.COMPLETE)
-			backingStore.removeCompletedJob(job);
+			backingStore.removeCompletedJobById(job.getId());
 		else if (job.getState() == Job.State.FAILED)
-			backingStore.removeFailedJob(job);
+			backingStore.removeFailedJobById(job.getId());
 
 		getContext().system().eventStream().publish(new JobEnqueuedEvent(job));
 		startJobsBroadcast();

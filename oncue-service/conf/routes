@@ -23,4 +23,3 @@ POST	/api/jobs                   controllers.api.Jobs.create()
 PUT		/api/jobs/:id               controllers.api.Jobs.rerun(id: Long)
 
 GET		/api/status     			controllers.api.Status.index()
-

@@ -94,25 +94,25 @@ public interface BackingStore {
 	/**
 	 * Remove a job from the list of completed jobs
 	 */
-	public void removeCompletedJob(Job job);
+	public void removeCompletedJobById(long jobId);
 
 	/**
 	 * Remove a job from the list of failed jobs
 	 */
-	public void removeFailedJob(Job job);
+	public void removeFailedJobById(long jobId);
 
 	/**
-	 * Remove a job from the list of scheduled jobs
+	 * Remove a job from the list of scheduled jobs by ID
 	 * 
-	 * @param job
-	 *            is the {@linkplain Job} to remove
+	 * @param jobId
+	 *            the ID of the {@linkplain Job} to remove
 	 */
-	public void removeScheduledJob(Job job);
+	public void removeScheduledJobById(long jobId);
 
 	/**
-	 * Remove a job from the unscheduled jobs queue
+	 * Remove a job from the unscheduled jobs queue by ID
 	 */
-	public void removeUnscheduledJob(Job job);
+	public void removeUnscheduledJobById(long jobId);
 
 	/**
 	 * Restore the unscheduled jobs queue from both scheduled and unscheduled
