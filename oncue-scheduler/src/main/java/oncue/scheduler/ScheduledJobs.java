@@ -25,6 +25,9 @@ import oncue.common.messages.Agent;
 import oncue.common.messages.Job;
 import oncue.scheduler.exceptions.RemoveScheduleJobException;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
+
 /**
  * An encapsulated map of {@linkplain Job}s to the {@linkplain Agent}s they have
  * been scheduled against.
@@ -54,7 +57,6 @@ public class ScheduledJobs {
 	 *            is the list of {@linkplain Jobs}s to assign to the agent
 	 */
 	public void addJobs(String agent, List<Job> jobs) {
-
 		List<Job> assignedJobs = scheduledJobs.get(agent);
 		if (assignedJobs == null) {
 			assignedJobs = new ArrayList<Job>();
@@ -120,20 +122,21 @@ public class ScheduledJobs {
 	 * 
 	 * @throws RemoveScheduleJobException
 	 */
-	public void removeJob(Job job, String agent) throws RemoveScheduleJobException {
+	public void removeJobById(final long jobId, String agent) throws RemoveScheduleJobException {
 
 		if (!scheduledJobs.containsKey(agent))
 			throw new RemoveScheduleJobException("There is no registered agent " + agent
 					+ ".  It is possible the scheduler was restarted and this agent has not re-registered yet.");
 
-		Job jobToRemove = null;
-		for (Job scheduledJob : scheduledJobs.get(agent)) {
-			if (scheduledJob.getId() == job.getId())
-				jobToRemove = scheduledJob;
-		}
+		Iterables.removeIf(scheduledJobs.get(agent), new Predicate<Job>(){
 
-		scheduledJobs.get(agent).remove(jobToRemove);
-		backingStore.removeScheduledJob(job);
+			@Override
+			public boolean apply(Job input) {
+				return input.getId() == jobId;
+			}
+		});
+
+		backingStore.removeScheduledJobById(jobId);
 	}
 
 	/**

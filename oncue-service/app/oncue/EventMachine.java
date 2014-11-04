@@ -36,8 +36,9 @@ public class EventMachine extends UntypedActor {
 	private final Cancellable pinger = getContext()
 			.system()
 			.scheduler()
-			.schedule(Duration.create(500, TimeUnit.MILLISECONDS), Duration.create(30000, TimeUnit.MILLISECONDS),
-					getSelf(), "PING", getContext().dispatcher());
+			.schedule(Duration.create(500, TimeUnit.MILLISECONDS),
+					Duration.create(30000, TimeUnit.MILLISECONDS), getSelf(), "PING",
+					getContext().dispatcher());
 
 	static {
 		mapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssz"));
@@ -76,7 +77,7 @@ public class EventMachine extends UntypedActor {
 
 	@Override
 	public void onReceive(Object message) {
-		if (message.equals("PING")) {
+		if ("PING".equals(message)) {
 			log.debug("Pinging websocket clients...");
 			for (WebSocket.Out<JsonNode> client : clients) {
 				client.write(Json.toJson("PING"));
@@ -122,12 +123,9 @@ public class EventMachine extends UntypedActor {
 	/**
 	 * Construct an event
 	 * 
-	 * @param eventKey
-	 *            is the composite event key, e.g. 'agent:started'
-	 * @param subject
-	 *            is the subject of the event, e.g. 'agent'
-	 * @param payload
-	 *            is the object to serialise
+	 * @param eventKey is the composite event key, e.g. 'agent:started'
+	 * @param subject is the subject of the event, e.g. 'agent'
+	 * @param payload is the object to serialise
 	 * @return a JSON object node representing the event
 	 */
 	private ObjectNode constructEvent(String eventKey, String subject, Object payload) {

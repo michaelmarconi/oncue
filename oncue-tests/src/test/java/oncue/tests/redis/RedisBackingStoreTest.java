@@ -296,7 +296,7 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 				RedisBackingStore.persistJob(job, RedisBackingStore.SCHEDULED_JOBS, redis);
 
 				// Remove the scheduled job
-				backingStore.removeScheduledJob(job);
+				backingStore.removeScheduledJobById(job.getId());
 
 				// Check scheduled list in Redis
 				assertEquals("Expected no jobs in the scheduled jobs list", 0,
@@ -319,7 +319,7 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 				RedisBackingStore.persistJob(job, RedisBackingStore.UNSCHEDULED_JOBS, redis);
 
 				// Remove the scheduled job
-				backingStore.removeUnscheduledJob(job);
+				backingStore.removeUnscheduledJobById(job.getId());
 
 				// Check scheduled list in Redis
 				assertEquals("Expected no jobs in the unscheduled jobs list", 0,

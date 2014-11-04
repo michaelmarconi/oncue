@@ -75,7 +75,7 @@ public abstract class AbstractWorker extends UntypedActor {
 	}
 
 	/**
-	 * Update the job state let the agent know we have begun working.
+	 * Update the job state and let the agent know we have begun working.
 	 */
 	private void prepareWork() {
 		job.setState(State.RUNNING);

@@ -1,6 +1,7 @@
 package oncue.tests.strategies;
 
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.fail;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -16,6 +17,7 @@ import oncue.common.messages.SimpleMessages.SimpleMessage;
 import oncue.common.messages.WorkResponse;
 import oncue.scheduler.CapacityScheduler;
 import oncue.tests.base.ActorSystemTest;
+import oncue.tests.load.workers.SimpleLoadTestWorker;
 import oncue.tests.workers.TestWorker;
 import oncue.tests.workers.TestWorker2;
 
@@ -44,7 +46,7 @@ public class CapacityStrategyTest extends ActorSystemTest {
 				ActorRef scheduler = createScheduler(system);
 
 				// Enqueue jobs
-				scheduler.tell(new EnqueueJob(TestWorker2.class.getName(), requiredMemory("2600")),
+				scheduler.tell(new EnqueueJob(TestWorker2.class.getName(), memory("2600")),
 						getRef());
 				expectMsgClass(Job.class);
 
@@ -91,23 +93,23 @@ public class CapacityStrategyTest extends ActorSystemTest {
 				});
 
 				// Wait until the scheduler has three unscheduled jobs
-				final TestActorRef<CapacityScheduler> schedulerRef = TestActorRef.create(
-						system, schedulerProps, settings.SCHEDULER_NAME);
+				final TestActorRef<CapacityScheduler> schedulerRef = TestActorRef.create(system,
+						schedulerProps, settings.SCHEDULER_NAME);
 				final CapacityScheduler scheduler = schedulerRef.underlyingActor();
 				scheduler.pause();
 
 				// Enqueue jobs
 				schedulerRef.tell(
-						new EnqueueJob(TEST_WORKER, withParams(requiredMemory("2600"),
-								code("foo1"))), getRef());
+						new EnqueueJob(TEST_WORKER, withParams(memory("2600"), code("foo1"))),
+						getRef());
 				expectMsgClass(Job.class);
 				schedulerRef.tell(
-						new EnqueueJob(TEST_WORKER, withParams(requiredMemory("2600"),
-								code("foo2"))), getRef());
+						new EnqueueJob(TEST_WORKER, withParams(memory("2600"), code("foo2"))),
+						getRef());
 				expectMsgClass(Job.class);
 				schedulerRef.tell(
-						new EnqueueJob(TEST_WORKER, withParams(requiredMemory("1"),
-								code("foo3"))), getRef());
+						new EnqueueJob(TEST_WORKER, withParams(memory("1"), code("foo3"))),
+						getRef());
 				expectMsgClass(Job.class);
 
 				new AwaitCond(duration("60 seconds"), duration("1 second")) {
@@ -212,7 +214,7 @@ public class CapacityStrategyTest extends ActorSystemTest {
 	}
 
 	@Test
-	public void doesNotScheduleMultipleJobsForTheSameMatchingProcess() {
+	public void doesNotScheduleMultipleJobsForTheSameConstrainedWorker() {
 		new JavaTestKit(system) {
 			{
 				// Create an agent that can run "TestWorker" workers
@@ -296,6 +298,208 @@ public class CapacityStrategyTest extends ActorSystemTest {
 		};
 	}
 
+	@Test
+	public void handlesMultipleWorkerTypesWithMultipleUniquenessKeysCorrectly() {
+		new JavaTestKit(system) {
+			{
+				// Create an agent that can run "TestWorker" workers
+				final JavaTestKit schedulerProbe = new JavaTestKit(system) {
+					{
+						new IgnoreMsg() {
+							protected boolean ignore(Object message) {
+								if (message instanceof AbstractWorkRequest)
+									return false;
+								else
+									return true;
+							}
+						};
+					}
+				};
+
+				// Create a scheduler
+				ActorRef scheduler = createScheduler(system, schedulerProbe.getRef());
+
+				// Enqueue jobs
+				scheduler.tell(
+						new EnqueueJob(TestWorker2.class.getName(), withParams(code("FOO"),
+								memory("200"))), getRef());
+				expectMsgClass(Job.class);
+				scheduler.tell(
+						new EnqueueJob(TestWorker2.class.getName(), withParams(code("FOO"),
+								memory("200"))), getRef());
+				expectMsgClass(Job.class);
+				scheduler.tell(
+						new EnqueueJob(TestWorker2.class.getName(), withParams(code("FOO2"),
+								memory("200"))), getRef());
+				expectMsgClass(Job.class);
+				scheduler.tell(
+						new EnqueueJob(TestWorker.class.getName(), withParams(code("FOO2"),
+								memory("200"), foo("foobar"))), getRef());
+				scheduler.tell(
+						new EnqueueJob(TestWorker.class.getName(), withParams(code("FOO2"),
+								memory("200"), foo("bar"), bar("baz"))), getRef());
+				scheduler.tell(
+						new EnqueueJob(TestWorker.class.getName(), withParams(code("FOO2"),
+								memory("200"), foo("bar"), bar("barbaz"))), getRef());
+				expectMsgClass(Job.class);
+
+				// ---
+
+				// Create an agent that can run "TestWorker" workers
+				final JavaTestKit agentProbe = new JavaTestKit(system) {
+					{
+						new IgnoreMsg() {
+							protected boolean ignore(Object message) {
+								if (message instanceof WorkResponse)
+									return false;
+								else
+									return true;
+							}
+						};
+					}
+				};
+
+				createAgent(
+						system,
+						new HashSet<String>(Arrays.asList(TestWorker2.class.getName(),
+								TestWorker.class.getName())), agentProbe.getRef());
+
+				// Expect a work response with two TestWorker2 jobs - one for each process, and two
+				// TestWorker1 classes - the first two have the different (code, foo) combinations
+				WorkResponse workResponse = agentProbe.expectMsgClass(WorkResponse.class);
+				assertEquals(4, workResponse.getJobs().size());
+				assertEquals(1, workResponse.getJobs().get(0).getId());
+				assertEquals(3, workResponse.getJobs().get(1).getId());
+				assertEquals(4, workResponse.getJobs().get(2).getId());
+				assertEquals(5, workResponse.getJobs().get(3).getId());
+
+				new AwaitCond() {
+
+					@Override
+					protected boolean cond() {
+						// Expect worker to ask for more work and get an empty response while it's
+						// processing those jobs.
+						WorkResponse workResponse = agentProbe.expectMsgClass(WorkResponse.class);
+						if (workResponse.getJobs().size() == 0) {
+							return false;
+						}
+
+						schedulerProbe.expectMsgClass(new FiniteDuration(5, TimeUnit.SECONDS),
+								AbstractWorkRequest.class);
+
+						// There's three possible scenarios here: the TestWorker and TestWorker2
+						// jobs finish
+						// at the same time and there's a work response with two new jobs, or one of
+						// the
+						// jobs finishes first and the other appears
+						if (workResponse.getJobs().size() == 2) {
+							assertEquals(2, workResponse.getJobs().get(0).getId());
+							assertEquals(6, workResponse.getJobs().get(1).getId());
+						} else {
+							assertEquals(1, workResponse.getJobs().size());
+							long id = workResponse.getJobs().get(0).getId();
+							if (id != 0 && id != 6) {
+								fail();
+							}
+							int expectedJobID = id == 6 ? 2 : 6;
+							workResponse = agentProbe.expectMsgClass(WorkResponse.class);
+							assertEquals(1, workResponse.getJobs().size());
+							assertEquals(expectedJobID, workResponse.getJobs().get(0).getId());
+						}
+
+						return true;
+					}
+				};
+			}
+
+		};
+	}
+
+	@Test
+	public void uniquenessConstrainedWorkerTypeWithNoConstrainedParametersUsesOnlyWorkerTypeAsUniquenessConstraint() {
+		// i.e. if no parameters are defined, simply adding a worker type with no parameters will
+		// enforce that only one of that worker type can happen at a time, ignoring the parameters
+		// of any job with that worker type.
+		new JavaTestKit(system) {
+			{
+				// Create an agent that can run "SimpleLoadTestWorker" workers
+				final JavaTestKit schedulerProbe = new JavaTestKit(system) {
+					{
+						new IgnoreMsg() {
+							protected boolean ignore(Object message) {
+								if (message instanceof AbstractWorkRequest)
+									return false;
+								else
+									return true;
+							}
+						};
+					}
+				};
+
+				// Create a scheduler
+				ActorRef scheduler = createScheduler(system, schedulerProbe.getRef());
+
+				// Enqueue jobs
+				scheduler.tell(
+						new EnqueueJob(SimpleLoadTestWorker.class.getName(), withParams(
+								code("FOO"), memory("200"))), getRef());
+				expectMsgClass(Job.class);
+				scheduler.tell(
+						new EnqueueJob(SimpleLoadTestWorker.class.getName(), withParams(
+								code("FOO2"), memory("200"))), getRef());
+				expectMsgClass(Job.class);
+
+				// ---
+
+				// Create an agent that can run "SimpleLoadTestWorker" workers
+				final JavaTestKit agentProbe = new JavaTestKit(system) {
+					{
+						new IgnoreMsg() {
+							protected boolean ignore(Object message) {
+								if (message instanceof WorkResponse)
+									return false;
+								else
+									return true;
+							}
+						};
+					}
+				};
+
+				createAgent(system,
+						new HashSet<String>(Arrays.asList(SimpleLoadTestWorker.class.getName())),
+						agentProbe.getRef());
+
+				// Expect a work response with only one SimpleLoadTestWorker job
+				WorkResponse workResponse = agentProbe.expectMsgClass(WorkResponse.class);
+				assertEquals(1, workResponse.getJobs().size());
+				assertEquals(1, workResponse.getJobs().get(0).getId());
+
+				schedulerProbe.expectMsgClass(new FiniteDuration(5, TimeUnit.SECONDS),
+						AbstractWorkRequest.class);
+
+				new AwaitCond() {
+
+					@Override
+					protected boolean cond() {
+						// Expect worker to ask for more work and get an empty response while it's
+						// processing those jobs.
+						WorkResponse workResponse = agentProbe.expectMsgClass(
+								duration("5 seconds"), WorkResponse.class);
+						if (workResponse.getJobs().size() == 0) {
+							return false;
+						}
+
+						assertEquals(1, workResponse.getJobs().size());
+						assertEquals(2, workResponse.getJobs().get(0).getId());
+
+						return true;
+					}
+				};
+			}
+
+		};
+	}
+
 	@SafeVarargs
 	private final Map<String, String> withParams(Map<String, String>... params) {
 		Map<String, String> parameters = Maps.newHashMap();
@@ -317,9 +521,15 @@ public class CapacityStrategyTest extends ActorSystemTest {
 		return jobParams;
 	}
 
-	private Map<String, String> requiredMemory(String memory) {
+	private Map<String, String> foo(String bar) {
 		Map<String, String> jobParams = Maps.newHashMap();
-		jobParams.put("memory", memory);
+		jobParams.put("foo", bar);
+		return jobParams;
+	}
+
+	private Map<String, String> bar(String baz) {
+		Map<String, String> jobParams = Maps.newHashMap();
+		jobParams.put("bar", baz);
 		return jobParams;
 	}
 

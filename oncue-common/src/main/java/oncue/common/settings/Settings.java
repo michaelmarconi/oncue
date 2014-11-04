@@ -51,44 +51,44 @@ public class Settings implements Extension {
 	@SuppressWarnings("unchecked")
 	public Settings(Config config) {
 
-		config = config.getConfig("oncue");
+		Config oncueConfig = config.getConfig("oncue");
 
-		SCHEDULER_NAME = config.getString("scheduler.name");
-		SCHEDULER_PATH = config.getString("scheduler.path");
-		SCHEDULER_CLASS = config.getString("scheduler.class");
+		SCHEDULER_NAME = oncueConfig.getString("scheduler.name");
+		SCHEDULER_PATH = oncueConfig.getString("scheduler.path");
+		SCHEDULER_CLASS = oncueConfig.getString("scheduler.class");
 		SCHEDULER_TIMEOUT = Duration
-				.create(config.getMilliseconds("scheduler.response-timeout"), TimeUnit.MILLISECONDS);
+				.create(oncueConfig.getMilliseconds("scheduler.response-timeout"), TimeUnit.MILLISECONDS);
 
-		if(config.hasPath(SCHEDULER_BACKING_STORE_PATH)) {
-			SCHEDULER_BACKING_STORE_CLASS = config.getString(SCHEDULER_BACKING_STORE_PATH);
+		if(oncueConfig.hasPath(SCHEDULER_BACKING_STORE_PATH)) {
+			SCHEDULER_BACKING_STORE_CLASS = oncueConfig.getString(SCHEDULER_BACKING_STORE_PATH);
 		} else {
 			SCHEDULER_BACKING_STORE_CLASS = null;
 		}
 
 		SCHEDULER_BROADCAST_JOBS_FREQUENCY = Duration.create(
-				config.getMilliseconds("scheduler.broadcast-jobs-frequency"), TimeUnit.MILLISECONDS);
+				oncueConfig.getMilliseconds("scheduler.broadcast-jobs-frequency"), TimeUnit.MILLISECONDS);
 
 		SCHEDULER_BROADCAST_JOBS_QUIESCENCE_PERIOD = Duration.create(
-				config.getMilliseconds("scheduler.broadcast-jobs-quiescence-period"), TimeUnit.MILLISECONDS);
+				oncueConfig.getMilliseconds("scheduler.broadcast-jobs-quiescence-period"), TimeUnit.MILLISECONDS);
 
 		SCHEDULER_MONITOR_AGENTS_FREQUENCY = Duration.create(
-				config.getMilliseconds("scheduler.monitor-agents-frequency"), TimeUnit.MILLISECONDS);
+				oncueConfig.getMilliseconds("scheduler.monitor-agents-frequency"), TimeUnit.MILLISECONDS);
 
 		SCHEDULER_AGENT_HEARTBEAT_TIMEOUT = Duration.create(
-				config.getMilliseconds("scheduler.agent-heartbeat-timeout"), TimeUnit.MILLISECONDS);
+				oncueConfig.getMilliseconds("scheduler.agent-heartbeat-timeout"), TimeUnit.MILLISECONDS);
 
-		AGENT_NAME = config.getString("agent.name");
-		AGENT_PATH = config.getString("agent.path");
-		AGENT_CLASS = config.getString("agent.class");
-		AGENT_HEARTBEAT_FREQUENCY = Duration.create(config.getMilliseconds("agent.heartbeat-frequency"),
+		AGENT_NAME = oncueConfig.getString("agent.name");
+		AGENT_PATH = oncueConfig.getString("agent.path");
+		AGENT_CLASS = oncueConfig.getString("agent.class");
+		AGENT_HEARTBEAT_FREQUENCY = Duration.create(oncueConfig.getMilliseconds("agent.heartbeat-frequency"),
 				TimeUnit.MILLISECONDS);
 
-		TIMED_JOBS_RETRY_DELAY = Duration.create(config.getMilliseconds("timed-jobs.retry-delay"),
+		TIMED_JOBS_RETRY_DELAY = Duration.create(oncueConfig.getMilliseconds("timed-jobs.retry-delay"),
 				TimeUnit.MILLISECONDS);
 
 		// Timed jobs are optional
-		if (config.hasPath("timed-jobs.timetable")) {
-			TIMED_JOBS_TIMETABLE = (ArrayList<Map<String, Object>>) config.getAnyRef("timed-jobs.timetable");
+		if (oncueConfig.hasPath("timed-jobs.timetable")) {
+			TIMED_JOBS_TIMETABLE = (ArrayList<Map<String, Object>>) oncueConfig.getAnyRef("timed-jobs.timetable");
 		} else {
 			TIMED_JOBS_TIMETABLE = null;
 		}

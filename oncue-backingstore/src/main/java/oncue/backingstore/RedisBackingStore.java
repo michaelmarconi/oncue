@@ -255,7 +255,7 @@ public class RedisBackingStore extends AbstractBackingStore {
 			transaction.hset(jobKey, JOB_ERROR_MESSAGE, job.getErrorMessage());
 
 		// Add the job to the specified queue
-		transaction.lpush(queueName, new Long(job.getId()).toString());
+		transaction.lpush(queueName, Long.toString(job.getId()));
 
 		// Exec the transaction
 		transaction.exec();
@@ -297,7 +297,7 @@ public class RedisBackingStore extends AbstractBackingStore {
 		Jedis redis = RedisBackingStore.getConnection();
 
 		for (Job job : jobs) {
-			redis.lpush(SCHEDULED_JOBS, new Long(job.getId()).toString());
+			redis.lpush(SCHEDULED_JOBS, Long.toString(job.getId()));
 		}
 
 		RedisBackingStore.releaseConnection(redis);
@@ -374,44 +374,44 @@ public class RedisBackingStore extends AbstractBackingStore {
 		if (job.getState() == Job.State.COMPLETE) {
 			if (job.getCompletedAt() != null)
 				redis.hset(jobKey, JOB_COMPLETED_AT, job.getCompletedAt().toString());
-			redis.lpush(COMPLETED_JOBS, new Long(job.getId()).toString());
+			redis.lpush(COMPLETED_JOBS, Long.toString(job.getId()));
 		}
 
 		releaseConnection(redis);
 	}
 
 	@Override
-	public void removeCompletedJob(Job job) {
+	public void removeCompletedJobById(long jobId) {
 		Jedis redis = RedisBackingStore.getConnection();
 
-		redis.lrem(COMPLETED_JOBS, 0, new Long(job.getId()).toString());
+		redis.lrem(COMPLETED_JOBS, 0, Long.toString(jobId));
 
 		RedisBackingStore.releaseConnection(redis);
 	}
 
 	@Override
-	public void removeFailedJob(Job job) {
+	public void removeFailedJobById(long jobId) {
 		Jedis redis = RedisBackingStore.getConnection();
 
-		redis.lrem(FAILED_JOBS, 0, new Long(job.getId()).toString());
+		redis.lrem(FAILED_JOBS, 0, Long.toString(jobId));
 
 		RedisBackingStore.releaseConnection(redis);
 	}
 
 	@Override
-	public void removeScheduledJob(Job job) {
+	public void removeScheduledJobById(long jobId) {
 		Jedis redis = RedisBackingStore.getConnection();
 
-		redis.lrem(SCHEDULED_JOBS, 0, new Long(job.getId()).toString());
+		redis.lrem(SCHEDULED_JOBS, 0, Long.toString(jobId));
 
 		RedisBackingStore.releaseConnection(redis);
 	}
 
 	@Override
-	public void removeUnscheduledJob(Job job) {
+	public void removeUnscheduledJobById(long jobId) {
 		Jedis redis = RedisBackingStore.getConnection();
 
-		redis.lrem(UNSCHEDULED_JOBS, 0, new Long(job.getId()).toString());
+		redis.lrem(UNSCHEDULED_JOBS, 0, Long.toString(jobId));
 
 		RedisBackingStore.releaseConnection(redis);
 	}
@@ -452,7 +452,7 @@ public class RedisBackingStore extends AbstractBackingStore {
 			DateTime expirationThreshold = DateTime.now().minus(expirationAge.getMillis());
 			boolean isExpired = completedJob.getCompletedAt().isBefore(expirationThreshold.toInstant());
 			if (isExpired) {
-				removeCompletedJob(completedJob);
+				removeCompletedJobById(completedJob.getId());
 				cleanedJobsCount++;
 			}
 		}
@@ -472,7 +472,7 @@ public class RedisBackingStore extends AbstractBackingStore {
 			DateTime expirationThreshold = DateTime.now().minus(expirationAge.getMillis());
 			boolean isExpired = failedJob.getCompletedAt().isBefore(expirationThreshold.toInstant());
 			if (isExpired) {
-				removeFailedJob(failedJob);
+				removeFailedJobById(failedJob.getId());
 				cleanedJobsCount++;
 			}
 		}

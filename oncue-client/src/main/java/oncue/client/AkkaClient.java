@@ -40,20 +40,16 @@ public class AkkaClient implements Client {
 	}
 
 	@Override
-	public Job enqueueJob(String workerType, Map<String, String> jobParams)
-			throws ClientException {
+	public Job enqueueJob(String workerType, Map<String, String> jobParams) throws ClientException {
 		try {
 			return (Job) Await.result(
-					ask(scheduler, new EnqueueJob(workerType, jobParams),
-							new Timeout(settings.SCHEDULER_TIMEOUT)),
-					settings.SCHEDULER_TIMEOUT);
+					ask(scheduler, new EnqueueJob(workerType, jobParams), new Timeout(
+							settings.SCHEDULER_TIMEOUT)), settings.SCHEDULER_TIMEOUT);
+		} catch (AskTimeoutException e) {
+			log.error(e, "Timeout waiting for scheduler to enqueue job");
+			throw new ClientException(e);
 		} catch (Exception e) {
-			if (e instanceof AskTimeoutException) {
-				log.error(e, "Timeout waiting for scheduler to enqueue job");
-			} else {
-				log.error(e, "Failed to enqueue job");
-			}
-
+			log.error(e, "Failed to enqueue job");
 			throw new ClientException(e);
 		}
 	}
@@ -63,17 +59,13 @@ public class AkkaClient implements Client {
 		try {
 			JobSummary jobSummary = (JobSummary) Await.result(
 					ask(scheduler, SimpleMessage.JOB_SUMMARY, new Timeout(
-							settings.SCHEDULER_TIMEOUT)),
-					settings.SCHEDULER_TIMEOUT);
+							settings.SCHEDULER_TIMEOUT)), settings.SCHEDULER_TIMEOUT);
 			return jobSummary.getJobs();
+		} catch (AskTimeoutException e) {
+			log.error(e, "Timeout waiting for scheduler to respond with job summary");
+			throw new ClientException(e);
 		} catch (Exception e) {
-			if (e instanceof AskTimeoutException) {
-				log.error(e,
-						"Timeout waiting for scheduler to respond with job summary");
-			} else {
-				log.error(e, "Failed to retrieve job summary");
-			}
-
+			log.error(e, "Failed to retrieve job summary");
 			throw new ClientException(e);
 		}
 	}
