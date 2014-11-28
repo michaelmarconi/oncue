@@ -22,6 +22,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import oncue.backingstore.BackingStore;
+import oncue.common.comparators.JobComparator;
 import oncue.common.messages.Job;
 import akka.event.LoggingAdapter;
 
@@ -43,7 +44,7 @@ public class UnscheduledJobs {
 	private final LoggingAdapter log;
 
 	// The prioritised queue of unscheduled jobs
-	private final SortedSet<Job> unscheduledJobs;
+	private SortedSet<Job> unscheduledJobs = new TreeSet<>(new JobComparator());
 
 	/**
 	 * @param backingStore is an instance of {@linkplain BackingStore}

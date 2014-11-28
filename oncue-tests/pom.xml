@@ -99,7 +99,7 @@
 				</configuration>
 			</plugin>
 		</plugins>
-	</build>	
+	</build>
 
 	<reporting>
 		<plugins>
