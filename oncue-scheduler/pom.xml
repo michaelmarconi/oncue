@@ -7,7 +7,7 @@
   <parent>
     <groupId>oncue</groupId>
     <artifactId>oncue</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2-SNAPSHOT</version>
   </parent>
 
   <artifactId>oncue-scheduler</artifactId>
@@ -17,12 +17,12 @@
     <dependency>
       <groupId>oncue</groupId>
       <artifactId>oncue-common</artifactId>
-      <version>1.0.1</version>
+      <version>1.0.2-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>oncue</groupId>
       <artifactId>oncue-backingstore</artifactId>
-      <version>1.0.1</version>
+      <version>1.0.2-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.typesafe.akka</groupId>
