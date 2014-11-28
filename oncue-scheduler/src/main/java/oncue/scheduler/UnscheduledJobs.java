@@ -1,20 +1,19 @@
 /*******************************************************************************
  * Copyright 2013 Michael Marconi
  * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  * 
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  ******************************************************************************/
 package oncue.scheduler;
 
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -27,25 +26,32 @@ import oncue.common.comparators.JobComparator;
 import oncue.common.messages.Job;
 import akka.event.LoggingAdapter;
 
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Sets;
+
 /**
- * An encapsulated job queue of unscheduled {@linkplain Job}s that relies on a
- * backing store for persistence.
+ * An encapsulated job queue of unscheduled {@linkplain Job}s that relies on a backing store for
+ * persistence.
  */
 public class UnscheduledJobs {
 
 	// The persistent backing store
-	private BackingStore backingStore;
+	private final BackingStore backingStore;
 
-	private LoggingAdapter log;
+	private final LoggingAdapter log;
 
 	// The prioritised queue of unscheduled jobs
 	private SortedSet<Job> unscheduledJobs = new TreeSet<>(new JobComparator());
 
 	/**
-	 * @param backingStore
-	 *            is an instance of {@linkplain BackingStore}
+	 * @param backingStore is an instance of {@linkplain BackingStore}
 	 */
-	public UnscheduledJobs(BackingStore backingStore, LoggingAdapter log) {
+	public UnscheduledJobs(BackingStore backingStore, LoggingAdapter log,
+			Comparator<Job> jobComparator) {
+		this.unscheduledJobs = new TreeSet<>(jobComparator);
 		this.backingStore = backingStore;
 		this.log = log;
 		restoreJobs();
@@ -111,10 +117,18 @@ public class UnscheduledJobs {
 	 * 
 	 * @return a boolean, indicating if the removal was successful
 	 */
-	public boolean removeJob(Job job) {
-		boolean removed = unscheduledJobs.remove(job);
+	public boolean removeJobById(final long jobId) {
+		boolean removed = Iterables.removeIf(unscheduledJobs, new Predicate<Job>() {
+
+			@Override
+			public boolean apply(Job input) {
+				return input.getId() == jobId;
+			}
+
+		});
+
 		if (removed)
-			backingStore.removeUnscheduledJob(job);
+			backingStore.removeUnscheduledJobById(jobId);
 
 		return removed;
 	}
@@ -125,11 +139,28 @@ public class UnscheduledJobs {
 	 * @return a boolean, indicating if the removal was successful
 	 */
 	public boolean removeJobs(List<Job> jobs) {
-		boolean removed = unscheduledJobs.removeAll(jobs);
+		final Set<Long> jobIds = Sets.newHashSet(Iterators.transform(jobs.iterator(),
+				new Function<Job, Long>() {
+
+					@Override
+					public Long apply(Job input) {
+						return input.getId();
+					}
+
+				}));
+
+		boolean removed = Iterables.removeIf(unscheduledJobs, new Predicate<Job>() {
+			@Override
+			public boolean apply(Job input) {
+				return jobIds.contains(input.getId());
+			}
+		});
+
 		if (backingStore != null && removed)
 			for (Job job : jobs) {
-				backingStore.removeUnscheduledJob(job);
+				backingStore.removeUnscheduledJobById(job.getId());
 			}
+
 		return removed;
 	}
 
@@ -138,9 +169,10 @@ public class UnscheduledJobs {
 	 */
 	private void restoreJobs() {
 		List<Job> restoredJobs = backingStore.restoreJobs();
-		if (restoredJobs != null && restoredJobs.size() > 0)
+		if (restoredJobs != null && !restoredJobs.isEmpty())
 			log.info("Restoring {} jobs from the backing store", restoredJobs.size());
 
 		unscheduledJobs.addAll(restoredJobs);
 	}
+
 }

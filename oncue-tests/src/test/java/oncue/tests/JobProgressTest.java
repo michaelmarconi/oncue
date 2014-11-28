@@ -100,9 +100,10 @@ public class JobProgressTest extends ActorSystemTest {
 
 					// Scheduler progress
 					JobProgress schedulerProgress = schedulerProbe.expectMsgClass(JobProgress.class);
+					job = schedulerProgress.getJob();
 					assertEquals("Was expecting progress at the Scheduler of " + expectedProgress, expectedProgress,
-							schedulerProgress.getJob().getProgress());
-					assertEquals("Was expecting the job to be running.", Job.State.RUNNING, schedulerProgress.getJob()
+							job.getProgress());
+					assertEquals("Was expecting the job to be running.", Job.State.RUNNING, job
 							.getState());
 					assertNotNull("Was expecting started at time to be set", job.getStartedAt());
 					assertNull("Was expecting completed at time not to be set", job.getCompletedAt());
@@ -112,8 +113,9 @@ public class JobProgressTest extends ActorSystemTest {
 
 				// Expect the final completion message
 				JobProgress schedulerProgress = schedulerProbe.expectMsgClass(JobProgress.class);
-				assertEquals(1.0, schedulerProgress.getJob().getProgress());
-				assertEquals(Job.State.COMPLETE, schedulerProgress.getJob().getState());
+				job = schedulerProgress.getJob();
+				assertEquals(1.0, job.getProgress());
+				assertEquals(Job.State.COMPLETE, job.getState());
 				assertNotNull("Was expecting completed at time to be set", job.getCompletedAt());
 
 				// Expect no more messages

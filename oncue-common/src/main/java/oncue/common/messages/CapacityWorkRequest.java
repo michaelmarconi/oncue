@@ -13,36 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package oncue.tests.load.workers;
+package oncue.common.messages;
 
-import oncue.common.messages.Job;
-import oncue.worker.AbstractWorker;
+import java.util.Set;
 
-public class SimpleLoadTestWorker extends AbstractWorker {
+import akka.actor.ActorRef;
 
-	private static final int LOAD_FACTOR = 10000;
+public class CapacityWorkRequest extends AbstractWorkRequest {
 
-	@Override
-	protected void doWork(Job job) {
-		processJob();
+	private static final long serialVersionUID = 8422903458993615943L;
+
+	private int availableMemory;
+
+	/**
+	 * @param availableMemory
+	 *            is the amount of free memory the agent has.
+	 */
+	public CapacityWorkRequest(ActorRef agent, Set<String> workerTypes, int availableMemory) {
+		super(agent, workerTypes);
+		this.availableMemory = availableMemory;
 	}
 
-	private void processJob() {
-		int count = 0;
-		while (count < LOAD_FACTOR) {
-			count++;
-
-			/*
-			 * Yield occasionally, so we don't starve the Agent of CPU and
-			 * prevent its heart beat.
-			 */
-			if (count % 10 == 0)
-				Thread.yield();
-		}
+	public int getAvailableMemory() {
+		return availableMemory;
 	}
 
 	@Override
-	protected void redoWork(Job job) {
-		processJob();
+	public String toString() {
+		return "Cube capacity work request for a maximum of " + availableMemory;
 	}
+
 }

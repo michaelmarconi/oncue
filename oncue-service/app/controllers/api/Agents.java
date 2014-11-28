@@ -41,7 +41,7 @@ public class Agents extends Controller {
 				ask(scheduler, SimpleMessage.LIST_AGENTS, new Timeout(settings.SCHEDULER_TIMEOUT)).recover(
 						new Recover<Object>() {
 							@Override
-							public Object recover(Throwable t) throws Throwable {
+							public Object recover(Throwable t) {
 								if (t instanceof AskTimeoutException) {
 									Logger.error("Timeout waiting for scheduler to respond with the list of agents", t);
 									return internalServerError("Timeout");

@@ -34,7 +34,7 @@ public class JobEnqueueingTestWorker extends AbstractWorker {
 	}
 
 	@Override
-	protected void redoWork(Job job) throws Exception {
+	protected void redoWork(Job job) {
 		processJob(job);
 	}
 }

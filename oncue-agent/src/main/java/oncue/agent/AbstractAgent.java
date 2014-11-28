@@ -34,6 +34,7 @@ import oncue.common.messages.WorkResponse;
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
 import oncue.worker.AbstractWorker;
+
 import scala.concurrent.duration.Duration;
 import akka.actor.Actor;
 import akka.actor.ActorRef;
@@ -136,7 +137,7 @@ public abstract class AbstractAgent extends UntypedActor {
 	}
 
 	@Override
-	public void onReceive(Object message) throws Exception {
+	public void onReceive(Object message) {
 
 		if (testProbe != null)
 			testProbe.forward(message, getContext());
@@ -157,17 +158,14 @@ public abstract class AbstractAgent extends UntypedActor {
 
 		else if (message instanceof WorkAvailable) {
 			WorkAvailable workAvailable = (WorkAvailable) message;
-			log.debug("Agent {} found work available for the following worker types: {}", getSelf().path().toString(),
-					workAvailable.getWorkerTypes());
-			boolean canDoWork = false;
+			log.debug("Agent {} found work available for the following worker types: {}", getSelf()
+					.path().toString(), workAvailable.getWorkerTypes());
 			for (String workerTypeRequired : workAvailable.getWorkerTypes()) {
 				if (workerTypes.contains(workerTypeRequired)) {
-					canDoWork = true;
+					requestWork();
 					break;
 				}
 			}
-			if (canDoWork)
-				requestWork();
 		}
 
 		else if (message instanceof JobProgress) {
@@ -262,7 +260,7 @@ public abstract class AbstractAgent extends UntypedActor {
 				}
 			}), "job-" + job.getId());
 			jobsInProgress.put(worker.path().toString(), job);
-			worker.tell(job, getSelf());
+			worker.tell(job.clone(), getSelf());
 		} catch (MissingWorkerException e) {
 			log.error(e, e.getMessage());
 			sendFailure(job, e.getMessage());
@@ -304,7 +302,7 @@ public abstract class AbstractAgent extends UntypedActor {
 		return new OneForOneStrategy(0, Duration.Zero(), new Function<Throwable, Directive>() {
 
 			@Override
-			public Directive apply(Throwable error) throws Exception {
+			public Directive apply(Throwable error) {
 				log.error(error, "The worker {} has died a horrible death!", getSender());
 				Job job = jobsInProgress.remove(getSender().path().toString());
 				onWorkerDeath(job, error);

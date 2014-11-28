@@ -51,7 +51,7 @@ public class IncompetentTestWorker extends AbstractWorker {
 	}
 
 	@Override
-	protected void redoWork(Job job) throws Exception {
+	protected void redoWork(Job job) {
 		processJob();
 	}
 }

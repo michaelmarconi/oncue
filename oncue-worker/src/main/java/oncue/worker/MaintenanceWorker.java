@@ -64,7 +64,7 @@ public class MaintenanceWorker extends AbstractWorker {
 							settings.SCHEDULER_TIMEOUT)), settings.SCHEDULER_TIMEOUT);
 			log.info(object.toString());
 		} catch (TimeoutException e) {
-			throw new RuntimeException("Timeout waiting for scheduler to clean up jobs");
+			throw new RuntimeException("Timeout waiting for scheduler to clean up jobs", e);
 		}
 	}
 

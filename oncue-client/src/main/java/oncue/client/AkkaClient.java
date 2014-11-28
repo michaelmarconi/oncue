@@ -63,17 +63,13 @@ public class AkkaClient implements Client {
 		try {
 			JobSummary jobSummary = (JobSummary) Await.result(
 					ask(scheduler, SimpleMessage.JOB_SUMMARY, new Timeout(
-							settings.SCHEDULER_TIMEOUT)),
-					settings.SCHEDULER_TIMEOUT);
+							settings.SCHEDULER_TIMEOUT)), settings.SCHEDULER_TIMEOUT);
 			return jobSummary.getJobs();
+		} catch (AskTimeoutException e) {
+			log.error(e, "Timeout waiting for scheduler to respond with job summary");
+			throw new ClientException(e);
 		} catch (Exception e) {
-			if (e instanceof AskTimeoutException) {
-				log.error(e,
-						"Timeout waiting for scheduler to respond with job summary");
-			} else {
-				log.error(e, "Failed to retrieve job summary");
-			}
-
+			log.error(e, "Failed to retrieve job summary");
 			throw new ClientException(e);
 		}
 	}

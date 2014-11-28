@@ -34,7 +34,7 @@ public class Status extends Controller {
 				ask(scheduler, SimpleMessage.JOB_SUMMARY, new Timeout(settings.SCHEDULER_TIMEOUT)).recover(
 						new Recover<Object>() {
 							@Override
-							public Object recover(Throwable t) throws Throwable {
+							public Object recover(Throwable t) {
 								if (t instanceof AskTimeoutException) {
 									Logger.error("Timeout waiting for scheduler to respond to job summary request", t);
 									return internalServerError("Timeout");

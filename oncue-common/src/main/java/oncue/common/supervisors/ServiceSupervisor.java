@@ -32,7 +32,7 @@ public class ServiceSupervisor implements SupervisorStrategyConfigurator {
 		return new OneForOneStrategy(10, Duration.create("1 minute"), new Function<Throwable, Directive>() {
 
 			@Override
-			public Directive apply(Throwable t) throws Exception {
+			public Directive apply(Throwable t) {
 
 				if (t instanceof ActorInitializationException)
 					return escalate();
