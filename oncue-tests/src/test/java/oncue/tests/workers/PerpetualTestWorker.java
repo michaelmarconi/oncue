@@ -27,13 +27,13 @@ public class PerpetualTestWorker extends AbstractWorker {
 	}
 
 	private void processJob() {
-		try {
-			for (int i = 0; i < 1000; i++) {
+		while (true) {
+			try {
 				Thread.sleep(500);
 				reportProgress(0.1);
+			} catch (InterruptedException e) {
+				// Ignore
 			}
-		} catch (InterruptedException e) {
-			// Ignore
 		}
 	}
 
