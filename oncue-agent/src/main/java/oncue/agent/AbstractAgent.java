@@ -209,7 +209,6 @@ public abstract class AbstractAgent extends UntypedActor {
 
 					@Override
 					public void run() {
-						log.info("HEART BEATING");
 						getScheduler().tell(SimpleMessage.AGENT_HEARTBEAT, getSelf());
 					}
 				}, getContext().dispatcher());
