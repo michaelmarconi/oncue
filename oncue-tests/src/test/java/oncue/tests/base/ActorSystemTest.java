@@ -1,17 +1,15 @@
 /*******************************************************************************
  * Copyright 2013 Michael Marconi
  * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  * 
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  ******************************************************************************/
 package oncue.tests.base;
 
@@ -45,6 +43,11 @@ public abstract class ActorSystemTest {
 	protected Settings settings;
 	protected ActorSystem system;
 
+	// By default ActorSystemTest children will wait for all actors to finish before shutting down
+	// the test system. If you want to shut down the test system while e.g. workers are still
+	// running, set this to false.
+	protected boolean waitForRunningJobs = true;
+
 	// Required for naming agents uniquely
 	private int agentCount = 0;
 
@@ -58,8 +61,7 @@ public abstract class ActorSystemTest {
 	/**
 	 * Create an agent component, with a set of workers and an optional probe
 	 * 
-	 * @param probe
-	 *            can be null
+	 * @param probe can be null
 	 */
 	@SuppressWarnings("serial")
 	public ActorRef createAgent(ActorSystem system, final Set<String> workers, final ActorRef probe) {
@@ -67,8 +69,8 @@ public abstract class ActorSystemTest {
 		return system.actorOf(new Props(new UntypedActorFactory() {
 			@Override
 			public Actor create() throws Exception {
-				AbstractAgent agent = (AbstractAgent) Class.forName(settings.AGENT_CLASS).getConstructor(Set.class)
-						.newInstance(workers);
+				AbstractAgent agent = (AbstractAgent) Class.forName(settings.AGENT_CLASS)
+						.getConstructor(Set.class).newInstance(workers);
 				if (probe != null)
 					agent.injectProbe(probe);
 				return agent;
@@ -86,8 +88,7 @@ public abstract class ActorSystemTest {
 	/**
 	 * Create a scheduler component, with an optional probe
 	 * 
-	 * @param probe
-	 *            can be null
+	 * @param probe can be null
 	 */
 	@SuppressWarnings("serial")
 	public ActorRef createScheduler(ActorSystem system, final ActorRef probe) {
@@ -100,8 +101,8 @@ public abstract class ActorSystemTest {
 					backingStoreClass = Class.forName(settings.SCHEDULER_BACKING_STORE_CLASS);
 
 				@SuppressWarnings("rawtypes")
-				AbstractScheduler scheduler = (AbstractScheduler) schedulerClass.getConstructor(Class.class)
-						.newInstance(backingStoreClass);
+				AbstractScheduler scheduler = (AbstractScheduler) schedulerClass.getConstructor(
+						Class.class).newInstance(backingStoreClass);
 				if (probe != null)
 					scheduler.injectProbe(probe);
 				return scheduler;
@@ -112,8 +113,7 @@ public abstract class ActorSystemTest {
 	@Before
 	public void startActorSystem() {
 		/*
-		 * Load configuration specific to this test and fall back to the
-		 * reference configuration
+		 * Load configuration specific to this test and fall back to the reference configuration
 		 */
 		config = ConfigFactory.load();
 		config = ConfigFactory.load(getClass().getSimpleName()).withFallback(config);
@@ -126,9 +126,11 @@ public abstract class ActorSystemTest {
 	@After
 	public void stopActorSystem() throws Exception {
 		system.shutdown();
-		while (!system.isTerminated()) {
-			log.debug("Waiting for system to shut down...");
-			Thread.sleep(500);
+		if (waitForRunningJobs) {
+			while (!system.isTerminated()) {
+				log.debug("Waiting for system to shut down...");
+				Thread.sleep(500);
+			}
 		}
 		log.debug("System shut down");
 	}
