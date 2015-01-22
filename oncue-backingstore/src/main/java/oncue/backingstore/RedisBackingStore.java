@@ -385,6 +385,7 @@ public class RedisBackingStore extends AbstractBackingStore {
 		Jedis redis = RedisBackingStore.getConnection();
 
 		redis.lrem(COMPLETED_JOBS, 0, Long.toString(jobId));
+		removeJobById(jobId, redis);
 
 		RedisBackingStore.releaseConnection(redis);
 	}
@@ -394,6 +395,7 @@ public class RedisBackingStore extends AbstractBackingStore {
 		Jedis redis = RedisBackingStore.getConnection();
 
 		redis.lrem(FAILED_JOBS, 0, Long.toString(jobId));
+		removeJobById(jobId, redis);
 
 		RedisBackingStore.releaseConnection(redis);
 	}
@@ -403,6 +405,7 @@ public class RedisBackingStore extends AbstractBackingStore {
 		Jedis redis = RedisBackingStore.getConnection();
 
 		redis.lrem(SCHEDULED_JOBS, 0, Long.toString(jobId));
+		removeJobById(jobId, redis);
 
 		RedisBackingStore.releaseConnection(redis);
 	}
@@ -412,8 +415,13 @@ public class RedisBackingStore extends AbstractBackingStore {
 		Jedis redis = RedisBackingStore.getConnection();
 
 		redis.lrem(UNSCHEDULED_JOBS, 0, Long.toString(jobId));
+		removeJobById(jobId, redis);
 
 		RedisBackingStore.releaseConnection(redis);
+	}
+
+	public void removeJobById(long jobId, Jedis redis) {
+		redis.del(String.format(JOB_KEY, jobId));
 	}
 
 	/**

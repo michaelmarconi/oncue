@@ -16,8 +16,10 @@
 package oncue.tests.redis;
 
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertTrue;
+import static oncue.backingstore.RedisBackingStore.JOB_KEY;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -37,7 +39,6 @@ import oncue.tests.workers.TestWorker;
 
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import redis.clients.jedis.Jedis;
@@ -285,53 +286,6 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 	}
 
 	@Test
-	public void removeScheduledJob() {
-		new JavaTestKit(system) {
-			{
-				Jedis redis = RedisBackingStore.getConnection();
-				RedisBackingStore backingStore = new RedisBackingStore(system, settings);
-
-				// Push a job into Redis
-				Job job = new Job(1, TestWorker.class.getName());
-				RedisBackingStore.persistJob(job, RedisBackingStore.SCHEDULED_JOBS, redis);
-
-				// Remove the scheduled job
-				backingStore.removeScheduledJobById(job.getId());
-
-				// Check scheduled list in Redis
-				assertEquals("Expected no jobs in the scheduled jobs list", 0,
-						redis.lrange(RedisBackingStore.SCHEDULED_JOBS, 0, -1).size());
-
-				RedisBackingStore.releaseConnection(redis);
-			}
-		};
-	}
-
-	@Test
-	public void removeUnscheduledJob() {
-		new JavaTestKit(system) {
-			{
-				Jedis redis = RedisBackingStore.getConnection();
-				RedisBackingStore backingStore = new RedisBackingStore(system, settings);
-
-				// Push a job into Redis
-				Job job = new Job(1, TestWorker.class.getName());
-				RedisBackingStore.persistJob(job, RedisBackingStore.UNSCHEDULED_JOBS, redis);
-
-				// Remove the scheduled job
-				backingStore.removeUnscheduledJobById(job.getId());
-
-				// Check scheduled list in Redis
-				assertEquals("Expected no jobs in the unscheduled jobs list", 0,
-						redis.lrange(RedisBackingStore.UNSCHEDULED_JOBS, 0, -1).size());
-
-				RedisBackingStore.releaseConnection(redis);
-
-			}
-		};
-	}
-
-	@Test
 	public void restoreJobs() {
 		new JavaTestKit(system) {
 			{
@@ -415,8 +369,16 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 				persistTestJob(2, DateTime.now().minusHours(2), true);
 				persistTestJob(3, DateTime.now().minusHours(2), true);
 
+				assertTrue(redis.exists(getJobId(1)));
+				assertTrue(redis.exists(getJobId(2)));
+				assertTrue(redis.exists(getJobId(3)));
+
 				assertEquals(1, backingStore.cleanupJobs(false, Duration.standardHours(1)));
 				assertEquals(2, backingStore.cleanupJobs(true, Duration.standardHours(1)));
+
+				assertFalse(redis.exists(getJobId(1)));
+				assertFalse(redis.exists(getJobId(2)));
+				assertFalse(redis.exists(getJobId(3)));
 
 				RedisBackingStore.releaseConnection(redis);
 			}
@@ -441,16 +403,145 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 	}
 
 	@Test
-	@Ignore("Not implemented yet")
-	// TODO
-	public void removeCompletedJob() {
+	public void removeJobById() {
+		new JavaTestKit(system) {
+			private Jedis redis;
+			private RedisBackingStore backingStore;
 
+			{
+				redis = RedisBackingStore.getConnection();
+				backingStore = new RedisBackingStore(system, settings);
+
+				Job job = new Job(1, TestWorker.class.getName());
+				RedisBackingStore.persistJob(job, RedisBackingStore.SCHEDULED_JOBS, redis);
+
+				String jobId = getJobId(job.getId());
+				assertTrue(redis.exists(jobId));
+
+				backingStore.removeJobById(job.getId(), redis);
+				assertFalse(redis.exists(jobId));
+
+				RedisBackingStore.releaseConnection(redis);
+			}
+
+		};
 	}
 
 	@Test
-	@Ignore("Not implemented yet")
-	// TODO
-	public void removeFailedJob() {
+	public void removeCompletedJobById() {
+		new JavaTestKit(system) {
+			{
+				Jedis redis = RedisBackingStore.getConnection();
+				RedisBackingStore backingStore = new RedisBackingStore(system, settings);
 
+				// Push a job into Redis
+				Job job = new Job(1, TestWorker.class.getName());
+				job.setCompletedAt(DateTime.now().minusYears(1));
+
+				RedisBackingStore.persistJob(job, RedisBackingStore.COMPLETED_JOBS, redis);
+
+				assertTrue(redis.exists(getJobId(job.getId())));
+
+				// Remove the scheduled job
+				backingStore.removeCompletedJobById(job.getId());
+
+				assertFalse(redis.exists(getJobId(job.getId())));
+
+				// Check scheduled list in Redis
+				assertEquals("Expected no jobs in the completed jobs list", 0,
+						redis.lrange(RedisBackingStore.COMPLETED_JOBS, 0, -1).size());
+
+				RedisBackingStore.releaseConnection(redis);
+			}
+		};
 	}
+
+	@Test
+	public void removeFailedJobById() {
+		new JavaTestKit(system) {
+			{
+				Jedis redis = RedisBackingStore.getConnection();
+				RedisBackingStore backingStore = new RedisBackingStore(system, settings);
+
+				// Push a job into Redis
+				Job job = new Job(1, TestWorker.class.getName());
+				job.setCompletedAt(DateTime.now().minusYears(1));
+
+				RedisBackingStore.persistJob(job, RedisBackingStore.FAILED_JOBS, redis);
+
+				assertTrue(redis.exists(getJobId(job.getId())));
+
+				// Remove the scheduled job
+				backingStore.removeFailedJobById(job.getId());
+
+				assertFalse(redis.exists(getJobId(job.getId())));
+
+				// Check scheduled list in Redis
+				assertEquals("Expected no jobs in the failed jobs list", 0,
+						redis.lrange(RedisBackingStore.FAILED_JOBS, 0, -1).size());
+
+				RedisBackingStore.releaseConnection(redis);
+			}
+		};
+	}
+
+	@Test
+	public void removeScheduledJobById() {
+		new JavaTestKit(system) {
+			{
+				Jedis redis = RedisBackingStore.getConnection();
+				RedisBackingStore backingStore = new RedisBackingStore(system, settings);
+
+				// Push a job into Redis
+				Job job = new Job(1, TestWorker.class.getName());
+				RedisBackingStore.persistJob(job, RedisBackingStore.SCHEDULED_JOBS, redis);
+
+				assertTrue(redis.exists(getJobId(job.getId())));
+
+				// Remove the scheduled job
+				backingStore.removeScheduledJobById(job.getId());
+
+				assertFalse(redis.exists(getJobId(job.getId())));
+
+				// Check scheduled list in Redis
+				assertEquals("Expected no jobs in the scheduled jobs list", 0,
+						redis.lrange(RedisBackingStore.SCHEDULED_JOBS, 0, -1).size());
+
+				RedisBackingStore.releaseConnection(redis);
+			}
+		};
+	}
+
+	@Test
+	public void removeUnscheduledJobById() {
+		new JavaTestKit(system) {
+			{
+				Jedis redis = RedisBackingStore.getConnection();
+				RedisBackingStore backingStore = new RedisBackingStore(system, settings);
+
+				// Push a job into Redis
+				Job job = new Job(1, TestWorker.class.getName());
+				RedisBackingStore.persistJob(job, RedisBackingStore.UNSCHEDULED_JOBS, redis);
+
+				assertTrue(redis.exists(getJobId(job.getId())));
+
+				// Remove the scheduled job
+				backingStore.removeUnscheduledJobById(job.getId());
+
+				assertFalse(redis.exists(getJobId(job.getId())));
+
+				// Check scheduled list in Redis
+				assertEquals("Expected no jobs in the unscheduled jobs list", 0,
+						redis.lrange(RedisBackingStore.UNSCHEDULED_JOBS, 0, -1).size());
+
+				RedisBackingStore.releaseConnection(redis);
+
+			}
+		};
+	}
+
+	private String getJobId(long id) {
+		return String.format(JOB_KEY, id);
+	}
+
 }
