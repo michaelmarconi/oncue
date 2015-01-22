@@ -16,8 +16,10 @@
 package oncue.tests.redis;
 
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertTrue;
+import static oncue.backingstore.RedisBackingStore.JOB_KEY;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -37,7 +39,9 @@ import oncue.tests.workers.TestWorker;
 
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
-import org.junit.Ignore;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.Test;
 
 import redis.clients.jedis.Jedis;
@@ -45,6 +49,26 @@ import akka.actor.ActorRef;
 import akka.testkit.JavaTestKit;
 
 public class RedisBackingStoreTest extends ActorSystemTest {
+
+	private Jedis redis;
+
+	@Before
+	public void flushRedis() {
+		redis = RedisBackingStore.getConnection();
+		redis.flushAll();
+	}
+
+	@After
+	public void releaseRedisConnection() {
+		RedisBackingStore.releaseConnection(redis);
+	}
+
+	@AfterClass
+	public static void finalFlushRedis() {
+		Jedis redis = RedisBackingStore.getConnection();
+		redis.flushAll();
+		RedisBackingStore.releaseConnection(redis);
+	}
 
 	@Test
 	public void addScheduledJob() {
@@ -72,19 +96,18 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 
 				// Enqueue a job
 				scheduler.tell(new EnqueueJob(TestWorker.class.getName(), params), getRef());
-				Job job = expectMsgClass(Job.class);
+				final Job job = expectMsgClass(Job.class);
 
-				// Start an Agent
-				createAgent(system, new HashSet<String>(Arrays.asList(TestWorker.class.getName())), null);
+				// Check to see that the job is written as finished in redis
+				new AwaitCond() {
+					@Override
+					protected boolean cond() {
+						return redis.llen(RedisBackingStore.UNSCHEDULED_JOBS) > 0
+								&& redis.exists(getJobId(job.getId()));
+					}
+				};
 
-				// Wait for some progress
-				schedulerProbe.expectMsgClass(JobProgress.class);
-
-				// Check to see that scheduled job has been recorded in Redis
-				Jedis redis = RedisBackingStore.getConnection();
-				List<String> jobIDs = redis.brpop(0, RedisBackingStore.SCHEDULED_JOBS);
-				long jobId = new Long(jobIDs.get(1));
-				Job loadedJob = RedisBackingStore.loadJob(jobId, redis);
+				Job loadedJob = RedisBackingStore.loadJob(job.getId(), redis);
 
 				assertEquals(job.getId(), loadedJob.getId());
 				assertEquals(job.getEnqueuedAt().toString(), loadedJob.getEnqueuedAt().toString());
@@ -92,6 +115,27 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 				assertEquals("Wrong number of parameters", 2, loadedJob.getParams().size());
 				assertEquals(job.getParams().get("month"), loadedJob.getParams().get("month"));
 				assertEquals(job.getParams().get("size"), loadedJob.getParams().get("size"));
+
+				// Start an Agent
+				createAgent(system, new HashSet<>(Arrays.asList(TestWorker.class.getName())), null);
+
+				// Check to see that the scheduled job has finished
+				new AwaitCond() {
+					@Override
+					protected boolean cond() {
+						// Wait for some progress
+						JobProgress progress = schedulerProbe.expectMsgClass(JobProgress.class);
+						return progress.getJob().getProgress() == 1.0;
+					}
+				};
+
+				// Check to see that the job goes into the completed jobs list
+				new AwaitCond() {
+					@Override
+					protected boolean cond() {
+						return redis.llen(RedisBackingStore.COMPLETED_JOBS) > 0;
+					}
+				};
 			}
 		};
 	}
@@ -110,10 +154,18 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 
 				// Enqueue a job
 				scheduler.tell(new EnqueueJob(TestWorker.class.getName(), params), getRef());
-				Job job = expectMsgClass(Job.class);
+				final Job job = expectMsgClass(Job.class);
+
+				// Check to see that the job is written as finished in redis
+				new AwaitCond() {
+					@Override
+					protected boolean cond() {
+						return redis.llen(RedisBackingStore.UNSCHEDULED_JOBS) > 0
+								&& redis.exists(getJobId(job.getId()));
+					}
+				};
 
 				// Check to see that unscheduled job has been recorded in Redis
-				Jedis redis = RedisBackingStore.getConnection();
 				List<String> jobIDs = redis.brpop(0, RedisBackingStore.UNSCHEDULED_JOBS);
 				long jobId = new Long(jobIDs.get(1));
 				Job loadedJob = RedisBackingStore.loadJob(jobId, redis);
@@ -124,8 +176,8 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 				assertEquals("Wrong number of parameters", 2, loadedJob.getParams().size());
 				assertEquals(job.getParams().get("month"), loadedJob.getParams().get("month"));
 				assertEquals(job.getParams().get("size"), loadedJob.getParams().get("size"));
-				assertEquals("There should be no more jobs on the unscheduled queue", 0,
-						redis.llen(RedisBackingStore.UNSCHEDULED_JOBS).longValue());
+				assertEquals("There should be no more jobs on the unscheduled queue", 0, redis
+						.llen(RedisBackingStore.UNSCHEDULED_JOBS).longValue());
 			}
 		};
 	}
@@ -153,25 +205,41 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 				scheduler.tell(new EnqueueJob(IncompetentTestWorker.class.getName()), getRef());
 				Job job = expectMsgClass(Job.class);
 
+				final String jobKey = getJobId(job.getId());
+
+				// Check to see that the scheduled job has been recorded in Redis
+				new AwaitCond() {
+					@Override
+					protected boolean cond() {
+						return redis.exists(jobKey);
+					}
+				};
+
 				// Start an Agent
-				createAgent(system, new HashSet<String>(Arrays.asList(IncompetentTestWorker.class.getName())), null);
+				createAgent(system,
+						new HashSet<>(Arrays.asList(IncompetentTestWorker.class.getName())), null);
 
 				// Expect a job failure message at the scheduler
 				JobFailed jobFailed = schedulerProbe.expectMsgClass(JobFailed.class);
 				Job failedJob = jobFailed.getJob();
 				assertEquals("Job IDs don't match", job.getId(), failedJob.getId());
-				assertTrue("Wrong exception type",
-						jobFailed.getJob().getErrorMessage().contains(ArithmeticException.class.getName()));
+				assertTrue(
+						"Wrong exception type",
+						jobFailed.getJob().getErrorMessage()
+								.contains(ArithmeticException.class.getName()));
 
 				expectNoMsg();
 
-				// Check to see that job failure has been recorded in Redis
-				Jedis redis = RedisBackingStore.getConnection();
-				final String jobKey = String.format(RedisBackingStore.JOB_KEY, job.getId());
+				new AwaitCond() {
+					@Override
+					protected boolean cond() {
+						return redis.llen(RedisBackingStore.FAILED_JOBS) > 0;
+					}
+				};
+
 				String state = redis.hget(jobKey, RedisBackingStore.JOB_STATE);
 				String errorMessage = redis.hget(jobKey, RedisBackingStore.JOB_ERROR_MESSAGE);
 				RedisBackingStore.releaseConnection(redis);
-
 				assertNotNull("No job state found", state);
 				assertEquals("The recorded state does not match the expected state", Job.State.FAILED.toString(), state);
 				assertTrue(errorMessage.contains(ArithmeticException.class.getName()));
@@ -203,7 +271,7 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 				Job job = expectMsgClass(Job.class);
 
 				// Start an Agent
-				createAgent(system, new HashSet<String>(Arrays.asList(TestWorker.class.getName())), null);
+				createAgent(system, new HashSet<>(Arrays.asList(TestWorker.class.getName())), null);
 
 				// Expect a series of progress reports
 				double expectedProgress = 0;
@@ -216,17 +284,15 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 				schedulerProbe.expectNoMsg();
 
 				// Check to see progress has been recorded in Redis
-				Jedis redis = RedisBackingStore.getConnection();
-				final String jobKey = String.format(RedisBackingStore.JOB_KEY, job.getId());
+				final String jobKey = getJobId(job.getId());
 				String progress = redis.hget(jobKey, RedisBackingStore.JOB_PROGRESS);
 
 				assertNotNull("No progress found", progress);
-				assertEquals("The recorded progress does not match the expected progress", 1.0, new Double(progress));
+				assertEquals("The recorded progress does not match the expected progress", 1.0,
+						new Double(progress));
 
 				// Check to see that only one job was persisted
 				assertEquals(1, redis.lrange(RedisBackingStore.COMPLETED_JOBS, 0, -1).size());
-
-				RedisBackingStore.releaseConnection(redis);
 			}
 		};
 	}
@@ -235,7 +301,6 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 	public void getCompletedJobs() {
 		new JavaTestKit(system) {
 			{
-				Jedis redis = RedisBackingStore.getConnection();
 				RedisBackingStore backingStore = new RedisBackingStore(system, settings);
 
 				// Push a job into Redis
@@ -252,8 +317,6 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 
 				assertEquals(1, completedJobs.size());
 				assertEquals(job.getId(), completedJobs.get(0).getId());
-
-				RedisBackingStore.releaseConnection(redis);
 			}
 		};
 	}
@@ -262,7 +325,6 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 	public void getFailedJobs() {
 		new JavaTestKit(system) {
 			{
-				Jedis redis = RedisBackingStore.getConnection();
 				RedisBackingStore backingStore = new RedisBackingStore(system, settings);
 
 				// Push a job into Redis
@@ -278,55 +340,6 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 
 				assertEquals(1, failedJobs.size());
 				assertEquals(job.getId(), failedJobs.get(0).getId());
-
-				RedisBackingStore.releaseConnection(redis);
-			}
-		};
-	}
-
-	@Test
-	public void removeScheduledJob() {
-		new JavaTestKit(system) {
-			{
-				Jedis redis = RedisBackingStore.getConnection();
-				RedisBackingStore backingStore = new RedisBackingStore(system, settings);
-
-				// Push a job into Redis
-				Job job = new Job(1, TestWorker.class.getName());
-				RedisBackingStore.persistJob(job, RedisBackingStore.SCHEDULED_JOBS, redis);
-
-				// Remove the scheduled job
-				backingStore.removeScheduledJobById(job.getId());
-
-				// Check scheduled list in Redis
-				assertEquals("Expected no jobs in the scheduled jobs list", 0,
-						redis.lrange(RedisBackingStore.SCHEDULED_JOBS, 0, -1).size());
-
-				RedisBackingStore.releaseConnection(redis);
-			}
-		};
-	}
-
-	@Test
-	public void removeUnscheduledJob() {
-		new JavaTestKit(system) {
-			{
-				Jedis redis = RedisBackingStore.getConnection();
-				RedisBackingStore backingStore = new RedisBackingStore(system, settings);
-
-				// Push a job into Redis
-				Job job = new Job(1, TestWorker.class.getName());
-				RedisBackingStore.persistJob(job, RedisBackingStore.UNSCHEDULED_JOBS, redis);
-
-				// Remove the scheduled job
-				backingStore.removeUnscheduledJobById(job.getId());
-
-				// Check scheduled list in Redis
-				assertEquals("Expected no jobs in the unscheduled jobs list", 0,
-						redis.lrange(RedisBackingStore.UNSCHEDULED_JOBS, 0, -1).size());
-
-				RedisBackingStore.releaseConnection(redis);
-
 			}
 		};
 	}
@@ -335,12 +348,12 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 	public void restoreJobs() {
 		new JavaTestKit(system) {
 			{
-				Jedis redis = RedisBackingStore.getConnection();
 				RedisBackingStore backingStore = new RedisBackingStore(system, settings);
 
 				// Push an unscheduled job into Redis
 				Job unscheduledJob = new Job(1, TestWorker.class.getName());
-				RedisBackingStore.persistJob(unscheduledJob, RedisBackingStore.UNSCHEDULED_JOBS, redis);
+				RedisBackingStore.persistJob(unscheduledJob, RedisBackingStore.UNSCHEDULED_JOBS,
+						redis);
 
 				// Push a scheduled job into Redis
 				Job scheduledJob = new Job(2, TestWorker.class.getName());
@@ -352,13 +365,12 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 				// Check the set of restored jobs
 				assertTrue(restoredJobs.size() == 2);
 				for (Job job : restoredJobs) {
-					assertTrue(job.getId() == unscheduledJob.getId() || job.getId() == scheduledJob.getId());
+					assertTrue(job.getId() == unscheduledJob.getId()
+							|| job.getId() == scheduledJob.getId());
 				}
 
 				// Make sure no scheduled jobs remain
 				assertEquals(0, redis.lrange(RedisBackingStore.SCHEDULED_JOBS, 0, -1).size());
-
-				RedisBackingStore.releaseConnection(redis);
 			}
 		};
 	}
@@ -379,10 +391,8 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 		job.setRerun(true);
 		job.setStartedAt(testTime);
 		job.setCompletedAt(testTime);
-		Jedis redis = RedisBackingStore.getConnection();
 		RedisBackingStore.persistJob(job, "test_queue", redis);
 		Job loadedJob = RedisBackingStore.loadJob(0, redis);
-		RedisBackingStore.releaseConnection(redis);
 
 		assertNotNull("Expected 'enqueued at' timestamp", job.getEnqueuedAt());
 		assertNotNull("Expected 'started at' timestamp", job.getStartedAt());
@@ -403,11 +413,9 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 	@Test
 	public void cleanUpJobsReturnsCorrectCleanedUpJobCount() {
 		new JavaTestKit(system) {
-			private Jedis redis;
 			private RedisBackingStore backingStore;
 
 			{
-				redis = RedisBackingStore.getConnection();
 				backingStore = new RedisBackingStore(system, settings);
 
 				// Push expired jobs into redis
@@ -415,10 +423,16 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 				persistTestJob(2, DateTime.now().minusHours(2), true);
 				persistTestJob(3, DateTime.now().minusHours(2), true);
 
+				assertTrue(redis.exists(getJobId(1)));
+				assertTrue(redis.exists(getJobId(2)));
+				assertTrue(redis.exists(getJobId(3)));
+
 				assertEquals(1, backingStore.cleanupJobs(false, Duration.standardHours(1)));
 				assertEquals(2, backingStore.cleanupJobs(true, Duration.standardHours(1)));
 
-				RedisBackingStore.releaseConnection(redis);
+				assertFalse(redis.exists(getJobId(1)));
+				assertFalse(redis.exists(getJobId(2)));
+				assertFalse(redis.exists(getJobId(3)));
 			}
 
 			private void persistTestJob(int jobNumber, DateTime completionTime, boolean failed) {
@@ -441,16 +455,132 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 	}
 
 	@Test
-	@Ignore("Not implemented yet")
-	// TODO
-	public void removeCompletedJob() {
+	public void removeJobById() {
+		new JavaTestKit(system) {
+			private RedisBackingStore backingStore;
 
+			{
+				backingStore = new RedisBackingStore(system, settings);
+
+				Job job = new Job(1, TestWorker.class.getName());
+				RedisBackingStore.persistJob(job, RedisBackingStore.SCHEDULED_JOBS, redis);
+
+				String jobId = getJobId(job.getId());
+				assertTrue(redis.exists(jobId));
+
+				backingStore.removeJobById(job.getId(), redis);
+				assertFalse(redis.exists(jobId));
+			}
+
+		};
 	}
 
 	@Test
-	@Ignore("Not implemented yet")
-	// TODO
-	public void removeFailedJob() {
+	public void removeCompletedJobById() {
+		new JavaTestKit(system) {
+			{
+				RedisBackingStore backingStore = new RedisBackingStore(system, settings);
 
+				// Push a job into Redis
+				Job job = new Job(1, TestWorker.class.getName());
+				job.setCompletedAt(DateTime.now().minusYears(1));
+
+				RedisBackingStore.persistJob(job, RedisBackingStore.COMPLETED_JOBS, redis);
+
+				assertTrue(redis.exists(getJobId(job.getId())));
+
+				// Remove the scheduled job
+				backingStore.removeCompletedJobById(job.getId());
+
+				// Assert that the job no longer exists
+				assertFalse(redis.exists(getJobId(job.getId())));
+
+				// Check scheduled list in Redis
+				assertEquals("Expected no jobs in the completed jobs list", 0,
+						redis.lrange(RedisBackingStore.COMPLETED_JOBS, 0, -1).size());
+			}
+		};
 	}
+
+	@Test
+	public void removeFailedJobById() {
+		new JavaTestKit(system) {
+			{
+				RedisBackingStore backingStore = new RedisBackingStore(system, settings);
+
+				// Push a job into Redis
+				Job job = new Job(1, TestWorker.class.getName());
+				job.setCompletedAt(DateTime.now().minusYears(1));
+
+				RedisBackingStore.persistJob(job, RedisBackingStore.FAILED_JOBS, redis);
+
+				assertTrue(redis.exists(getJobId(job.getId())));
+
+				// Remove the scheduled job
+				backingStore.removeFailedJobById(job.getId());
+
+				// Assert that the job no longer exists
+				assertFalse(redis.exists(getJobId(job.getId())));
+
+				// Check scheduled list in Redis
+				assertEquals("Expected no jobs in the failed jobs list", 0,
+						redis.lrange(RedisBackingStore.FAILED_JOBS, 0, -1).size());
+			}
+		};
+	}
+
+	@Test
+	public void removeScheduledJobById() {
+		new JavaTestKit(system) {
+			{
+				RedisBackingStore backingStore = new RedisBackingStore(system, settings);
+
+				// Push a job into Redis
+				Job job = new Job(1, TestWorker.class.getName());
+				RedisBackingStore.persistJob(job, RedisBackingStore.SCHEDULED_JOBS, redis);
+
+				assertTrue(redis.exists(getJobId(job.getId())));
+
+				// Remove the scheduled job
+				backingStore.removeScheduledJobById(job.getId());
+
+				// Assert that the job still exists
+				assertTrue(redis.exists(getJobId(job.getId())));
+
+				// Check scheduled list in Redis
+				assertEquals("Expected no jobs in the scheduled jobs list", 0,
+						redis.lrange(RedisBackingStore.SCHEDULED_JOBS, 0, -1).size());
+			}
+		};
+	}
+
+	@Test
+	public void removeUnscheduledJobById() {
+		new JavaTestKit(system) {
+			{
+				RedisBackingStore backingStore = new RedisBackingStore(system, settings);
+
+				// Push a job into Redis
+				Job job = new Job(1, TestWorker.class.getName());
+				RedisBackingStore.persistJob(job, RedisBackingStore.UNSCHEDULED_JOBS, redis);
+
+				assertTrue(redis.exists(getJobId(job.getId())));
+
+				// Remove the scheduled job
+				backingStore.removeUnscheduledJobById(job.getId());
+
+				// Assert that the job still exists
+				assertTrue(redis.exists(getJobId(job.getId())));
+
+				// Check scheduled list in Redis
+				assertEquals("Expected no jobs in the unscheduled jobs list", 0,
+						redis.lrange(RedisBackingStore.UNSCHEDULED_JOBS, 0, -1).size());
+			}
+		};
+	}
+
+	private String getJobId(long id) {
+		return String.format(JOB_KEY, id);
+	}
+
 }
