@@ -243,8 +243,19 @@ public class RedisBackingStore extends AbstractBackingStore {
 		transaction.hset(jobKey, JOB_WORKER_TYPE, job.getWorkerType());
 		transaction.hset(jobKey, JOB_RERUN_STATUS, Boolean.toString(job.isRerun()));
 
-		if (job.getParams() != null)
-			transaction.hset(jobKey, JOB_PARAMS, JSONValue.toJSONString(job.getParams()));
+		if (job.getParams() != null) {
+			Map<String,String> params = null;
+			switch (job.getState()) {
+			case COMPLETED:
+			case FAILED:
+				params = job.getPrintableParams();
+				break;
+			default:
+				params = job.getParams();
+				break;
+			}
+			transaction.hset(jobKey, JOB_PARAMS, JSONValue.toJSONString(params));
+		}
 
 		if (job.getState() != null)
 			transaction.hset(jobKey, JOB_STATE, job.getState().toString());

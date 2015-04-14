@@ -2,6 +2,9 @@ package controllers.api;
 
 import static akka.pattern.Patterns.ask;
 
+import java.util.List;
+import java.util.ArrayList;
+
 import java.text.SimpleDateFormat;
 
 import oncue.OnCueService;
@@ -67,7 +70,11 @@ public class Jobs extends Controller {
 					return (Result) response;
 				} else {
 					JobSummary jobSummary = (JobSummary) response;
-					return ok(mapper.valueToTree(jobSummary.getJobs()));
+					List<Job> publicJobs = new ArrayList<>();
+					for (Job job : jobSummary.getJobs()) {
+						publicJobs.add(job.clonePublicView());
+					}
+					return ok(mapper.valueToTree(publicJobs));
 				}
 			}
 		}));
@@ -111,7 +118,7 @@ public class Jobs extends Controller {
 					if (jobToShow == null)
 						throw new RuntimeException("Failed to find a job with ID " + id);
 
-					return ok(mapper.valueToTree(jobToShow));
+					return ok(mapper.valueToTree(jobToShow.clonePublicView()));
 				}
 			}
 		}));
