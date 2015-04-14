@@ -246,9 +246,9 @@ public class RedisBackingStore extends AbstractBackingStore {
 		if (job.getParams() != null) {
 			Map<String,String> params = null;
 			switch (job.getState()) {
-			case COMPLETED:
+			case COMPLETE:
 			case FAILED:
-				params = job.getPrintableParams();
+				params = job.getParams(false);
 				break;
 			default:
 				params = job.getParams();

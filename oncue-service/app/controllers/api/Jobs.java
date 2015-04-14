@@ -70,11 +70,7 @@ public class Jobs extends Controller {
 					return (Result) response;
 				} else {
 					JobSummary jobSummary = (JobSummary) response;
-					List<Job> publicJobs = new ArrayList<>();
-					for (Job job : jobSummary.getJobs()) {
-						publicJobs.add(job.clonePublicView());
-					}
-					return ok(mapper.valueToTree(publicJobs));
+					return ok(mapper.valueToTree(jobSummary.getJobs()));
 				}
 			}
 		}));
@@ -111,14 +107,14 @@ public class Jobs extends Controller {
 					Job jobToShow = null;
 					for (Job job : jobSummary.getJobs()) {
 						if (job.getId() == id) {
-							jobToShow = job;
+							jobToShow = job.clonePublicView();
 							break;
 						}
 					}
 					if (jobToShow == null)
 						throw new RuntimeException("Failed to find a job with ID " + id);
 
-					return ok(mapper.valueToTree(jobToShow.clonePublicView()));
+					return ok(mapper.valueToTree(jobToShow));
 				}
 			}
 		}));

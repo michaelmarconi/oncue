@@ -200,7 +200,10 @@ public class Job implements Serializable, Cloneable {
 	}
 
 	// Don't print parameters that start with $
-	public Map<String,String> getPrintableParams() {
+	public Map<String,String> getParams(boolean includeSecrets) {
+		if (includeSecrets) {
+			return params;
+		}
 		Map<String,String> result = new HashMap<>();
 		for (String key : params.keySet()) {
 			if (key.charAt(0) != '$') {
@@ -217,7 +220,7 @@ public class Job implements Serializable, Cloneable {
 		return String
 				.format("Job %s (state=%s, enqueuedAt=%s, startedAt=%s, completedAt=%s, workerType=%s, re-run=%s, progress=%s params=%s)",
 						id, state, getEnqueuedAt(), getStartedAt(), getCompletedAt(), workerType,
-						rerun, progress, getPrintableParams());
+						rerun, progress, getParams(false));
 	}
 
 	@Override
