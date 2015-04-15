@@ -2,7 +2,6 @@ package controllers.api;
 
 import static akka.pattern.Patterns.ask;
 
-import java.util.List;
 import java.util.ArrayList;
 
 import java.text.SimpleDateFormat;
