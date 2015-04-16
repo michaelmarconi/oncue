@@ -15,6 +15,8 @@ package oncue.common.messages;
 
 import java.io.Serializable;
 import java.util.Map;
+import java.util.HashMap;
+import java.util.Iterator;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
@@ -113,6 +115,18 @@ public class Job implements Serializable, Cloneable {
 		return clone;
 	}
 
+	// Create a clone of this job with publicly visible properties.
+	public Job clonePublicView() {
+		Job result = (Job) clone();
+		for (Iterator<String> it = result.getParams().keySet().iterator(); it.hasNext(); ) {
+			String key = it.next();
+			if (key.charAt(0) == '$') {
+				result.getParams().put(key, "*hidden*");
+			}
+		}
+		return result;
+	}
+
 	public DateTime getCompletedAt() {
 		return completedAt;
 	}
@@ -185,12 +199,28 @@ public class Job implements Serializable, Cloneable {
 		this.state = state;
 	}
 
+	// Don't print parameters that start with $
+	public Map<String,String> getParams(boolean includeSecrets) {
+		if (includeSecrets) {
+			return params;
+		}
+		Map<String,String> result = new HashMap<>();
+		for (String key : params.keySet()) {
+			if (key.charAt(0) != '$') {
+				result.put(key, params.get(key));
+			} else {
+				result.put(key, "*hidden*");
+			}
+		}
+		return result;
+	}
+
 	@Override
 	public String toString() {
 		return String
 				.format("Job %s (state=%s, enqueuedAt=%s, startedAt=%s, completedAt=%s, workerType=%s, re-run=%s, progress=%s params=%s)",
 						id, state, getEnqueuedAt(), getStartedAt(), getCompletedAt(), workerType,
-						rerun, progress, params);
+						rerun, progress, getParams(false));
 	}
 
 	@Override

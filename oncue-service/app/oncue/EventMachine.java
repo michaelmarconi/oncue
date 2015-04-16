@@ -97,19 +97,19 @@ public class EventMachine extends UntypedActor {
 		} else if (message instanceof JobEnqueuedEvent) {
 			JobEnqueuedEvent jobEnqueued = (JobEnqueuedEvent) message;
 			for (WebSocket.Out<JsonNode> client : clients) {
-				ObjectNode event = constructEvent("job:enqueued", "job", jobEnqueued.getJob());
+				ObjectNode event = constructEvent("job:enqueued", "job", jobEnqueued.getJob().clonePublicView());
 				client.write(event);
 			}
 		} else if (message instanceof JobProgressEvent) {
 			JobProgressEvent jobProgress = (JobProgressEvent) message;
 			for (WebSocket.Out<JsonNode> client : clients) {
-				ObjectNode event = constructEvent("job:progressed", "job", jobProgress.getJob());
+				ObjectNode event = constructEvent("job:progressed", "job", jobProgress.getJob().clonePublicView());
 				client.write(event);
 			}
 		} else if (message instanceof JobFailedEvent) {
 			JobFailedEvent jobFailed = (JobFailedEvent) message;
 			for (WebSocket.Out<JsonNode> client : clients) {
-				ObjectNode event = constructEvent("job:failed", "job", jobFailed.getJob());
+				ObjectNode event = constructEvent("job:failed", "job", jobFailed.getJob().clonePublicView());
 				client.write(event);
 			}
 		} else if (message instanceof JobCleanupEvent) {
