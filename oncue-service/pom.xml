@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>oncue</groupId>
 		<artifactId>oncue</artifactId>
-		<version>1.0.4-SNAPSHOT</version>
+		<version>1.0.4</version>
 	</parent>
 
 	<artifactId>oncue-service</artifactId>
@@ -28,17 +28,17 @@
 		<dependency>
 			<groupId>oncue</groupId>
 			<artifactId>oncue-common</artifactId>
-			<version>1.0.4-SNAPSHOT</version>
+			<version>1.0.4</version>
 		</dependency>
 		<dependency>
 			<groupId>oncue</groupId>
 			<artifactId>oncue-scheduler</artifactId>
-			<version>1.0.4-SNAPSHOT</version>
+			<version>1.0.4</version>
 		</dependency>
 		<dependency>
 			<groupId>oncue</groupId>
 			<artifactId>oncue-timedjobs</artifactId>
-			<version>1.0.4-SNAPSHOT</version>
+			<version>1.0.4</version>
 		</dependency>
 
 		<!-- Play Framework Dependencies -->
