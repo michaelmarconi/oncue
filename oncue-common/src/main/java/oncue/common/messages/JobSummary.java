@@ -25,7 +25,7 @@ public class JobSummary implements Serializable {
 	public JobSummary(Collection<Job> jobs) {
 		super();
 		for (Job job : jobs) {
-			this.jobs.add((Job) job.clone());
+			this.jobs.add((Job) job.clonePublicView());
 		}
 	}
 

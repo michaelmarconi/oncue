@@ -2,6 +2,8 @@ package controllers.api;
 
 import static akka.pattern.Patterns.ask;
 
+import java.util.ArrayList;
+
 import java.text.SimpleDateFormat;
 
 import oncue.OnCueService;
@@ -104,7 +106,7 @@ public class Jobs extends Controller {
 					Job jobToShow = null;
 					for (Job job : jobSummary.getJobs()) {
 						if (job.getId() == id) {
-							jobToShow = job;
+							jobToShow = job.clonePublicView();
 							break;
 						}
 					}
