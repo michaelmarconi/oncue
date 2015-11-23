@@ -27,8 +27,7 @@ import oncue.common.messages.WorkResponse;
 import akka.actor.ActorRef;
 
 /**
- * A Schedule describes the set of {@linkplain Job}s assigned to each
- * {@linkplain Agent}.
+ * A Schedule describes the set of {@linkplain Job}s assigned to each agent
  */
 public class Schedule {
 
