@@ -27,7 +27,7 @@ import oncue.common.messages.ThrottledWorkRequest;
  * This implementation of {@linkplain AbstractScheduler} employs a throttling
  * strategy to ensure that agents are never overwhelmed with work.
  * 
- * A {@linkplain ThrottledAgent} will send a {@linkplain ThrottledWorkRequest},
+ * A <code>oncue.agent.ThrottledAgent</code> will send a {@linkplain ThrottledWorkRequest},
  * stating the number of jobs it is able to process in parallel. This scheduler
  * will pop just enough jobs off the queue to satisfy this throttled request for
  * work.

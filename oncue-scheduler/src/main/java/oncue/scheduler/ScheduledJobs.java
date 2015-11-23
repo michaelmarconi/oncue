@@ -1,17 +1,15 @@
 /*******************************************************************************
  * Copyright 2013 Michael Marconi
  * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  * 
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  ******************************************************************************/
 package oncue.scheduler;
 
@@ -20,17 +18,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import oncue.backingstore.BackingStore;
-import oncue.common.messages.Agent;
-import oncue.common.messages.Job;
-import oncue.scheduler.exceptions.RemoveScheduleJobException;
-
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 
+import oncue.backingstore.BackingStore;
+import oncue.common.messages.Job;
+import oncue.scheduler.exceptions.RemoveScheduleJobException;
+
 /**
- * An encapsulated map of {@linkplain Job}s to the {@linkplain Agent}s they have
- * been scheduled against.
+ * An encapsulated map of {@linkplain Job}s to the agents they have been scheduled against.
  */
 public class ScheduledJobs {
 
@@ -41,8 +37,7 @@ public class ScheduledJobs {
 	private Map<String, List<Job>> scheduledJobs = new HashMap<String, List<Job>>();
 
 	/**
-	 * @param backingStore
-	 *            is an instance of {@linkplain BackingStore}
+	 * @param backingStore is an instance of {@linkplain BackingStore}
 	 */
 	public ScheduledJobs(BackingStore backingStore) {
 		this.backingStore = backingStore;
@@ -51,10 +46,8 @@ public class ScheduledJobs {
 	/**
 	 * Assign a list of jobs to an agent
 	 * 
-	 * @param agent
-	 *            is the {@linkplain Agent} to which the jobs are being assigned
-	 * @param jobs
-	 *            is the list of {@linkplain Jobs}s to assign to the agent
+	 * @param agent is the agent to which the jobs are being assigned
+	 * @param jobs is the list of {@linkplain Job}s to assign to the agent
 	 */
 	public void addJobs(String agent, List<Job> jobs) {
 		List<Job> assignedJobs = scheduledJobs.get(agent);
@@ -83,8 +76,7 @@ public class ScheduledJobs {
 	/**
 	 * Get the list of jobs associated with this agent
 	 * 
-	 * @param agent
-	 *            is the {@linkplain Agent} the jobs are associated with
+	 * @param agent is the agent the jobs are associated with
 	 * @return a list of {@linkplain Job}s associated with the agent
 	 */
 	public List<Job> getJobs(String agent) {
@@ -96,13 +88,11 @@ public class ScheduledJobs {
 	}
 
 	/**
-	 * Update the state and progress of a scheduled job, usually in response to
-	 * work done on the job.
+	 * Update the state and progress of a scheduled job, usually in response to work done on the
+	 * job.
 	 * 
-	 * @param job
-	 *            contains the updates
-	 * @param agent
-	 *            is where the work is being done
+	 * @param job contains the updates
+	 * @param agent is where the work is being done
 	 */
 	public void updateJob(Job job, String agent) {
 		List<Job> jobs = getJobs(agent);
@@ -117,8 +107,7 @@ public class ScheduledJobs {
 	/**
 	 * Remove a job associated with an agent
 	 * 
-	 * @param job
-	 *            is the {@linkplain Job} to remove
+	 * @param jobId is the {@linkplain Job} ID to remove
 	 * 
 	 * @throws RemoveScheduleJobException
 	 */
