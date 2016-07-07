@@ -15,16 +15,12 @@ package oncue.tests.base;
 
 import java.util.Set;
 
-import oncue.agent.AbstractAgent;
-import oncue.backingstore.RedisBackingStore;
-import oncue.common.settings.Settings;
-import oncue.common.settings.SettingsProvider;
-import oncue.scheduler.AbstractScheduler;
-
 import org.junit.After;
 import org.junit.Before;
 
-import redis.clients.jedis.Jedis;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
+
 import akka.actor.Actor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -32,15 +28,20 @@ import akka.actor.Props;
 import akka.actor.UntypedActorFactory;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
-
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
+import oncue.agent.AbstractAgent;
+import oncue.backingstore.RedisBackingStore.RedisConnection;
+import oncue.common.settings.Settings;
+import oncue.common.settings.SettingsProvider;
+import oncue.scheduler.AbstractScheduler;
 
 public abstract class ActorSystemTest {
 
 	protected Config config;
+
 	protected LoggingAdapter log;
+
 	protected Settings settings;
+
 	protected ActorSystem system;
 
 	// By default ActorSystemTest children will wait for all actors to finish before shutting down
@@ -64,9 +65,11 @@ public abstract class ActorSystemTest {
 	 * @param probe can be null
 	 */
 	@SuppressWarnings("serial")
-	public ActorRef createAgent(ActorSystem system, final Set<String> workers, final ActorRef probe) {
+	public ActorRef createAgent(ActorSystem system, final Set<String> workers,
+			final ActorRef probe) {
 		agentCount++;
 		return system.actorOf(new Props(new UntypedActorFactory() {
+
 			@Override
 			public Actor create() throws Exception {
 				AbstractAgent agent = (AbstractAgent) Class.forName(settings.AGENT_CLASS)
@@ -93,6 +96,7 @@ public abstract class ActorSystemTest {
 	@SuppressWarnings("serial")
 	public ActorRef createScheduler(ActorSystem system, final ActorRef probe) {
 		return system.actorOf(new Props(new UntypedActorFactory() {
+
 			@Override
 			public Actor create() throws Exception {
 				Class<?> schedulerClass = Class.forName(settings.SCHEDULER_CLASS);
@@ -101,8 +105,8 @@ public abstract class ActorSystemTest {
 					backingStoreClass = Class.forName(settings.SCHEDULER_BACKING_STORE_CLASS);
 
 				@SuppressWarnings("rawtypes")
-				AbstractScheduler scheduler = (AbstractScheduler) schedulerClass.getConstructor(
-						Class.class).newInstance(backingStoreClass);
+				AbstractScheduler scheduler = (AbstractScheduler) schedulerClass
+						.getConstructor(Class.class).newInstance(backingStoreClass);
 				if (probe != null)
 					scheduler.injectProbe(probe);
 				return scheduler;
@@ -138,8 +142,8 @@ public abstract class ActorSystemTest {
 	@Before
 	@After
 	public void cleanRedis() {
-		Jedis redis = RedisBackingStore.getConnection();
-		redis.flushDB();
-		RedisBackingStore.releaseConnection(redis);
+		try (RedisConnection redis = new RedisConnection()) {
+			redis.flushDB();
+		}
 	}
 }

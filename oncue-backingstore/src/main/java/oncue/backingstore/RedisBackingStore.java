@@ -1,17 +1,15 @@
 /*******************************************************************************
  * Copyright 2013 Michael Marconi
  * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  * 
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  ******************************************************************************/
 package oncue.backingstore;
 
@@ -19,26 +17,108 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import oncue.common.messages.Job;
-import oncue.common.messages.Job.State;
-import oncue.common.settings.Settings;
-
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
 import org.json.simple.JSONValue;
 
+import com.typesafe.config.Config;
+
+import akka.actor.ActorSystem;
+import akka.event.Logging;
+import akka.event.LoggingAdapter;
+import oncue.common.messages.Job;
+import oncue.common.messages.Job.State;
+import oncue.common.settings.Settings;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.Protocol;
 import redis.clients.jedis.Transaction;
-import akka.actor.ActorSystem;
-import akka.event.Logging;
-import akka.event.LoggingAdapter;
-
-import com.typesafe.config.Config;
 
 public class RedisBackingStore extends AbstractBackingStore {
+
+	/**
+	 * An AutoCloseable wrapper that manages fetching a connection from the redis connection pool
+	 * and safely returning it when finished.
+	 * 
+	 * This class proxies methods from Jedis for convenience.
+	 */
+	public static class RedisConnection implements AutoCloseable {
+
+		// A Redis connection pool
+		private static JedisPool redisPool;
+
+		private Jedis connection;
+
+		public RedisConnection() {
+			if (redisPool == null) {
+				redisPool = new JedisPool(new JedisPoolConfig(), host, port,
+						Protocol.DEFAULT_TIMEOUT, null);
+			}
+			this.connection = redisPool.getResource();
+		}
+
+		@Override
+		public void close() {
+			// May throw JedisException
+			redisPool.returnResource(connection);
+		}
+
+		public Long incr(String key) {
+			return this.connection.incr(key);
+		}
+
+		public Transaction multi() {
+			return this.connection.multi();
+		}
+
+		public void lpush(String key, String value) {
+			this.connection.lpush(key, value);
+		}
+
+		public List<String> lrange(String key, int start, int end) {
+			return this.connection.lrange(key, start, end);
+		}
+
+		public String hget(String key, String field) {
+			return this.connection.hget(key, field);
+		}
+
+		public void hset(String key, String field, String value) {
+			this.connection.hset(key, field, value);
+		}
+
+		public void lrem(String key, int count, String value) {
+			this.connection.lrem(key, count, value);
+		}
+
+		public void del(String key) {
+			this.connection.del(key);
+		}
+
+		public Object rpoplpush(String srckey, String dstkey) {
+			return this.connection.rpoplpush(srckey, dstkey);
+		}
+
+		/**
+		 * Flush the entire redis database. This should only be used in tests.
+		 */
+		public void flushDB() {
+			this.connection.flushDB();
+		}
+
+		public boolean exists(String key) {
+			return this.connection.exists(key);
+		}
+
+		public Long llen(String key) {
+			return this.connection.llen(key);
+		}
+
+		public List<String> brpop(int timeout, String key) {
+			return this.connection.brpop(timeout, key);
+		}
+	}
 
 	// Redis host config key
 	private static final String REDIS_HOST = "oncue.scheduler.backing-store.redis.host";
@@ -48,9 +128,6 @@ public class RedisBackingStore extends AbstractBackingStore {
 
 	// Redis port
 	private static int port = Protocol.DEFAULT_PORT;
-
-	// A Redis connection pool
-	private static JedisPool redisPool;
 
 	// The jobs that have completed successfully
 	public static final String COMPLETED_JOBS = "oncue:jobs:complete";
@@ -98,8 +175,8 @@ public class RedisBackingStore extends AbstractBackingStore {
 	public static final String JOB_RERUN_STATUS = "job_rerun_status";
 
 	/*
-	 * The queue of jobs that acts as an external interface; the scheduler
-	 * component will watch this queue for new jobs
+	 * The queue of jobs that acts as an external interface; the scheduler component will watch this
+	 * queue for new jobs
 	 */
 	public static final String NEW_JOBS = "oncue:jobs:new";
 
@@ -112,56 +189,37 @@ public class RedisBackingStore extends AbstractBackingStore {
 	/**
 	 * Create a new {@linkplain Job} and persist it in Redis
 	 * 
-	 * @param workerType
-	 *            is the type of worker required to complete this job
+	 * @param workerType is the type of worker required to complete this job
 	 * 
-	 * @param params
-	 *            is a map of job parameters
+	 * @param params is a map of job parameters
 	 * 
 	 * @return a new {@linkplain Job}
 	 */
 	public static Job createJob(String workerType, Map<String, String> params) {
+		try (RedisConnection redis = new RedisConnection()) {
+			// Get the latest job ID
+			Long jobId = redis.incr(RedisBackingStore.JOB_COUNT_KEY);
 
-		// Get a connection to Redis
-		Jedis redis = getConnection();
+			// Create a new job
+			Job job = new Job(jobId, workerType);
+			if (params != null)
+				job.setParams(params);
 
-		// Get the latest job ID
-		Long jobId = redis.incr(RedisBackingStore.JOB_COUNT_KEY);
-
-		// Create a new job
-		Job job = new Job(jobId, workerType);
-		if (params != null)
-			job.setParams(params);
-
-		// Now, persist the job and release the connection
-		persistJob(job, RedisBackingStore.NEW_JOBS, redis);
-		releaseConnection(redis);
-
-		return job;
-	}
-
-	/**
-	 * @return a {@linkplain Jedis} connection to Redis. Be sure to release this
-	 *         when you're done with it!
-	 */
-	public static Jedis getConnection() {
-		if (redisPool == null) {
-			redisPool = new JedisPool(new JedisPoolConfig(), host, port, Protocol.DEFAULT_TIMEOUT, null);
+			// Now, persist the job and release the connection
+			persistJob(job, RedisBackingStore.NEW_JOBS, redis);
+			return job;
 		}
-		return redisPool.getResource();
 	}
 
 	/**
 	 * Construct a job from a given Job ID
 	 * 
-	 * @param id
-	 *            is the id of the job
-	 * @param redis
-	 *            is a connection to Redis
+	 * @param id is the id of the job
+	 * @param redis is a connection to Redis
 	 * @return a {@linkplain Job} that represents the job hash in Redis
 	 */
 	@SuppressWarnings("unchecked")
-	public static Job loadJob(long id, Jedis redis) {
+	public static Job loadJob(long id, RedisConnection redis) {
 		String jobKey = String.format(JOB_KEY, id);
 		Job job;
 
@@ -209,7 +267,8 @@ public class RedisBackingStore extends AbstractBackingStore {
 				job.setErrorMessage(errorMessage);
 
 		} catch (Exception e) {
-			throw new RuntimeException(String.format("Could not load job with id %s from Redis", id), e);
+			throw new RuntimeException(
+					String.format("Could not load job with id %s from Redis", id), e);
 		}
 
 		return job;
@@ -218,14 +277,11 @@ public class RedisBackingStore extends AbstractBackingStore {
 	/**
 	 * Persist a job as a hash in Redis
 	 * 
-	 * @param job
-	 *            is the {@linkplain Job} to persist
-	 * @param queueName
-	 *            is the name of the queue to push the job onto
-	 * @param redis
-	 *            is a connection to Redis
+	 * @param job is the {@linkplain Job} to persist
+	 * @param queueName is the name of the queue to push the job onto
+	 * @param redis is a connection to Redis
 	 */
-	public static void persistJob(Job job, String queueName, Jedis redis) {
+	public static void persistJob(Job job, String queueName, RedisConnection redis) {
 
 		// Persist the job in a transaction
 		Transaction transaction = redis.multi();
@@ -244,7 +300,7 @@ public class RedisBackingStore extends AbstractBackingStore {
 		transaction.hset(jobKey, JOB_RERUN_STATUS, Boolean.toString(job.isRerun()));
 
 		if (job.getParams() != null) {
-			Map<String,String> params = null;
+			Map<String, String> params = null;
 			switch (job.getState()) {
 			case COMPLETE:
 			case FAILED:
@@ -272,16 +328,6 @@ public class RedisBackingStore extends AbstractBackingStore {
 		transaction.exec();
 	}
 
-	/**
-	 * Release a Redis connection back into the pool
-	 * 
-	 * @param connection
-	 *            is the Redis connection to release
-	 */
-	public static void releaseConnection(Jedis connection) {
-		redisPool.returnResource(connection);
-	}
-
 	// Logger
 	private LoggingAdapter log;
 
@@ -305,158 +351,132 @@ public class RedisBackingStore extends AbstractBackingStore {
 
 	@Override
 	public void addScheduledJobs(List<Job> jobs) {
-		Jedis redis = RedisBackingStore.getConnection();
-
-		for (Job job : jobs) {
-			redis.lpush(SCHEDULED_JOBS, Long.toString(job.getId()));
+		try (RedisConnection redis = new RedisConnection()) {
+			for (Job job : jobs) {
+				redis.lpush(SCHEDULED_JOBS, Long.toString(job.getId()));
+			}
 		}
-
-		RedisBackingStore.releaseConnection(redis);
 	}
 
 	@Override
 	public void addUnscheduledJob(Job job) {
-		Jedis redis = RedisBackingStore.getConnection();
-
-		persistJob(job, UNSCHEDULED_JOBS, redis);
-
-		RedisBackingStore.releaseConnection(redis);
+		try (RedisConnection redis = new RedisConnection()) {
+			persistJob(job, UNSCHEDULED_JOBS, redis);
+		}
 	}
 
 	@Override
 	public List<Job> getCompletedJobs() {
 		List<Job> jobs = new ArrayList<>();
-		Jedis redis = getConnection();
 
-		List<String> jobIDs = redis.lrange(COMPLETED_JOBS, 0, -1);
-		for (String jobID : jobIDs) {
-			jobs.add(loadJob(new Long(jobID), redis));
+		try (RedisConnection redis = new RedisConnection()) {
+			List<String> jobIDs = redis.lrange(COMPLETED_JOBS, 0, -1);
+			for (String jobID : jobIDs) {
+				jobs.add(loadJob(new Long(jobID), redis));
+			}
 		}
-
-		releaseConnection(redis);
 		return jobs;
 	}
 
 	@Override
 	public List<Job> getFailedJobs() {
 		List<Job> jobs = new ArrayList<>();
-		Jedis redis = getConnection();
-
-		List<String> jobIDs = redis.lrange(FAILED_JOBS, 0, -1);
-		for (String jobID : jobIDs) {
-			jobs.add(loadJob(new Long(jobID), redis));
+		try (RedisConnection redis = new RedisConnection()) {
+			List<String> jobIDs = redis.lrange(FAILED_JOBS, 0, -1);
+			for (String jobID : jobIDs) {
+				jobs.add(loadJob(new Long(jobID), redis));
+			}
 		}
 
-		releaseConnection(redis);
 		return jobs;
 	}
 
 	@Override
 	public long getNextJobID() {
-
-		// Get a connection to Redis
-		Jedis redis = getConnection();
-
-		// Increment and return the latest job ID
-		Long jobId = redis.incr(RedisBackingStore.JOB_COUNT_KEY);
-
-		releaseConnection(redis);
-
-		return jobId;
+		try (RedisConnection redis = new RedisConnection()) {
+			// Increment and return the latest job ID
+			return redis.incr(RedisBackingStore.JOB_COUNT_KEY);
+		}
 	}
 
 	@Override
 	public void persistJobFailure(Job job) {
-		Jedis redis = getConnection();
-		persistJob(job, FAILED_JOBS, redis);
-		releaseConnection(redis);
+		try (RedisConnection redis = new RedisConnection()) {
+			persistJob(job, FAILED_JOBS, redis);
+		}
 	}
 
 	@Override
 	public void persistJobProgress(Job job) {
-		Jedis redis = getConnection();
+		try (RedisConnection redis = new RedisConnection()) {
+			String jobKey = String.format(JOB_KEY, job.getId());
+			redis.hset(jobKey, JOB_PROGRESS, String.valueOf(job.getProgress()));
+			redis.hset(jobKey, JOB_STATE, job.getState().toString());
+			if (job.getStartedAt() != null)
+				redis.hset(jobKey, JOB_STARTED_AT, job.getStartedAt().toString());
 
-		String jobKey = String.format(JOB_KEY, job.getId());
-		redis.hset(jobKey, JOB_PROGRESS, String.valueOf(job.getProgress()));
-		redis.hset(jobKey, JOB_STATE, job.getState().toString());
-		if (job.getStartedAt() != null)
-			redis.hset(jobKey, JOB_STARTED_AT, job.getStartedAt().toString());
-
-		if (job.getState() == Job.State.COMPLETE) {
-			if (job.getCompletedAt() != null)
-				redis.hset(jobKey, JOB_COMPLETED_AT, job.getCompletedAt().toString());
-			redis.lpush(COMPLETED_JOBS, Long.toString(job.getId()));
+			if (job.getState() == Job.State.COMPLETE) {
+				if (job.getCompletedAt() != null)
+					redis.hset(jobKey, JOB_COMPLETED_AT, job.getCompletedAt().toString());
+				redis.lpush(COMPLETED_JOBS, Long.toString(job.getId()));
+			}
 		}
-
-		releaseConnection(redis);
 	}
 
 	@Override
 	public void removeCompletedJobById(long jobId) {
-		Jedis redis = RedisBackingStore.getConnection();
-
-		redis.lrem(COMPLETED_JOBS, 0, Long.toString(jobId));
-		removeJobById(jobId, redis);
-
-		RedisBackingStore.releaseConnection(redis);
+		try (RedisConnection redis = new RedisConnection()) {
+			redis.lrem(COMPLETED_JOBS, 0, Long.toString(jobId));
+			removeJobById(jobId, redis);
+		}
 	}
 
 	@Override
 	public void removeFailedJobById(long jobId) {
-		Jedis redis = RedisBackingStore.getConnection();
-
-		redis.lrem(FAILED_JOBS, 0, Long.toString(jobId));
-		removeJobById(jobId, redis);
-
-		RedisBackingStore.releaseConnection(redis);
+		try (RedisConnection redis = new RedisConnection()) {
+			redis.lrem(FAILED_JOBS, 0, Long.toString(jobId));
+			removeJobById(jobId, redis);
+		}
 	}
 
 	@Override
 	public void removeScheduledJobById(long jobId) {
-		Jedis redis = RedisBackingStore.getConnection();
-
-		redis.lrem(SCHEDULED_JOBS, 0, Long.toString(jobId));
-
-		RedisBackingStore.releaseConnection(redis);
+		try (RedisConnection redis = new RedisConnection()) {
+			redis.lrem(SCHEDULED_JOBS, 0, Long.toString(jobId));
+		}
 	}
 
 	@Override
 	public void removeUnscheduledJobById(long jobId) {
-		Jedis redis = RedisBackingStore.getConnection();
-
-		redis.lrem(UNSCHEDULED_JOBS, 0, Long.toString(jobId));
-
-		RedisBackingStore.releaseConnection(redis);
+		try (RedisConnection redis = new RedisConnection()) {
+			redis.lrem(UNSCHEDULED_JOBS, 0, Long.toString(jobId));
+		}
 	}
 
-	public void removeJobById(long jobId, Jedis redis) {
+	public void removeJobById(long jobId, RedisConnection redis) {
 		redis.del(String.format(JOB_KEY, jobId));
 	}
 
 	/**
-	 * When restoring the jobs queue, we need to look for all the jobs that were
-	 * on the scheduler jobs queue in Redis, as well as the jobs that had been
-	 * scheduled against agents, which we assume are dead.
+	 * When restoring the jobs queue, we need to look for all the jobs that were on the scheduler
+	 * jobs queue in Redis, as well as the jobs that had been scheduled against agents, which we
+	 * assume are dead.
 	 */
 	@Override
 	public List<Job> restoreJobs() {
-		List<Job> jobs = new ArrayList<Job>();
+		List<Job> jobs = new ArrayList<>();
 
-		Jedis redis = RedisBackingStore.getConnection();
+		try (RedisConnection redis = new RedisConnection()) {
+			// Pop all scheduled jobs back onto the unscheduled jobs queue
+			while (redis.rpoplpush(SCHEDULED_JOBS, UNSCHEDULED_JOBS) != null) {
+			}
 
-		/*
-		 * Pop all scheduled jobs back onto the unscheduled jobs queue
-		 */
-		while (redis.rpoplpush(SCHEDULED_JOBS, UNSCHEDULED_JOBS) != null) {
+			// Get all the unscheduled jobs
+			List<String> jobIDs = redis.lrange(UNSCHEDULED_JOBS, 0, -1);
+			for (String jobID : jobIDs) {
+				jobs.add(loadJob(new Long(jobID), redis));
+			}
 		}
-
-		// Get all the unscheduled jobs
-		List<String> jobIDs = redis.lrange(UNSCHEDULED_JOBS, 0, -1);
-		for (String jobID : jobIDs) {
-			jobs.add(loadJob(new Long(jobID), redis));
-		}
-
-		RedisBackingStore.releaseConnection(redis);
 
 		return jobs;
 	}
@@ -467,7 +487,8 @@ public class RedisBackingStore extends AbstractBackingStore {
 
 		for (Job completedJob : getCompletedJobs()) {
 			DateTime expirationThreshold = DateTime.now().minus(expirationAge.getMillis());
-			boolean isExpired = completedJob.getCompletedAt().isBefore(expirationThreshold.toInstant());
+			boolean isExpired = completedJob.getCompletedAt()
+					.isBefore(expirationThreshold.toInstant());
 			if (isExpired) {
 				removeCompletedJobById(completedJob.getId());
 				cleanedJobsCount++;
@@ -480,14 +501,16 @@ public class RedisBackingStore extends AbstractBackingStore {
 
 		for (Job failedJob : getFailedJobs()) {
 			if (failedJob.getCompletedAt() == null) {
-				log.error("Found a failed job with no completion time.  Setting completion time to now and defering to next clean up. ("
-						+ failedJob.toString() + ")");
+				log.error(
+						"Found a failed job with no completion time.  Setting completion time to now and defering to next clean up. ("
+								+ failedJob.toString() + ")");
 				failedJob.setCompletedAt(DateTime.now());
 				persistJobFailure(failedJob);
 				continue;
 			}
 			DateTime expirationThreshold = DateTime.now().minus(expirationAge.getMillis());
-			boolean isExpired = failedJob.getCompletedAt().isBefore(expirationThreshold.toInstant());
+			boolean isExpired = failedJob.getCompletedAt()
+					.isBefore(expirationThreshold.toInstant());
 			if (isExpired) {
 				removeFailedJobById(failedJob.getId());
 				cleanedJobsCount++;
