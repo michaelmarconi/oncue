@@ -78,11 +78,9 @@ public abstract class AbstractAgent extends UntypedActor {
 	 * 
 	 * @throws MissingWorkerException thrown if a class representing a worker cannot be found
 	 */
-	public AbstractAgent(Set<String> workerTypes) throws MissingWorkerException {
+	public AbstractAgent(Set<String> workerTypes) {
+		workerTypes.removeIf(workerType -> fetchWorkerClass(workerType.trim()) == null);
 		this.workerTypes = workerTypes;
-		for (String workerType : workerTypes) {
-			fetchWorkerClass(workerType.trim());
-		}
 	}
 
 	/**
@@ -94,18 +92,14 @@ public abstract class AbstractAgent extends UntypedActor {
 	 * extend AbstractWorker
 	 */
 	@SuppressWarnings("unchecked")
-	private static Class<? extends AbstractWorker> fetchWorkerClass(String workerType)
-			throws MissingWorkerException {
+	private Class<? extends AbstractWorker> fetchWorkerClass(String workerType) {
 		try {
-			Class<? extends AbstractWorker> workerClass = (Class<? extends AbstractWorker>) Class
-					.forName(workerType);
-
-			return workerClass;
+			return (Class<? extends AbstractWorker>) Class.forName(workerType);
 		} catch (ClassNotFoundException e) {
-			throw new MissingWorkerException(String.format(
-					"Cannot find a class for the worker type '%s'", workerType), e);
+			log.error(String.format("Cannot find a class for the worker type '%s'", workerType), e);
+			return null;
 		} catch (ClassCastException e) {
-			throw new MissingWorkerException(String.format(
+			throw new IllegalStateException(String.format(
 					"The class for worker type '%s' doesn't extend the AbstractWorker base class",
 					workerType), e);
 		}
@@ -146,8 +140,8 @@ public abstract class AbstractAgent extends UntypedActor {
 		}
 
 		else if (message instanceof WorkResponse) {
-			log.debug("Agent {} got a response to my work request: {}",
-					getSelf().path().toString(), message);
+			log.debug("Agent {} got a response to my work request: {}", getSelf().path().toString(),
+					message);
 			List<Job> jobs = ((WorkResponse) message).getJobs();
 			Collections.sort(jobs, new JobComparator());
 			for (Job job : jobs) {
@@ -157,8 +151,8 @@ public abstract class AbstractAgent extends UntypedActor {
 
 		else if (message instanceof WorkAvailable) {
 			WorkAvailable workAvailable = (WorkAvailable) message;
-			log.debug("Agent {} found work available for the following worker types: {}", getSelf()
-					.path().toString(), workAvailable.getWorkerTypes());
+			log.debug("Agent {} found work available for the following worker types: {}",
+					getSelf().path().toString(), workAvailable.getWorkerTypes());
 			for (String workerTypeRequired : workAvailable.getWorkerTypes()) {
 				if (workerTypes.contains(workerTypeRequired)) {
 					requestWork();
@@ -204,8 +198,8 @@ public abstract class AbstractAgent extends UntypedActor {
 			stopHeartbeat();
 		}
 
-		heartbeat = getContext().system().scheduler()
-				.schedule(Duration.Zero(), settings.AGENT_HEARTBEAT_FREQUENCY, new Runnable() {
+		heartbeat = getContext().system().scheduler().schedule(Duration.Zero(),
+				settings.AGENT_HEARTBEAT_FREQUENCY, new Runnable() {
 
 					@Override
 					public void run() {
@@ -249,8 +243,8 @@ public abstract class AbstractAgent extends UntypedActor {
 		if (workRequest != null && !workRequest.isCancelled())
 			workRequest.cancel();
 
-		workRequest = getContext().system().scheduler()
-				.scheduleOnce(Duration.Zero(), new Runnable() {
+		workRequest = getContext().system().scheduler().scheduleOnce(Duration.Zero(),
+				new Runnable() {
 
 					@Override
 					public void run() {
@@ -266,37 +260,37 @@ public abstract class AbstractAgent extends UntypedActor {
 	 */
 	@SuppressWarnings("serial")
 	private void spawnWorker(Job job) {
-		try {
-			final Class<? extends AbstractWorker> workerClass = fetchWorkerClass(job
-					.getWorkerType());
+		final Class<? extends AbstractWorker> workerClass = fetchWorkerClass(job.getWorkerType());
 
-			// The agent has connected to a scheduler and received a job. If this agent thinks that
-			// it is already running that job then do nothing. This can happen during a network
-			// partition where an agent reconnects and get scheduled the same job that it's already
-			// processing.
-			boolean jobInProgress = false;
-			for (Job activeJob : jobsInProgress.values()) {
-				if (job.getId() == activeJob.getId()) {
-					jobInProgress = true;
-					break;
+		if (workerClass == null) {
+			sendFailure(job, String.format("Could not find worker for job type %s", workerClass));
+			return;
+		}
+
+		// The agent has connected to a scheduler and received a job. If this agent thinks that
+		// it is already running that job then do nothing. This can happen during a network
+		// partition where an agent reconnects and get scheduled the same job that it's already
+		// processing.
+		boolean jobInProgress = false;
+		for (Job activeJob : jobsInProgress.values()) {
+			if (job.getId() == activeJob.getId()) {
+				jobInProgress = true;
+				break;
+			}
+		}
+
+		if (!jobInProgress) {
+			ActorRef worker = getContext().actorOf(new Props(new UntypedActorFactory() {
+
+				@Override
+				public Actor create() throws Exception {
+					return workerClass.newInstance();
 				}
-			}
-
-			if (!jobInProgress) {
-				ActorRef worker = getContext().actorOf(new Props(new UntypedActorFactory() {
-					@Override
-					public Actor create() throws Exception {
-						return workerClass.newInstance();
-					}
-				}), "job-" + job.getId());
-				jobsInProgress.put(worker.path().toString(), job);
-				worker.tell(job.clone(), getSelf());
-			} else {
-				log.error("Job {} is already in progress. Ignoring scheduler response", job.getId());
-			}
-		} catch (MissingWorkerException e) {
-			log.error(e, e.getMessage());
-			sendFailure(job, e.getMessage());
+			}), "job-" + job.getId());
+			jobsInProgress.put(worker.path().toString(), job);
+			worker.tell(job.clone(), getSelf());
+		} else {
+			log.error("Job {} is already in progress. Ignoring scheduler response", job.getId());
 		}
 	}
 

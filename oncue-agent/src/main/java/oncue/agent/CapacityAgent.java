@@ -39,7 +39,7 @@ public class CapacityAgent extends AbstractAgent {
 	private final int TOTAL_MEMORY = getContext().system().settings().config()
 			.getInt("oncue.agent.capacity-agent.total-memory");
 
-	public CapacityAgent(Set<String> workerTypes) throws MissingWorkerException {
+	public CapacityAgent(Set<String> workerTypes) {
 		super(workerTypes);
 		log.info("This capacity agent has total memory of {} to work with.", TOTAL_MEMORY);
 	}
