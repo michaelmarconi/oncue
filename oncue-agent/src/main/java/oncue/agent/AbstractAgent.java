@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import oncue.common.comparators.JobComparator;
 import oncue.common.messages.Job;
@@ -79,7 +80,13 @@ public abstract class AbstractAgent extends UntypedActor {
 	 * @throws MissingWorkerException thrown if a class representing a worker cannot be found
 	 */
 	public AbstractAgent(Set<String> workerTypes) {
-		workerTypes.removeIf(workerType -> fetchWorkerClass(workerType.trim()) == null);
+		workerTypes.removeIf(new Predicate<String>() {
+
+			@Override
+			public boolean test(String workerType) {
+				return fetchWorkerClass(workerType.trim()) == null;
+			}
+		});
 		this.workerTypes = workerTypes;
 	}
 
@@ -96,7 +103,7 @@ public abstract class AbstractAgent extends UntypedActor {
 		try {
 			return (Class<? extends AbstractWorker>) Class.forName(workerType);
 		} catch (ClassNotFoundException e) {
-			log.error(String.format("Cannot find a class for the worker type '%s'", workerType), e);
+			log.error(String.format("Cannot find a class for the worker type '%s'", workerType));
 			return null;
 		} catch (ClassCastException e) {
 			throw new IllegalStateException(String.format(
