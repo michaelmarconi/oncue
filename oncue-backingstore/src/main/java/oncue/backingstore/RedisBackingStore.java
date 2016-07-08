@@ -13,6 +13,7 @@
  ******************************************************************************/
 package oncue.backingstore;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,7 @@ import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.Protocol;
 import redis.clients.jedis.Transaction;
+import redis.clients.jedis.exceptions.JedisException;
 
 public class RedisBackingStore extends AbstractBackingStore {
 
@@ -60,8 +62,7 @@ public class RedisBackingStore extends AbstractBackingStore {
 
 		@Override
 		public void close() {
-			// May throw JedisException
-			redisPool.returnResource(connection);
+			this.connection.close();
 		}
 
 		public Long incr(String key) {
@@ -282,50 +283,55 @@ public class RedisBackingStore extends AbstractBackingStore {
 	 * @param redis is a connection to Redis
 	 */
 	public static void persistJob(Job job, String queueName, RedisConnection redis) {
-
 		// Persist the job in a transaction
-		Transaction transaction = redis.multi();
+		try (Transaction transaction = redis.multi()) {
 
-		// Create a map describing the job
-		String jobKey = String.format(JOB_KEY, job.getId());
-		transaction.hset(jobKey, JOB_ENQUEUED_AT, job.getEnqueuedAt().toString());
+			// Create a map describing the job
+			String jobKey = String.format(JOB_KEY, job.getId());
+			transaction.hset(jobKey, JOB_ENQUEUED_AT, job.getEnqueuedAt().toString());
 
-		if (job.getStartedAt() != null)
-			transaction.hset(jobKey, JOB_STARTED_AT, job.getStartedAt().toString());
+			if (job.getStartedAt() != null)
+				transaction.hset(jobKey, JOB_STARTED_AT, job.getStartedAt().toString());
 
-		if (job.getCompletedAt() != null)
-			transaction.hset(jobKey, JOB_COMPLETED_AT, job.getCompletedAt().toString());
+			if (job.getCompletedAt() != null)
+				transaction.hset(jobKey, JOB_COMPLETED_AT, job.getCompletedAt().toString());
 
-		transaction.hset(jobKey, JOB_WORKER_TYPE, job.getWorkerType());
-		transaction.hset(jobKey, JOB_RERUN_STATUS, Boolean.toString(job.isRerun()));
+			transaction.hset(jobKey, JOB_WORKER_TYPE, job.getWorkerType());
+			transaction.hset(jobKey, JOB_RERUN_STATUS, Boolean.toString(job.isRerun()));
 
-		if (job.getParams() != null) {
-			Map<String, String> params = null;
-			switch (job.getState()) {
-			case COMPLETE:
-			case FAILED:
-				params = job.getParams(false);
-				break;
-			default:
-				params = job.getParams();
-				break;
+			if (job.getParams() != null) {
+				Map<String, String> params = null;
+				switch (job.getState()) {
+				case COMPLETE:
+				case FAILED:
+					params = job.getParams(false);
+					break;
+				default:
+					params = job.getParams();
+					break;
+				}
+				transaction.hset(jobKey, JOB_PARAMS, JSONValue.toJSONString(params));
 			}
-			transaction.hset(jobKey, JOB_PARAMS, JSONValue.toJSONString(params));
+
+			if (job.getState() != null)
+				transaction.hset(jobKey, JOB_STATE, job.getState().toString());
+
+			transaction.hset(jobKey, JOB_PROGRESS, String.valueOf(job.getProgress()));
+
+			if (job.getErrorMessage() != null)
+				transaction.hset(jobKey, JOB_ERROR_MESSAGE, job.getErrorMessage());
+
+			// Add the job to the specified queue
+			transaction.lpush(queueName, Long.toString(job.getId()));
+
+			// Exec the transaction
+			transaction.exec();
+		} catch (IOException e) {
+			// Jedis' Transaction.close() method does not actually throw IOException, it just says
+			// that it does. In fact it can only throw a JedisConnectionException, an instance of a
+			// RuntimeException. Let's wrap this in a JedisException anyway to be sure.
+			throw new JedisException(e);
 		}
-
-		if (job.getState() != null)
-			transaction.hset(jobKey, JOB_STATE, job.getState().toString());
-
-		transaction.hset(jobKey, JOB_PROGRESS, String.valueOf(job.getProgress()));
-
-		if (job.getErrorMessage() != null)
-			transaction.hset(jobKey, JOB_ERROR_MESSAGE, job.getErrorMessage());
-
-		// Add the job to the specified queue
-		transaction.lpush(queueName, Long.toString(job.getId()));
-
-		// Exec the transaction
-		transaction.exec();
 	}
 
 	// Logger
