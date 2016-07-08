@@ -3,18 +3,17 @@ package oncue.tests.timedjobs;
 import java.util.Arrays;
 import java.util.HashSet;
 
+import org.junit.Test;
+
+import akka.testkit.JavaTestKit;
 import junit.framework.Assert;
 import oncue.backingstore.RedisBackingStore;
+import oncue.backingstore.RedisBackingStore.RedisConnection;
 import oncue.common.messages.Job;
 import oncue.common.messages.WorkResponse;
 import oncue.tests.base.DistributedActorSystemTest;
 import oncue.tests.load.workers.SimpleLoadTestWorker;
 import oncue.timedjobs.TimedJobFactory;
-
-import org.junit.Test;
-
-import redis.clients.jedis.Jedis;
-import akka.testkit.JavaTestKit;
 
 public class DistributedTimedJobTest extends DistributedActorSystemTest {
 
@@ -39,7 +38,8 @@ public class DistributedTimedJobTest extends DistributedActorSystemTest {
 		createScheduler(null);
 
 		// Create a throttled agent
-		createAgent(new HashSet<String>(Arrays.asList(SimpleLoadTestWorker.class.getName())), agentProbe.getRef());
+		createAgent(new HashSet<String>(Arrays.asList(SimpleLoadTestWorker.class.getName())),
+				agentProbe.getRef());
 
 		// The agent should connect to the scheduler and get an empty work
 		// response
@@ -49,37 +49,37 @@ public class DistributedTimedJobTest extends DistributedActorSystemTest {
 		TimedJobFactory.createTimedJobs(serviceSystem, serviceSettings.TIMED_JOBS_TIMETABLE);
 
 		// Wait until all the jobs have completed
-		final Jedis redis = RedisBackingStore.getConnection();
+		try (RedisConnection redis = new RedisConnection()) {
+			final int JOB_COUNT = serviceConfig.getInt("oncue.timed-jobs.repeatCount");
 
-		final int JOB_COUNT = serviceConfig.getInt("oncue.timed-jobs.repeatCount");
+			new JavaTestKit(serviceSystem) {
 
-		new JavaTestKit(serviceSystem) {
-			{
-				new AwaitCond(duration("5 minutes"), duration("5 seconds")) {
+				{
+					new AwaitCond(duration("5 minutes"), duration("5 seconds")) {
 
-					@Override
-					protected boolean cond() {
-						Job finalJob;
-						try {
-							finalJob = RedisBackingStore.loadJob(JOB_COUNT, redis);
-							return finalJob.getProgress() == 1.0;
-						} catch (RuntimeException e) {
-							// Job may not exist in Redis yet
-							return false;
+						@Override
+						protected boolean cond() {
+							Job finalJob;
+							try {
+								finalJob = RedisBackingStore.loadJob(JOB_COUNT, redis);
+								return finalJob.getProgress() == 1.0;
+							} catch (RuntimeException e) {
+								// Job may not exist in Redis yet
+								return false;
+							}
 						}
-					}
-				};
+					};
+				}
+			};
+
+			// Now, check all the jobs completed in Redis
+			for (int i = 0; i < JOB_COUNT; i++) {
+				Job job = RedisBackingStore.loadJob(i + 1, redis);
+				Assert.assertEquals(1.0, job.getProgress());
 			}
-		};
 
-		// Now, check all the jobs completed in Redis
-		for (int i = 0; i < JOB_COUNT; i++) {
-			Job job = RedisBackingStore.loadJob(i + 1, redis);
-			Assert.assertEquals(1.0, job.getProgress());
+			serviceLog.info("All jobs were processed!");
+
 		}
-
-		serviceLog.info("All jobs were processed!");
-
-		RedisBackingStore.releaseConnection(redis);
 	}
 }
