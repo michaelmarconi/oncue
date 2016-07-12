@@ -3,7 +3,14 @@ package oncue.tests.robustness;
 import java.util.Arrays;
 import java.util.HashSet;
 
-import oncue.agent.MissingWorkerException;
+import org.junit.Test;
+
+import akka.actor.Actor;
+import akka.actor.ActorRef;
+import akka.actor.Props;
+import akka.actor.UntypedActorFactory;
+import akka.testkit.JavaTestKit;
+import akka.testkit.TestActorRef;
 import oncue.agent.UnlimitedCapacityAgent;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
@@ -13,15 +20,6 @@ import oncue.common.messages.WorkResponse;
 import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.PerpetualTestWorker;
 import oncue.tests.workers.TestWorker;
-
-import org.junit.Test;
-
-import akka.actor.Actor;
-import akka.actor.ActorRef;
-import akka.actor.Props;
-import akka.actor.UntypedActorFactory;
-import akka.testkit.JavaTestKit;
-import akka.testkit.TestActorRef;
 
 public class AgentDisconnectsTest extends ActorSystemTest {
 
@@ -76,7 +74,7 @@ public class AgentDisconnectsTest extends ActorSystemTest {
 				final Props agentProps = new Props(new UntypedActorFactory() {
 
 					@Override
-					public Actor create() throws MissingWorkerException {
+					public Actor create() {
 						UnlimitedCapacityAgent unlimitedCapacityAgent = new UnlimitedCapacityAgent(
 								new HashSet<>(Arrays.asList(PerpetualTestWorker.class.getName(),
 										TestWorker.class.getName())));

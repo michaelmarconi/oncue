@@ -30,7 +30,7 @@ public class ThrottledAgent extends AbstractAgent {
 	// The maximum number of concurrent workers
 	private final Integer MAX_WORKERS;
 
-	public ThrottledAgent(Set<String> workerTypes) throws MissingWorkerException {
+	public ThrottledAgent(Set<String> workerTypes) {
 		super(workerTypes);
 		Config config = getContext().system().settings().config();
 		if (!config.hasPath("oncue.agent.throttled-agent.max-jobs")) {
