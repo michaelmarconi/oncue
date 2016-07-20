@@ -28,7 +28,7 @@ public class JVMCapacityAgent extends AbstractAgent {
 	// Only used for testing
 	private long testCapacity;
 
-	public JVMCapacityAgent(Set<String> workerTypes) throws MissingWorkerException {
+	public JVMCapacityAgent(Set<String> workerTypes) {
 		super(workerTypes);
 	}
 
@@ -38,7 +38,7 @@ public class JVMCapacityAgent extends AbstractAgent {
 	 * @param testCapacity
 	 *            overrides the maximum number of jobs to deal with concurrently
 	 */
-	public JVMCapacityAgent(Set<String> workerTypes, long testCapacity) throws MissingWorkerException {
+	public JVMCapacityAgent(Set<String> workerTypes, long testCapacity) {
 		super(workerTypes);
 		this.testCapacity = testCapacity;
 	}

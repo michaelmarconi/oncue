@@ -28,7 +28,7 @@ import oncue.common.messages.SimpleWorkRequest;
  */
 public class UnlimitedCapacityAgent extends AbstractAgent {
 
-	public UnlimitedCapacityAgent(Set<String> workerTypes) throws MissingWorkerException {
+	public UnlimitedCapacityAgent(Set<String> workerTypes) {
 		super(workerTypes);
 	}
 

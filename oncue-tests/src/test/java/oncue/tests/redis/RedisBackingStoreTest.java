@@ -1,17 +1,15 @@
 /*******************************************************************************
  * Copyright 2013 Michael Marconi
  * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  * 
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  ******************************************************************************/
 package oncue.tests.redis;
 
@@ -27,7 +25,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
+import org.joda.time.DateTime;
+import org.joda.time.Duration;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Test;
+
+import akka.actor.ActorRef;
+import akka.testkit.JavaTestKit;
 import oncue.backingstore.RedisBackingStore;
+import oncue.backingstore.RedisBackingStore.RedisConnection;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.Job.State;
@@ -36,48 +44,41 @@ import oncue.common.messages.JobProgress;
 import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.IncompetentTestWorker;
 import oncue.tests.workers.TestWorker;
-
-import org.joda.time.DateTime;
-import org.joda.time.Duration;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Test;
-
 import redis.clients.jedis.Jedis;
-import akka.actor.ActorRef;
-import akka.testkit.JavaTestKit;
 
 public class RedisBackingStoreTest extends ActorSystemTest {
 
-	private Jedis redis;
+	private RedisConnection redis;
 
 	@Before
 	public void flushRedis() {
-		redis = RedisBackingStore.getConnection();
-		redis.flushAll();
+		redis = new RedisConnection();
+		redis.flushDB();
 	}
 
 	@After
 	public void releaseRedisConnection() {
-		RedisBackingStore.releaseConnection(redis);
+		redis.close();
 	}
 
 	@AfterClass
 	public static void finalFlushRedis() {
-		Jedis redis = RedisBackingStore.getConnection();
-		redis.flushAll();
-		RedisBackingStore.releaseConnection(redis);
+		try (RedisConnection redis = new RedisConnection()) {
+			redis.flushDB();
+		}
 	}
 
 	@Test
 	public void addScheduledJob() {
 		new JavaTestKit(system) {
+
 			{
 				// Create a scheduler probe
 				final JavaTestKit schedulerProbe = new JavaTestKit(system) {
+
 					{
 						new IgnoreMsg() {
+
 							@Override
 							protected boolean ignore(Object message) {
 								return !(message instanceof JobProgress);
@@ -100,6 +101,7 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 
 				// Check to see that the job is written as finished in redis
 				new AwaitCond() {
+
 					@Override
 					protected boolean cond() {
 						return redis.llen(RedisBackingStore.UNSCHEDULED_JOBS) > 0
@@ -121,6 +123,7 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 
 				// Check to see that the scheduled job has finished
 				new AwaitCond() {
+
 					@Override
 					protected boolean cond() {
 						// Wait for some progress
@@ -131,6 +134,7 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 
 				// Check to see that the job goes into the completed jobs list
 				new AwaitCond() {
+
 					@Override
 					protected boolean cond() {
 						return redis.llen(RedisBackingStore.COMPLETED_JOBS) > 0;
@@ -143,6 +147,7 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 	@Test
 	public void addUnscheduledJob() {
 		new JavaTestKit(system) {
+
 			{
 				// Create a Redis-backed scheduler (see config)
 				ActorRef scheduler = createScheduler(system, null);
@@ -158,6 +163,7 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 
 				// Check to see that the job is written as finished in redis
 				new AwaitCond() {
+
 					@Override
 					protected boolean cond() {
 						return redis.llen(RedisBackingStore.UNSCHEDULED_JOBS) > 0
@@ -176,8 +182,8 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 				assertEquals("Wrong number of parameters", 2, loadedJob.getParams().size());
 				assertEquals(job.getParams().get("month"), loadedJob.getParams().get("month"));
 				assertEquals(job.getParams().get("size"), loadedJob.getParams().get("size"));
-				assertEquals("There should be no more jobs on the unscheduled queue", 0, redis
-						.llen(RedisBackingStore.UNSCHEDULED_JOBS).longValue());
+				assertEquals("There should be no more jobs on the unscheduled queue", 0,
+						redis.llen(RedisBackingStore.UNSCHEDULED_JOBS).longValue());
 			}
 		};
 	}
@@ -185,11 +191,14 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 	@Test
 	public void persistJobFailure() {
 		new JavaTestKit(system) {
+
 			{
 				// Create a scheduler probe
 				final JavaTestKit schedulerProbe = new JavaTestKit(system) {
+
 					{
 						new IgnoreMsg() {
+
 							@Override
 							protected boolean ignore(Object message) {
 								return !(message instanceof JobFailed);
@@ -209,6 +218,7 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 
 				// Check to see that the scheduled job has been recorded in Redis
 				new AwaitCond() {
+
 					@Override
 					protected boolean cond() {
 						return redis.exists(jobKey);
@@ -223,14 +233,13 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 				JobFailed jobFailed = schedulerProbe.expectMsgClass(JobFailed.class);
 				Job failedJob = jobFailed.getJob();
 				assertEquals("Job IDs don't match", job.getId(), failedJob.getId());
-				assertTrue(
-						"Wrong exception type",
-						jobFailed.getJob().getErrorMessage()
-								.contains(ArithmeticException.class.getName()));
+				assertTrue("Wrong exception type", jobFailed.getJob().getErrorMessage()
+						.contains(ArithmeticException.class.getName()));
 
 				expectNoMsg();
 
 				new AwaitCond() {
+
 					@Override
 					protected boolean cond() {
 						return redis.llen(RedisBackingStore.FAILED_JOBS) > 0;
@@ -239,9 +248,9 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 
 				String state = redis.hget(jobKey, RedisBackingStore.JOB_STATE);
 				String errorMessage = redis.hget(jobKey, RedisBackingStore.JOB_ERROR_MESSAGE);
-				RedisBackingStore.releaseConnection(redis);
 				assertNotNull("No job state found", state);
-				assertEquals("The recorded state does not match the expected state", Job.State.FAILED.toString(), state);
+				assertEquals("The recorded state does not match the expected state",
+						Job.State.FAILED.toString(), state);
 				assertTrue(errorMessage.contains(ArithmeticException.class.getName()));
 			}
 		};
@@ -250,11 +259,14 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 	@Test
 	public void persistJobProgress() {
 		new JavaTestKit(system) {
+
 			{
 				// Create a scheduler probe
 				final JavaTestKit schedulerProbe = new JavaTestKit(system) {
+
 					{
 						new IgnoreMsg() {
+
 							@Override
 							protected boolean ignore(Object message) {
 								return !(message instanceof JobProgress);
@@ -300,6 +312,7 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 	@Test
 	public void getCompletedJobs() {
 		new JavaTestKit(system) {
+
 			{
 				RedisBackingStore backingStore = new RedisBackingStore(system, settings);
 
@@ -324,6 +337,7 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 	@Test
 	public void getFailedJobs() {
 		new JavaTestKit(system) {
+
 			{
 				RedisBackingStore backingStore = new RedisBackingStore(system, settings);
 
@@ -347,6 +361,7 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 	@Test
 	public void restoreJobs() {
 		new JavaTestKit(system) {
+
 			{
 				RedisBackingStore backingStore = new RedisBackingStore(system, settings);
 
@@ -413,6 +428,7 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 	@Test
 	public void cleanUpJobsReturnsCorrectCleanedUpJobCount() {
 		new JavaTestKit(system) {
+
 			private RedisBackingStore backingStore;
 
 			{
@@ -457,6 +473,7 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 	@Test
 	public void removeJobById() {
 		new JavaTestKit(system) {
+
 			private RedisBackingStore backingStore;
 
 			{
@@ -478,6 +495,7 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 	@Test
 	public void removeCompletedJobById() {
 		new JavaTestKit(system) {
+
 			{
 				RedisBackingStore backingStore = new RedisBackingStore(system, settings);
 
@@ -505,6 +523,7 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 	@Test
 	public void removeFailedJobById() {
 		new JavaTestKit(system) {
+
 			{
 				RedisBackingStore backingStore = new RedisBackingStore(system, settings);
 
@@ -532,6 +551,7 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 	@Test
 	public void removeScheduledJobById() {
 		new JavaTestKit(system) {
+
 			{
 				RedisBackingStore backingStore = new RedisBackingStore(system, settings);
 
@@ -557,6 +577,7 @@ public class RedisBackingStoreTest extends ActorSystemTest {
 	@Test
 	public void removeUnscheduledJobById() {
 		new JavaTestKit(system) {
+
 			{
 				RedisBackingStore backingStore = new RedisBackingStore(system, settings);
 

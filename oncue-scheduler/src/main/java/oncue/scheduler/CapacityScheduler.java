@@ -37,7 +37,7 @@ import com.typesafe.config.ConfigObject;
  * job does not provide a priority, it is assumed to be 0 (low priority).
  * 
  * This scheduler will only provide as many jobs to an agent as it declares it has free memory. See
- * the documentation for {@link CapacityAgent} for more information.
+ * the documentation for <code>oncue.agent.CapacityAgent</code> for more information.
  * 
  * This scheduler also allows specification of a job that cannot be run in parallel. The worker type
  * must be specified with "oncue.scheduler.capacity-scheduler.worker-type" and the parameter for
