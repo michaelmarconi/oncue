@@ -17,8 +17,8 @@ done
 
 declare AKKA_HOME="$(cd "$(cd "$(dirname "$0")"; pwd -P)"/..; pwd)"
 
-[ -n "$JAVA_OPTS" ] || JAVA_OPTS="-Xms1024M -Xmx1024M -Xss1M -XX:MaxPermSize=256M -XX:+UseParallelGC"
+[ -z "$JAVA_OPTS" ] && JAVA_OPTS="-Xms1024M -Xmx1024M -Xss1M -XX:MaxPermSize=256M -XX:+UseParallelGC"
 
-[ -n "$AKKA_CLASSPATH" ] || AKKA_CLASSPATH="$AKKA_HOME/lib/scala-library.jar:$AKKA_HOME/config:$AKKA_HOME/lib/*:$AKKA_HOME/thirdparty/*"
+[ -z "$AKKA_CLASSPATH" ] && AKKA_CLASSPATH="$AKKA_HOME/lib/scala-library.jar:$AKKA_HOME/config:$AKKA_HOME/lib/*:$AKKA_HOME/thirdparty/*"
 
 java $JAVA_OPTS -cp "$AKKA_CLASSPATH" -Dakka.home="$AKKA_HOME" -Dakka.kernel.quiet=$quiet akka.kernel.Main "$@"
