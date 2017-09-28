@@ -7,31 +7,26 @@
     <groupId>oncue</groupId>
     <version>1.0.6-SNAPSHOT</version>
   </parent>
-  <groupId>oncue</groupId>
-  <artifactId>oncue-client</artifactId>
-  <name>OnCue Java Client</name>
-
-  <dependencies>
-    <dependency>
-      <groupId>com.google.http-client</groupId>
-      <artifactId>google-http-client</artifactId>
-      <version>1.14.1-beta</version>
-    </dependency>
-	<dependency>
-	    <groupId>com.typesafe</groupId>
-	    <artifactId>config</artifactId>
-	    <version>1.0.0</version>
-	</dependency>
-	<dependency>
-	  <groupId>oncue</groupId>
-	  <artifactId>oncue-common</artifactId>
-	  <version>1.0.6-SNAPSHOT</version>
-	</dependency>
-	<dependency>
-  		<groupId>com.fasterxml.jackson.core</groupId>
-  		<artifactId>jackson-databind</artifactId>
-  		<version>2.1.3</version>
-  		<scope>test</scope>
-  	</dependency>
-  </dependencies>
+	<groupId>oncue</groupId>
+	<artifactId>oncue-client</artifactId>
+	<name>OnCue Java Client</name>
+	<dependencies>
+		<dependency>
+			<groupId>com.google.http-client</groupId>
+			<artifactId>google-http-client</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.typesafe</groupId>
+			<artifactId>config</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>oncue</groupId>
+			<artifactId>oncue-common</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
 </project>

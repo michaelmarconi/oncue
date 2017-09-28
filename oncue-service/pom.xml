@@ -1,74 +1,59 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-
 	<parent>
 		<groupId>oncue</groupId>
 		<artifactId>oncue</artifactId>
 		<version>1.0.6-SNAPSHOT</version>
 	</parent>
-
 	<artifactId>oncue-service</artifactId>
 	<packaging>play2</packaging>
 	<name>OnCue Service</name>
-
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<play2.version>2.1.0</play2.version>
 	</properties>
-
 	<repositories>
 		<repository>
 			<id>typesafe</id>
 			<url>http://repo.typesafe.com/typesafe/releases/</url>
 		</repository>
 	</repositories>
-
 	<dependencies>
 		<dependency>
 			<groupId>oncue</groupId>
 			<artifactId>oncue-common</artifactId>
-			<version>1.0.6-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>oncue</groupId>
 			<artifactId>oncue-scheduler</artifactId>
-			<version>1.0.6-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>oncue</groupId>
 			<artifactId>oncue-timedjobs</artifactId>
-			<version>1.0.6-SNAPSHOT</version>
 		</dependency>
-
 		<!-- Play Framework Dependencies -->
 		<dependency>
 			<groupId>play</groupId>
 			<artifactId>play_2.10</artifactId>
-			<version>${play2.version}</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>play</groupId>
 			<artifactId>play-test_2.10</artifactId>
-			<version>${play2.version}</version>
 			<scope>provided</scope>
 		</dependency>
-
 		<!-- the Java API is in this artifact -->
 		<dependency>
 			<groupId>play</groupId>
 			<artifactId>play-java_2.10</artifactId>
-			<version>${play2.version}</version>
 			<scope>provided</scope>
 		</dependency>
 	</dependencies>
-
 	<build>
 		<!-- Play source directory -->
 		<sourceDirectory>app</sourceDirectory>
 		<testSourceDirectory>test</testSourceDirectory>
-
 		<plugins>
 			<plugin>
 				<groupId>org.nanoko.playframework</groupId>
@@ -101,8 +86,6 @@
 					<target>1.7</target>
 				</configuration>
 			</plugin>
-
-
 			<!-- For Eclipse IDE support -->
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
@@ -126,5 +109,4 @@
 			</plugin>
 		</plugins>
 	</build>
-
 </project>

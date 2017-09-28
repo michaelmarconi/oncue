@@ -13,27 +13,22 @@
   <artifactId>oncue-timedjobs</artifactId>
   <name>OnCue Timed Jobs</name>
 
-  <dependencies>
-    <dependency>
-      <groupId>oncue</groupId>
-      <artifactId>oncue-common</artifactId>
-      <version>1.0.6-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-camel_2.10</artifactId>
-      <version>2.1.0</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.camel</groupId>
-      <artifactId>camel-core</artifactId>
-      <version>2.10.4</version>
-    </dependency>      
-    <dependency>
-      <groupId>org.apache.camel</groupId>
-      <artifactId>camel-quartz</artifactId>
-      <version>2.10.4</version>
-    </dependency>        
-  </dependencies>
-
+	<dependencies>
+		<dependency>
+			<groupId>oncue</groupId>
+			<artifactId>oncue-common</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.typesafe.akka</groupId>
+			<artifactId>akka-camel_2.10</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.camel</groupId>
+			<artifactId>camel-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.camel</groupId>
+			<artifactId>camel-quartz</artifactId>
+		</dependency>
+	</dependencies>
 </project>
