@@ -1,14 +1,25 @@
 package oncue.tests.strategies;
 
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertFalse;
+import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import oncue.backingstore.BackingStore;
+import org.junit.Test;
+
+import com.google.api.client.util.Maps;
+import com.google.common.collect.Sets;
+
+import akka.actor.ActorRef;
+import akka.actor.Props;
+import akka.testkit.JavaTestKit;
+import akka.testkit.TestActorRef;
 import oncue.common.messages.AbstractWorkRequest;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
@@ -20,19 +31,7 @@ import oncue.tests.base.ActorSystemTest;
 import oncue.tests.load.workers.SimpleLoadTestWorker;
 import oncue.tests.workers.TestWorker;
 import oncue.tests.workers.TestWorker2;
-
-import org.junit.Test;
-
 import scala.concurrent.duration.FiniteDuration;
-import akka.actor.Actor;
-import akka.actor.ActorRef;
-import akka.actor.Props;
-import akka.actor.UntypedActorFactory;
-import akka.testkit.JavaTestKit;
-import akka.testkit.TestActorRef;
-
-import com.google.api.client.util.Maps;
-import com.google.common.collect.Sets;
 
 public class CapacityStrategyTest extends ActorSystemTest {
 
@@ -77,20 +76,14 @@ public class CapacityStrategyTest extends ActorSystemTest {
 	}
 
 	@Test
-	public void doesNotScheduleJobsThatExceedCapacity() {
+	public void doesNotScheduleJobsThatExceedCapacity() throws Exception {
 		new JavaTestKit(system) {
 			{
 				// Create a naked scheduler
+				Class<?> backingStore = Class
+						.forName(settings.SCHEDULER_BACKING_STORE_CLASS);
 				@SuppressWarnings("serial")
-				final Props schedulerProps = new Props(new UntypedActorFactory() {
-					@SuppressWarnings("unchecked")
-					@Override
-					public Actor create() throws ClassNotFoundException {
-						return new CapacityScheduler(
-								(Class<? extends BackingStore>) Class
-										.forName(settings.SCHEDULER_BACKING_STORE_CLASS));
-					}
-				});
+				final Props schedulerProps = Props.create(CapacityScheduler.class, backingStore);
 
 				// Wait until the scheduler has three unscheduled jobs
 				final TestActorRef<CapacityScheduler> schedulerRef = TestActorRef.create(system,
@@ -335,9 +328,11 @@ public class CapacityStrategyTest extends ActorSystemTest {
 				scheduler.tell(
 						new EnqueueJob(TestWorker.class.getName(), withParams(code("FOO2"),
 								memory("200"), foo("foobar"))), getRef());
+				expectMsgClass(Job.class);
 				scheduler.tell(
 						new EnqueueJob(TestWorker.class.getName(), withParams(code("FOO2"),
 								memory("200"), foo("bar"), bar("baz"))), getRef());
+				expectMsgClass(Job.class);
 				scheduler.tell(
 						new EnqueueJob(TestWorker.class.getName(), withParams(code("FOO2"),
 								memory("200"), foo("bar"), bar("barbaz"))), getRef());
@@ -373,43 +368,28 @@ public class CapacityStrategyTest extends ActorSystemTest {
 				assertEquals(4, workResponse.getJobs().get(2).getId());
 				assertEquals(5, workResponse.getJobs().get(3).getId());
 
+				// We've gotten completion for jobs 1, 3, 4, 5.
+				// Now we have to wait for jobs 2 and 6, in any order. They may not finish
+				// in a single iteration of AwaitCond either.
+
+				final Set<Long> completed = new HashSet<>();
 				new AwaitCond() {
 
 					@Override
 					protected boolean cond() {
-						// Expect worker to ask for more work and get an empty response while it's
-						// processing those jobs.
 						WorkResponse workResponse = agentProbe.expectMsgClass(WorkResponse.class);
-						if (workResponse.getJobs().size() == 0) {
-							return false;
+
+						for (Job job : workResponse.getJobs()) {
+							assertFalse(completed.contains(job.getId()));
+							completed.add(job.getId());
 						}
 
-						schedulerProbe.expectMsgClass(new FiniteDuration(5, TimeUnit.SECONDS),
-								AbstractWorkRequest.class);
-
-						// There's three possible scenarios here: the TestWorker and TestWorker2
-						// jobs finish
-						// at the same time and there's a work response with two new jobs, or one of
-						// the
-						// jobs finishes first and the other appears
-						if (workResponse.getJobs().size() == 2) {
-							assertEquals(2, workResponse.getJobs().get(0).getId());
-							assertEquals(6, workResponse.getJobs().get(1).getId());
-						} else {
-							assertEquals(1, workResponse.getJobs().size());
-							long id = workResponse.getJobs().get(0).getId();
-							if (id != 0 && id != 6) {
-								fail();
-							}
-							int expectedJobID = id == 6 ? 2 : 6;
-							workResponse = agentProbe.expectMsgClass(WorkResponse.class);
-							assertEquals(1, workResponse.getJobs().size());
-							assertEquals(expectedJobID, workResponse.getJobs().get(0).getId());
-						}
-
-						return true;
+						return completed.size() == 2;
 					}
 				};
+				assertEquals(2, completed.size());
+				assertTrue(completed.contains(2L));
+				assertTrue(completed.contains(6L));
 			}
 
 		};

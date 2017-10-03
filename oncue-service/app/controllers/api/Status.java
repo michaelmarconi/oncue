@@ -1,6 +1,9 @@
 package controllers.api;
 
 import static akka.pattern.Patterns.ask;
+
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import oncue.OnCueService;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobSummary;
@@ -8,10 +11,9 @@ import oncue.common.messages.SimpleMessages.SimpleMessage;
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
 
-import org.codehaus.jackson.node.ObjectNode;
-
 import play.Logger;
 import play.libs.Akka;
+import play.libs.F;
 import play.libs.F.Function;
 import play.libs.Json;
 import play.mvc.Controller;
@@ -28,9 +30,9 @@ public class Status extends Controller {
 	/**
 	 * Returns a JSON object with all relevant service status information
 	 */
-	public static Result index() {
+	public static F.Promise<Result> index() {
 		ActorRef scheduler = OnCueService.system().actorFor(settings.SCHEDULER_PATH);
-		return async(Akka.asPromise(
+		return F.Promise.wrap(
 				ask(scheduler, SimpleMessage.JOB_SUMMARY, new Timeout(settings.SCHEDULER_TIMEOUT)).recover(
 						new Recover<Object>() {
 							@Override
@@ -71,6 +73,6 @@ public class Status extends Controller {
 					return ok(result);
 				}
 			}
-		}));
+		});
 	}
 }

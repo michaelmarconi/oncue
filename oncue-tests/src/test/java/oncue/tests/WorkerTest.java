@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
+import akka.japi.Creator;
 import oncue.agent.UnlimitedCapacityAgent;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
@@ -74,17 +75,12 @@ public class WorkerTest extends ActorSystemTest {
 
 				// Create and expose an agent
 				@SuppressWarnings("serial")
-				TestActorRef<UnlimitedCapacityAgent> agentRef = TestActorRef.create(system, new Props(
-						new UntypedActorFactory() {
 
-							@Override
-							public Actor create() throws Exception {
-								UnlimitedCapacityAgent agent = new UnlimitedCapacityAgent(new HashSet<>(Arrays
-										.asList(TestWorker.class.getName())));
-								agent.injectProbe(agentProbe.getRef());
-								return agent;
-							}
-						}), settings.AGENT_NAME);
+				TestActorRef<UnlimitedCapacityAgent> agentRef = TestActorRef.create(system,
+						Creators.makeProps(agentProbe.getRef(), UnlimitedCapacityAgent.class,
+								new HashSet<>(Arrays
+										.asList(TestWorker.class.getName()))),
+						settings.AGENT_NAME);
 				UnlimitedCapacityAgent agent = agentRef.underlyingActor();
 
 				// Wait until the agent receives an empty work response

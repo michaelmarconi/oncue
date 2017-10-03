@@ -32,22 +32,22 @@ public class OnCueService extends GlobalSettings {
 		system = ActorSystem.create("oncue-service", config.getConfig("oncue").withFallback(config));
 
 		// Start the scheduler
-		system.actorOf(new Props(new UntypedActorFactory() {
-			@Override
-			public Actor create() throws Exception {
-				Class<?> schedulerClass = Class.forName(settings.SCHEDULER_CLASS);
-				Class<?> backingStoreClass = null;
-				if (settings.SCHEDULER_BACKING_STORE_CLASS != null)
-					backingStoreClass = Class.forName(settings.SCHEDULER_BACKING_STORE_CLASS);
-				return (Actor) schedulerClass.getConstructor(Class.class).newInstance(backingStoreClass);
-			}
-		}), settings.SCHEDULER_NAME);
+		Class<?> schedulerClass = null;
+		Class<?> backingStoreClass = null;
+		try {
+			schedulerClass = Class.forName(settings.SCHEDULER_CLASS);
+			if (settings.SCHEDULER_BACKING_STORE_CLASS != null)
+				backingStoreClass = Class.forName(settings.SCHEDULER_BACKING_STORE_CLASS);
+		} catch (ClassNotFoundException e) {
+			throw new RuntimeException(e);
+		}
+		system.actorOf(Props.create(schedulerClass, backingStoreClass), settings.SCHEDULER_NAME);
 
 		// Start up any timed jobs
 		TimedJobFactory.createTimedJobs(system, settings.TIMED_JOBS_TIMETABLE);
 
 		// Start the event stream listener
-		system.actorOf(new Props(EventMachine.class), "event-stream-listener");
+		system.actorOf(Props.create(EventMachine.class), "event-stream-listener");
 	}
 
 	/**

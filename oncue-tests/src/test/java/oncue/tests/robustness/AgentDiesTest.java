@@ -69,13 +69,8 @@ public class AgentDiesTest extends ActorSystemTest {
 				ActorRef scheduler = createScheduler(system, schedulerProbe.getRef());
 
 				// Create an agent
-				ActorRef agent1 = system.actorOf(new Props(new UntypedActorFactory() {
-					@Override
-					public Actor create() throws Exception {
-						return new UnlimitedCapacityAgent(
-								new HashSet<String>(Arrays.asList(TestWorker.class.getName())));
-					}
-				}), "agent1");
+				ActorRef agent1 = system.actorOf(Props.create(UnlimitedCapacityAgent.class,
+								new HashSet<>(Arrays.asList(TestWorker.class.getName()))), "agent1");
 
 				// Enqueue a job
 				scheduler.tell(new EnqueueJob(TestWorker.class.getName()), getRef());
@@ -95,13 +90,8 @@ public class AgentDiesTest extends ActorSystemTest {
 				schedulerProbe.expectNoMsg(settings.AGENT_HEARTBEAT_FREQUENCY);
 
 				// Now, create a second agent
-				system.actorOf(new Props(new UntypedActorFactory() {
-					@Override
-					public Actor create() throws Exception {
-						return new UnlimitedCapacityAgent(
-								new HashSet<String>(Arrays.asList(TestWorker.class.getName())));
-					}
-				}), "agent2");
+				system.actorOf(Props.create(UnlimitedCapacityAgent.class,
+						new HashSet<>(Arrays.asList(TestWorker.class.getName()))), "agent2");
 
 				// Wait for some progress on the original job
 				JobProgress jobProgress = schedulerProbe.expectMsgClass(JobProgress.class);

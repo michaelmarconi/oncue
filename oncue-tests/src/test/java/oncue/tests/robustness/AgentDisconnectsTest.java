@@ -9,6 +9,7 @@ import akka.actor.Actor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.actor.UntypedActorFactory;
+import akka.japi.Creator;
 import akka.testkit.JavaTestKit;
 import akka.testkit.TestActorRef;
 import oncue.agent.UnlimitedCapacityAgent;
@@ -17,6 +18,7 @@ import oncue.common.messages.Job;
 import oncue.common.messages.JobProgress;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
 import oncue.common.messages.WorkResponse;
+import oncue.tests.Creators;
 import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.PerpetualTestWorker;
 import oncue.tests.workers.TestWorker;
@@ -71,17 +73,9 @@ public class AgentDisconnectsTest extends ActorSystemTest {
 				};
 
 				// Create a naked agent
-				final Props agentProps = new Props(new UntypedActorFactory() {
-
-					@Override
-					public Actor create() {
-						UnlimitedCapacityAgent unlimitedCapacityAgent = new UnlimitedCapacityAgent(
-								new HashSet<>(Arrays.asList(PerpetualTestWorker.class.getName(),
-										TestWorker.class.getName())));
-						unlimitedCapacityAgent.injectProbe(agentProbe.getRef());
-						return unlimitedCapacityAgent;
-					}
-				});
+				final Props agentProps = Creators.makeProps(agentProbe.getRef(), UnlimitedCapacityAgent.class,
+						new HashSet<>(Arrays.asList(PerpetualTestWorker.class.getName(),
+								TestWorker.class.getName())));
 
 				final TestActorRef<UnlimitedCapacityAgent> agentRef = TestActorRef.create(system,
 						agentProps, settings.AGENT_NAME);

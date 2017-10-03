@@ -25,15 +25,16 @@ import akka.actor.Actor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-import akka.actor.UntypedActorFactory;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
+import akka.japi.Creator;
 import oncue.agent.AbstractAgent;
 import oncue.backingstore.RedisBackingStore;
 import oncue.backingstore.RedisBackingStore.RedisConnection;
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
 import oncue.scheduler.AbstractScheduler;
+import oncue.tests.Creators;
 
 public abstract class DistributedActorSystemTest {
 
@@ -58,19 +59,16 @@ public abstract class DistributedActorSystemTest {
 	 * 
 	 * @param probe can be null
 	 */
-	@SuppressWarnings("serial")
+	@SuppressWarnings({"serial", "unchecked"})
 	public ActorRef createAgent(final Set<String> workers, final ActorRef probe) {
-		return agentSystem.actorOf(new Props(new UntypedActorFactory() {
-
-			@Override
-			public Actor create() throws Exception {
-				AbstractAgent agent = (AbstractAgent) Class.forName(agentSettings.AGENT_CLASS)
-						.getConstructor(Set.class).newInstance(workers);
-				if (probe != null)
-					agent.injectProbe(probe);
-				return agent;
-			}
-		}), agentSettings.AGENT_NAME);
+		Class<AbstractAgent> agentClass = null;
+		try {
+			agentClass = (Class<AbstractAgent>) Class.forName(agentSettings.AGENT_CLASS);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		return agentSystem.actorOf(
+				Creators.makeProps(probe, agentClass, workers), agentSettings.AGENT_NAME);
 	}
 
 	/**
@@ -78,26 +76,23 @@ public abstract class DistributedActorSystemTest {
 	 * 
 	 * @param probe can be null
 	 */
-	@SuppressWarnings("serial")
+	@SuppressWarnings({"serial", "unchecked"})
 	public ActorRef createScheduler(final ActorRef probe) {
-		return serviceSystem.actorOf(new Props(new UntypedActorFactory() {
 
-			@Override
-			public Actor create() throws Exception {
-				Class<?> schedulerClass = Class.forName(serviceSettings.SCHEDULER_CLASS);
-				Class<?> backingStoreClass = null;
-				if (serviceSettings.SCHEDULER_BACKING_STORE_CLASS != null)
-					backingStoreClass = Class
-							.forName(serviceSettings.SCHEDULER_BACKING_STORE_CLASS);
+		try {
+			Class<AbstractScheduler> schedulerClass = (Class<AbstractScheduler>)
+					Class.forName(serviceSettings.SCHEDULER_CLASS);
+			Class<?> backingStoreClass = null;
+			if (serviceSettings.SCHEDULER_BACKING_STORE_CLASS != null)
+				backingStoreClass = Class
+						.forName(serviceSettings.SCHEDULER_BACKING_STORE_CLASS);
 
-				@SuppressWarnings("rawtypes")
-				AbstractScheduler scheduler = (AbstractScheduler) schedulerClass
-						.getConstructor(Class.class).newInstance(backingStoreClass);
-				if (probe != null)
-					scheduler.injectProbe(probe);
-				return scheduler;
-			}
-		}), serviceSettings.SCHEDULER_NAME);
+			return serviceSystem.actorOf(
+					Creators.makeProps(probe, schedulerClass, backingStoreClass),
+					serviceSettings.SCHEDULER_NAME);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Before

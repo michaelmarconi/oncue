@@ -2,11 +2,11 @@ package oncue.common.serializers;
 
 import java.text.SimpleDateFormat;
 
-import org.codehaus.jackson.map.DeserializationConfig;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.PropertyNamingStrategy;
-import org.codehaus.jackson.map.SerializationConfig;
-
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
 
 public class ObjectMapperFactory {
 
@@ -14,9 +14,10 @@ public class ObjectMapperFactory {
 
 	static {
 		mapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssz"));
-		mapper.configure(SerializationConfig.Feature.WRITE_ENUMS_USING_TO_STRING, true);
-		mapper.configure(DeserializationConfig.Feature.READ_ENUMS_USING_TO_STRING, true);
+		mapper.configure(SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
+		mapper.configure(DeserializationFeature.READ_ENUMS_USING_TO_STRING, true);
 		mapper.setPropertyNamingStrategy(PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES);
+		mapper.registerModule(new JodaModule());
 	}
 
 	private ObjectMapperFactory() {

@@ -21,6 +21,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import akka.actor.ActorRef;
+import akka.actor.Cancellable;
+import akka.actor.OneForOneStrategy;
+import akka.actor.Props;
+import akka.actor.Scheduler;
+import akka.actor.SupervisorStrategy;
+import akka.actor.SupervisorStrategy.Directive;
+import akka.actor.UntypedActor;
+import akka.event.Logging;
+import akka.event.LoggingAdapter;
+import akka.japi.Function;
+import oncue.common.Injectable;
 import oncue.common.comparators.JobComparator;
 import oncue.common.messages.Job;
 import oncue.common.messages.Job.State;
@@ -32,23 +44,9 @@ import oncue.common.messages.WorkResponse;
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
 import oncue.worker.AbstractWorker;
-
 import scala.concurrent.duration.Duration;
-import akka.actor.Actor;
-import akka.actor.ActorRef;
-import akka.actor.Cancellable;
-import akka.actor.OneForOneStrategy;
-import akka.actor.Props;
-import akka.actor.Scheduler;
-import akka.actor.SupervisorStrategy;
-import akka.actor.SupervisorStrategy.Directive;
-import akka.actor.UntypedActor;
-import akka.actor.UntypedActorFactory;
-import akka.event.Logging;
-import akka.event.LoggingAdapter;
-import akka.japi.Function;
 
-public abstract class AbstractAgent extends UntypedActor {
+public abstract class AbstractAgent extends UntypedActor implements Injectable {
 
 	// The scheduled heartbeat
 	private Cancellable heartbeat;
@@ -178,7 +176,7 @@ public abstract class AbstractAgent extends UntypedActor {
 	}
 
 	@Override
-	public void postStop() {
+	public void postStop() throws Exception {
 		super.postStop();
 		heartbeat.cancel();
 		if (workRequest != null && !workRequest.isCancelled())
@@ -187,7 +185,7 @@ public abstract class AbstractAgent extends UntypedActor {
 	}
 
 	@Override
-	public void preStart() {
+	public void preStart() throws Exception {
 		super.preStart();
 		log.info("{} is running with worker types: {}", getClass().getSimpleName(),
 				workerTypes.toString());
@@ -284,13 +282,7 @@ public abstract class AbstractAgent extends UntypedActor {
 		}
 
 		if (!jobInProgress) {
-			ActorRef worker = getContext().actorOf(new Props(new UntypedActorFactory() {
-
-				@Override
-				public Actor create() throws Exception {
-					return workerClass.newInstance();
-				}
-			}), "job-" + job.getId());
+			ActorRef worker = getContext().actorOf(Props.create(workerClass), "job-" + job.getId());
 			jobsInProgress.put(worker.path().toString(), job);
 			worker.tell(job.clone(), getSelf());
 		} else {

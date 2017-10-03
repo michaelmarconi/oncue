@@ -5,6 +5,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import oncue.common.events.AgentStartedEvent;
 import oncue.common.events.AgentStoppedEvent;
 import oncue.common.events.JobCleanupEvent;
@@ -12,12 +18,7 @@ import oncue.common.events.JobEnqueuedEvent;
 import oncue.common.events.JobFailedEvent;
 import oncue.common.events.JobProgressEvent;
 
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.PropertyNamingStrategy;
-import org.codehaus.jackson.map.SerializationConfig;
-import org.codehaus.jackson.node.ObjectNode;
-
+import oncue.common.serializers.ObjectMapperFactory;
 import play.libs.F.Callback0;
 import play.libs.Json;
 import play.mvc.WebSocket;
@@ -32,22 +33,16 @@ public class EventMachine extends UntypedActor {
 
 	private final LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 	private static List<WebSocket.Out<JsonNode>> clients = new ArrayList<>();
-	private final static ObjectMapper mapper = new ObjectMapper();
+	private final static ObjectMapper mapper = ObjectMapperFactory.getInstance();
 	private final Cancellable pinger = getContext()
 			.system()
 			.scheduler()
 			.schedule(Duration.create(500, TimeUnit.MILLISECONDS),
 					Duration.create(30000, TimeUnit.MILLISECONDS), getSelf(), "PING",
-					getContext().dispatcher());
-
-	static {
-		mapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssz"));
-		mapper.configure(SerializationConfig.Feature.WRITE_ENUMS_USING_TO_STRING, true);
-		mapper.setPropertyNamingStrategy(PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES);
-	}
+					getContext().dispatcher(), getSelf());
 
 	@Override
-	public void preStart() {
+	public void preStart() throws Exception {
 		super.preStart();
 		EventStream eventStream = getContext().system().eventStream();
 		eventStream.subscribe(getSelf(), AgentStartedEvent.class);

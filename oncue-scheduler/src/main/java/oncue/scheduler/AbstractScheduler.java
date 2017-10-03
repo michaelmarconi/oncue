@@ -1,11 +1,11 @@
 /*******************************************************************************
  * Copyright 2013 Michael Marconi
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed under the License
  * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
  * or implied. See the License for the specific language governing permissions and limitations under
@@ -25,7 +25,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import akka.actor.ActorInitializationException;
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.actor.Cancellable;
+import akka.actor.Status.Failure;
+import akka.actor.Status.Success;
+import akka.actor.UntypedActor;
+import akka.event.Logging;
+import akka.event.LoggingAdapter;
+import akka.remote.DisassociatedEvent;
 import oncue.backingstore.BackingStore;
+import oncue.common.Injectable;
 import oncue.common.comparators.JobComparator;
 import oncue.common.events.AgentStartedEvent;
 import oncue.common.events.AgentStoppedEvent;
@@ -54,16 +65,6 @@ import oncue.common.settings.SettingsProvider;
 import oncue.scheduler.exceptions.JobNotFoundException;
 import oncue.scheduler.exceptions.ScheduleException;
 import scala.concurrent.duration.Deadline;
-import akka.actor.ActorInitializationException;
-import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
-import akka.actor.Cancellable;
-import akka.actor.Status.Failure;
-import akka.actor.Status.Success;
-import akka.actor.UntypedActor;
-import akka.event.Logging;
-import akka.event.LoggingAdapter;
-import akka.remote.RemoteClientShutdown;
 
 /**
  * A scheduler is responsible for keeping a list of registered agents, broadcasting new work to them
@@ -71,7 +72,7 @@ import akka.remote.RemoteClientShutdown;
  * the concrete implementation.
  */
 public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest> extends
-		UntypedActor {
+		UntypedActor implements Injectable {
 
 	// A periodic check for dead agents
 	private Cancellable agentMonitor;
@@ -198,7 +199,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 
 	/**
 	 * When a job is finished or has failed, it must be removed from the scheduler's records.
-	 * 
+	 *
 	 * @param job is the {@linkplain Job} to clean up after
 	 */
 	private void cleanupJob(Job job, String agent) {
@@ -215,7 +216,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 
 	/**
 	 * Delete an existing job
-	 * 
+	 *
 	 * @param job is the job to delete
 	 * @return the deleted job
 	 * @throws DeleteJobException if the job is currently running
@@ -263,7 +264,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	/**
 	 * Dispatch jobs to agents according to entries in the schedule. This method will also keep
 	 * record of the jobs scheduled to each agent, in case an agent dies.
-	 * 
+	 *
 	 * @param schedule is the {@linkplain Schedule} that maps agents to jobs
 	 */
 	protected void dispatchJobs(Schedule schedule) {
@@ -304,7 +305,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	 * This method can be overridden by a {@linkplain AbstractScheduler} implementation in order to
 	 * modify the Job object before it is persisted in the list of unscheduled jobs. This allows
 	 * scheduler-implementation-specific metadata to be attached to the job.
-	 * 
+	 *
 	 * @param job The job to modify
 	 */
 	protected void augmentJob(Job job) {
@@ -313,7 +314,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 
 	/**
 	 * Look through all jobs to find an existing job
-	 * 
+	 *
 	 * @param id is the unique job identifier
 	 * @return the matching job
 	 * @throws JobNotFoundException
@@ -358,7 +359,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 
 	/**
 	 * Record the details of a failed job
-	 * 
+	 *
 	 * @param jobFailed contains both the failed job and the cause of failure
 	 */
 	private void handleJobFailure(Job job, String agent) {
@@ -373,7 +374,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	/**
 	 * Record any progress made against a job. If the job is complete, remove it from the jobs
 	 * scheduled against an agent.
-	 * 
+	 *
 	 * @param jobProgress describes the job and associated progress.
 	 */
 	private void handleJobProgress(Job job, String agent) {
@@ -391,7 +392,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 
 	/**
 	 * Inject a probe into this actor for testing
-	 * 
+	 *
 	 * @param testProbe is a JavaTestKit probe
 	 */
 	public void injectProbe(ActorRef testProbe) {
@@ -427,10 +428,10 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 			registerAgent(getSender().path().toString());
 		}
 
-		else if (message instanceof RemoteClientShutdown) {
-			String system = ((RemoteClientShutdown) message).getRemoteAddress().system();
+		else if (message instanceof DisassociatedEvent) {
+			String system = ((DisassociatedEvent) message).getRemoteAddress().system();
 			if ("oncue-agent".equals(system)) {
-				String agent = ((RemoteClientShutdown) message).getRemoteAddress().toString()
+				String agent = ((DisassociatedEvent) message).getRemoteAddress().toString()
 						+ settings.AGENT_PATH;
 				log.info("Agent '{}' has shut down", agent);
 				deregisterAgent(agent);
@@ -535,7 +536,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	}
 
 	@Override
-	public void postStop() {
+	public void postStop() throws Exception {
 		super.postStop();
 
 		if (agentMonitor != null)
@@ -547,7 +548,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	}
 
 	@Override
-	public void preStart() {
+	public void preStart() throws Exception {
 		monitorAgents();
 		super.preStart();
 	}
@@ -555,7 +556,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	/**
 	 * In the case where an Agent has died or shutdown before completing the jobs assigned to it, we
 	 * need to re-broadcast the jobs so they are run by another agent.
-	 * 
+	 *
 	 * @param agent is the Agent to check for incomplete jobs
 	 */
 	private void rebroadcastJobs(String agent) {
@@ -587,14 +588,14 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	/**
 	 * Register the heartbeat of an agent, capturing the heartbeat time as a timestamp. If this is a
 	 * new Agent, return a message indicating that it has been registered.
-	 * 
+	 *
 	 * @param agent is the agent to register
 	 */
 	private void registerAgent(String url) {
 		if (!agents.containsKey(url)) {
 			Agent agent = new Agent(url);
 			getContext().actorFor(url).tell(SimpleMessage.AGENT_REGISTERED, getSelf());
-			getContext().system().eventStream().subscribe(getSelf(), RemoteClientShutdown.class);
+			getContext().system().eventStream().subscribe(getSelf(), DisassociatedEvent.class);
 			getContext().system().eventStream().publish(new AgentStartedEvent(agent));
 			log.info("Registered agent: {}", url);
 		}
@@ -630,7 +631,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 
 	/**
 	 * Re-run an existing job
-	 * 
+	 *
 	 * @param job is the job to re-run
 	 */
 	private Job rerunJob(Job job) {
@@ -684,7 +685,7 @@ public abstract class AbstractScheduler<WorkRequest extends AbstractWorkRequest>
 	/**
 	 * Ensure that the schedule produced by the scheduler is valid, e.g. ensure that no agent is
 	 * scheduled a job it does not have the worker to process.
-	 * 
+	 *
 	 * @param schedule is the {@linkplain Schedule} to validate
 	 */
 	private void validateSchedule(Schedule schedule) {

@@ -53,13 +53,11 @@ public class TimedJobFactory {
 			final String jobName, final String endpointUri, final Map<String, String> parameters,
 			final Integer failureRetryCount, final ActorRef testProbe) {
 
-		system.actorOf(new Props(new UntypedActorFactory() {
-			@Override
-			public Actor create() {
-				return new TimedJob(workerType, endpointUri, parameters, failureRetryCount,
-						testProbe);
-			}
-		}), "job-timer-" + jobName);
+
+
+		system.actorOf(
+				Props.create(TimedJob.class, workerType, endpointUri, parameters, failureRetryCount,
+				testProbe), "job-timer-" + jobName);
 	}
 
 	public static void createTimedJob(ActorSystem system, final String workerType,

@@ -2,10 +2,13 @@ package controllers.api;
 
 import static akka.pattern.Patterns.ask;
 
-import java.util.ArrayList;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.text.SimpleDateFormat;
-
+import akka.actor.ActorRef;
+import akka.dispatch.Recover;
+import akka.pattern.AskTimeoutException;
+import akka.util.Timeout;
 import oncue.OnCueService;
 import oncue.common.messages.DeleteJob;
 import oncue.common.messages.EnqueueJob;
@@ -13,42 +16,28 @@ import oncue.common.messages.Job;
 import oncue.common.messages.JobSummary;
 import oncue.common.messages.RerunJob;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
+import oncue.common.serializers.ObjectMapperFactory;
 import oncue.common.settings.Settings;
 import oncue.common.settings.SettingsProvider;
-
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.PropertyNamingStrategy;
-import org.codehaus.jackson.map.SerializationConfig;
-
 import play.Logger;
-import play.libs.Akka;
+import play.libs.F;
 import play.libs.F.Function;
 import play.mvc.Controller;
 import play.mvc.Result;
-import akka.actor.ActorRef;
-import akka.dispatch.Recover;
-import akka.pattern.AskTimeoutException;
-import akka.util.Timeout;
 
 public class Jobs extends Controller {
 
 	private final static Settings settings = SettingsProvider.SettingsProvider.get(OnCueService.system());
-	private final static ObjectMapper mapper = new ObjectMapper();
-
-	static {
-		mapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssz"));
-		mapper.configure(SerializationConfig.Feature.WRITE_ENUMS_USING_TO_STRING, true);
-		mapper.setPropertyNamingStrategy(PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES);
-	}
+	private final static ObjectMapper mapper = ObjectMapperFactory.getInstance();
 
 	/**
 	 * List all jobs
 	 * 
 	 * @return a {@linkplain JobSummary}
 	 */
-	public static Result index() {
+	public static F.Promise<Result> index() {
 		ActorRef scheduler = OnCueService.system().actorFor(settings.SCHEDULER_PATH);
-		return async(Akka.asPromise(
+		return F.Promise.wrap(
 				ask(scheduler, SimpleMessage.JOB_SUMMARY, new Timeout(settings.SCHEDULER_TIMEOUT)).recover(
 						new Recover<Object>() {
 							@Override
@@ -69,10 +58,10 @@ public class Jobs extends Controller {
 					return (Result) response;
 				} else {
 					JobSummary jobSummary = (JobSummary) response;
-					return ok(mapper.valueToTree(jobSummary.getJobs()));
+					return ok((JsonNode) mapper.valueToTree(jobSummary.getJobs()));
 				}
 			}
-		}));
+		});
 	}
 
 	/**
@@ -80,9 +69,9 @@ public class Jobs extends Controller {
 	 * 
 	 * @return a {@linkplain JobSummary}
 	 */
-	public static Result show(final Long id) {
+	public static F.Promise<Result> show(final Long id) {
 		ActorRef scheduler = OnCueService.system().actorFor(settings.SCHEDULER_PATH);
-		return async(Akka.asPromise(
+		return F.Promise.wrap(
 				ask(scheduler, SimpleMessage.JOB_SUMMARY, new Timeout(settings.SCHEDULER_TIMEOUT)).recover(
 						new Recover<Object>() {
 							@Override
@@ -113,10 +102,10 @@ public class Jobs extends Controller {
 					if (jobToShow == null)
 						throw new RuntimeException("Failed to find a job with ID " + id);
 
-					return ok(mapper.valueToTree(jobToShow));
+					return ok((JsonNode) mapper.valueToTree(jobToShow));
 				}
 			}
-		}));
+		});
 	}
 
 	/**
@@ -124,17 +113,17 @@ public class Jobs extends Controller {
 	 * 
 	 * @return a {@linkplain Job}
 	 */
-	public static Result create() {
+	public static F.Promise<Result> create() {
 		EnqueueJob enqueueJob;
 		try {
-			enqueueJob = mapper.readValue(request().body().asJson(), EnqueueJob.class);
+			enqueueJob = mapper.treeToValue(request().body().asJson(), EnqueueJob.class);
 		} catch (Exception e) {
 			Logger.error("Failed to parse enqueue job request", e);
-			return badRequest(request().body().asJson());
+			return F.Promise.<Result>pure(badRequest(request().body().asJson()));
 		}
 
 		ActorRef scheduler = OnCueService.system().actorFor(settings.SCHEDULER_PATH);
-		return async(Akka.asPromise(
+		return F.Promise.wrap(
 				ask(scheduler, enqueueJob, new Timeout(settings.SCHEDULER_TIMEOUT)).recover(new Recover<Object>() {
 					@Override
 					public Object recover(Throwable t) {
@@ -153,10 +142,10 @@ public class Jobs extends Controller {
 					// Result objects are returned by the recover handler above
 					return (Result) response;
 				} else {
-					return ok(mapper.valueToTree(response));
+					return ok((JsonNode) mapper.valueToTree(response));
 				}
 			}
-		}));
+		});
 	}
 	
 	/**
@@ -164,10 +153,10 @@ public class Jobs extends Controller {
 	 * 
 	 * @return a {@linkplain Job}
 	 */
-	public static Result delete(final Long id) {
+	public static F.Promise<Result> delete(final Long id) {
 		DeleteJob deleteJob = new DeleteJob(id);
 		ActorRef scheduler = OnCueService.system().actorFor(settings.SCHEDULER_PATH);
-		return async(Akka.asPromise(
+		return F.Promise.wrap(
 				ask(scheduler, deleteJob, new Timeout(settings.SCHEDULER_TIMEOUT)).recover(new Recover<Object>() {
 					@Override
 					public Object recover(Throwable t) {
@@ -186,10 +175,10 @@ public class Jobs extends Controller {
 					// Result objects are returned by the recover handler above
 					return (Result) response;
 				} else {
-					return ok(mapper.valueToTree(response));
+					return ok((JsonNode) mapper.valueToTree(response));
 				}
 			}
-		}));
+		});
 	}	
 
 	/**
@@ -197,10 +186,10 @@ public class Jobs extends Controller {
 	 * 
 	 * @return a {@linkplain Job}
 	 */
-	public static Result rerun(final Long id) {
+	public static F.Promise<Result> rerun(final Long id) {
 		RerunJob rerunJob = new RerunJob(id);
 		ActorRef scheduler = OnCueService.system().actorFor(settings.SCHEDULER_PATH);
-		return async(Akka.asPromise(
+		return F.Promise.wrap(
 				ask(scheduler, rerunJob, new Timeout(settings.SCHEDULER_TIMEOUT)).recover(new Recover<Object>() {
 					@Override
 					public Object recover(Throwable t) {
@@ -219,9 +208,9 @@ public class Jobs extends Controller {
 					// Result objects are returned by the recover handler above
 					return (Result) response;
 				} else {
-					return ok(mapper.valueToTree(response));
+					return ok((JsonNode) mapper.valueToTree(response));
 				}
 			}
-		}));
+		});
 	}
 }

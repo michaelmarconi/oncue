@@ -2,42 +2,34 @@ package controllers.api;
 
 import static akka.pattern.Patterns.ask;
 
-import java.text.SimpleDateFormat;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import oncue.OnCueService;
-import oncue.common.messages.AgentSummary;
-import oncue.common.messages.SimpleMessages.SimpleMessage;
-import oncue.common.settings.Settings;
-import oncue.common.settings.SettingsProvider;
-
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.PropertyNamingStrategy;
-import org.codehaus.jackson.map.SerializationConfig;
-
-import play.Logger;
-import play.libs.Akka;
-import play.libs.F.Function;
-import play.mvc.Controller;
-import play.mvc.Result;
 import akka.actor.ActorRef;
 import akka.dispatch.Recover;
 import akka.pattern.AskTimeoutException;
 import akka.util.Timeout;
+import oncue.OnCueService;
+import oncue.common.messages.AgentSummary;
+import oncue.common.messages.SimpleMessages.SimpleMessage;
+import oncue.common.serializers.ObjectMapperFactory;
+import oncue.common.settings.Settings;
+import oncue.common.settings.SettingsProvider;
+import play.Logger;
+import play.libs.Akka;
+import play.libs.F;
+import play.libs.F.Function;
+import play.mvc.Controller;
+import play.mvc.Result;
 
 public class Agents extends Controller {
 
 	private final static Settings settings = SettingsProvider.SettingsProvider.get(Akka.system());
-	private final static ObjectMapper mapper = new ObjectMapper();
+	private final static ObjectMapper mapper = ObjectMapperFactory.getInstance();
 
-	static {
-		mapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssz"));
-		mapper.configure(SerializationConfig.Feature.WRITE_ENUMS_USING_TO_STRING, true);
-		mapper.setPropertyNamingStrategy(PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES);
-	}
-
-	public static Result index() {
+	public static F.Promise<Result> index() {
 		ActorRef scheduler = OnCueService.system().actorFor(settings.SCHEDULER_PATH);
-		return async(Akka.asPromise(
+		return F.Promise.wrap(
 				ask(scheduler, SimpleMessage.LIST_AGENTS, new Timeout(settings.SCHEDULER_TIMEOUT)).recover(
 						new Recover<Object>() {
 							@Override
@@ -58,9 +50,9 @@ public class Agents extends Controller {
 					return (Result) response;
 				} else {
 					AgentSummary agentSummary = (AgentSummary) response;
-					return ok(mapper.valueToTree(agentSummary.getAgents()));
+					return ok((JsonNode) mapper.valueToTree(agentSummary.getAgents()));
 				}
 			}
-		}));
+		});
 	}
 }

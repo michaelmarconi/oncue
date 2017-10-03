@@ -27,15 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 
-import oncue.common.messages.EnqueueJob;
-import oncue.common.messages.Job;
-import oncue.common.serializers.ObjectMapperFactory;
-
-import org.codehaus.jackson.JsonParseException;
-import org.codehaus.jackson.map.JsonMappingException;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.PropertyNamingStrategy;
-import org.codehaus.jackson.map.SerializationConfig;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
@@ -43,6 +34,14 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.SerializationFeature;
+
+import oncue.common.messages.EnqueueJob;
+import oncue.common.messages.Job;
+import oncue.common.serializers.ObjectMapperFactory;
 import play.mvc.Result;
 import play.test.FakeApplication;
 
@@ -51,7 +50,7 @@ public class APITest {
 	private final static ObjectMapper mapper = ObjectMapperFactory.getInstance();
 	static {
 		mapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssz"));
-		mapper.configure(SerializationConfig.Feature.WRITE_ENUMS_USING_TO_STRING, true);
+		mapper.configure(SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
 		mapper.setPropertyNamingStrategy(PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES);
 	}
 
@@ -75,7 +74,7 @@ public class APITest {
 	}
 
 	@Test
-	public void listJobsButNoneHaveBeenQueued() throws JsonParseException, JsonMappingException, IOException {
+	public void listJobsButNoneHaveBeenQueued() throws IOException {
 		Result result = route(fakeRequest(GET, "/api/jobs"));
 
 		assertThat(status(result)).isEqualTo(OK);
@@ -87,9 +86,9 @@ public class APITest {
 	}
 
 	@Test
-	public void listJobsWithOneQueued() throws JsonParseException, JsonMappingException, IOException {
+	public void listJobsWithOneQueued() throws IOException {
 		EnqueueJob enqueueJob = new EnqueueJob("oncue.test.TestWorker");
-		routeAndCall(fakeRequest(POST, "/api/jobs").withJsonBody(mapper.valueToTree(enqueueJob)));
+		routeAndCall(fakeRequest(POST, "/api/jobs").withJsonBody((JsonNode) mapper.valueToTree(enqueueJob)));
 
 		Result result = route(fakeRequest(GET, "/api/jobs"));
 
@@ -103,7 +102,7 @@ public class APITest {
 	}
 
 	@Test
-	public void createJobWithNoParameters() throws JsonParseException, JsonMappingException, IOException {
+	public void createJobWithNoParameters() throws IOException {
 		EnqueueJob enqueueJob = new EnqueueJob("oncue.test.TestWorker");
 
 		/*
@@ -115,7 +114,8 @@ public class APITest {
 		 * Json.toJson(enqueueJob)));
 		 */
 
-		Result result = routeAndCall(fakeRequest(POST, "/api/jobs").withJsonBody(mapper.valueToTree(enqueueJob)));
+		Result result = routeAndCall(fakeRequest(POST, "/api/jobs").withJsonBody((JsonNode)
+				mapper.valueToTree(enqueueJob)));
 
 		assertEquals(OK, status(result));
 		assertEquals("application/json", contentType(result));
@@ -131,7 +131,7 @@ public class APITest {
 	}
 
 	@Test
-	public void createJobWithParameters() throws JsonParseException, JsonMappingException, IOException {
+	public void createJobWithParameters() throws IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put("key1", "Value 1");
 		params.put("key2", "Value 2");
@@ -146,7 +146,8 @@ public class APITest {
 		 * Json.toJson(enqueueJob)));
 		 */
 
-		Result result = routeAndCall(fakeRequest(POST, "/api/jobs").withJsonBody(mapper.valueToTree(enqueueJob)));
+		Result result = routeAndCall(fakeRequest(POST, "/api/jobs").withJsonBody((JsonNode)
+				mapper.valueToTree(enqueueJob)));
 
 		assertEquals(OK, status(result));
 		assertEquals("application/json", contentType(result));
@@ -163,7 +164,7 @@ public class APITest {
 	}
 
 	@Test
-	public void rerunJob() throws JsonParseException, JsonMappingException, IOException {
+	public void rerunJob() throws IOException {
 		EnqueueJob enqueueJob = new EnqueueJob("oncue.test.TestWorker");
 
 		/*
@@ -175,7 +176,8 @@ public class APITest {
 		 * Json.toJson(enqueueJob)));
 		 */
 
-		Result result = routeAndCall(fakeRequest(POST, "/api/jobs").withJsonBody(mapper.valueToTree(enqueueJob)));
+		Result result = routeAndCall(fakeRequest(POST, "/api/jobs").withJsonBody((JsonNode)
+				mapper.valueToTree(enqueueJob)));
 		Job job = mapper.readValue(contentAsString(result), Job.class);
 
 		// result = routeAndCall(fakeRequest(PUT, "/api/jobs/" + job.getId()));

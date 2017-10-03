@@ -21,24 +21,20 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
 
-import oncue.backingstore.RedisBackingStore;
+import org.junit.Test;
+
+import akka.actor.ActorRef;
+import akka.actor.PoisonPill;
+import akka.testkit.JavaTestKit;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
 import oncue.common.messages.JobProgress;
 import oncue.common.messages.SimpleMessages.SimpleMessage;
 import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.TestWorker;
-
-import org.junit.Before;
-import org.junit.Test;
-
-import redis.clients.jedis.Jedis;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
-import akka.actor.ActorRef;
-import akka.actor.PoisonPill;
-import akka.testkit.JavaTestKit;
 
 /**
  * It is possible to resurrect a scheduler that was running with a persistent
@@ -139,7 +135,7 @@ public class SchedulerDiesTest extends ActorSystemTest {
 				};
 				
 				// The agent should shut down first to prevent lookup exceptions
-				Future<Boolean> stopped = gracefulStop(agent, duration("5 seconds"), system);
+				Future<Boolean> stopped = gracefulStop(agent, duration("5 seconds"));
 				Await.result(stopped, Duration.create(5, TimeUnit.SECONDS));
 			}
 		};

@@ -104,7 +104,7 @@ public class TimedJob extends UntypedConsumerActor {
 				.system()
 				.scheduler()
 				.scheduleOnce(settings.TIMED_JOBS_RETRY_DELAY, getSelf(), retryMessage,
-						getContext().dispatcher());
+						getContext().dispatcher(), getSelf());
 	}
 
 	/**

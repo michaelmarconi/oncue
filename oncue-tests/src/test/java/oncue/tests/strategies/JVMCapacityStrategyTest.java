@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 
+import akka.japi.Creator;
 import junit.framework.Assert;
 import oncue.agent.JVMCapacityAgent;
 import oncue.common.messages.EnqueueJob;
@@ -75,14 +76,10 @@ public class JVMCapacityStrategyTest extends ActorSystemTest {
 
 			{
 				// Create a naked JVM capacity-aware scheduler
-				final Props schedulerProps = new Props(new UntypedActorFactory() {
-					@Override
-					public Actor create() {
-						return new JVMCapacityScheduler(null);
-					}
-				});
-				final TestActorRef<JVMCapacityScheduler> schedulerRef = TestActorRef.create(system, schedulerProps,
-						settings.SCHEDULER_NAME);
+				final Props schedulerProps = Props.create(JVMCapacityScheduler.class,
+						(Object[]) null);
+				final TestActorRef<JVMCapacityScheduler> schedulerRef =
+						TestActorRef.create(system, schedulerProps, settings.SCHEDULER_NAME);
 				final JVMCapacityScheduler scheduler = schedulerRef.underlyingActor();
 
 				// Create agent probes
@@ -187,12 +184,12 @@ public class JVMCapacityStrategyTest extends ActorSystemTest {
 
 	@SuppressWarnings("serial")
 	private void createAgent(final JavaTestKit agentProbe, String name, final int capacity) {
-		system.actorOf(new Props(new UntypedActorFactory() {
+		system.actorOf(Props.create(new Creator<Actor>() {
 
 			@Override
 			public Actor create() throws Exception {
-				JVMCapacityAgent agent = new JVMCapacityAgent(new HashSet<String>(Arrays.asList(TestWorker.class
-						.getName())), capacity);
+				JVMCapacityAgent agent = new JVMCapacityAgent(
+						new HashSet<>(Arrays.asList(TestWorker.class.getName())), capacity);
 				agent.injectProbe(agentProbe.getRef());
 				return agent;
 			}
@@ -204,7 +201,7 @@ public class JVMCapacityStrategyTest extends ActorSystemTest {
 		scheduler.tell(new EnqueueJob(TestWorker.class.getName(), new HashMap<String, String>() {
 
 			{
-				put(JVMCapacityScheduler.JOB_SIZE, new Integer(jobSize).toString());
+				put(JVMCapacityScheduler.JOB_SIZE, Integer.toString(jobSize));
 			}
 		}), testKit);
 	}

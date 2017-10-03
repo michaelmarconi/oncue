@@ -122,9 +122,8 @@ public class JobProgressTest extends ActorSystemTest {
 				schedulerProbe.expectNoMsg();
 
 				// The agent should shut down first to prevent lookup exceptions
-				Future<Boolean> stopped = gracefulStop(agent, duration("5 seconds"), system);
-				Await.result(stopped, Duration.create(5, TimeUnit.SECONDS));
-
+				Future<Boolean> stopped = gracefulStop(agent, duration("5 seconds"));
+				Await.result(stopped, Duration.create(100, TimeUnit.SECONDS));
 			}
 		};
 	}

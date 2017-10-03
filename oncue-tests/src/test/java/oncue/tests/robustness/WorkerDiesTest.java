@@ -21,6 +21,12 @@ import static junit.framework.Assert.assertTrue;
 import java.util.Arrays;
 import java.util.HashSet;
 
+import org.junit.Test;
+
+import akka.actor.ActorRef;
+import akka.actor.Props;
+import akka.testkit.JavaTestKit;
+import akka.testkit.TestActorRef;
 import oncue.agent.ThrottledAgent;
 import oncue.common.messages.EnqueueJob;
 import oncue.common.messages.Job;
@@ -29,15 +35,6 @@ import oncue.common.messages.JobProgress;
 import oncue.tests.base.ActorSystemTest;
 import oncue.tests.workers.IncompetentTestWorker;
 import oncue.tests.workers.TestWorker;
-
-import org.junit.Test;
-
-import akka.actor.Actor;
-import akka.actor.ActorRef;
-import akka.actor.Props;
-import akka.actor.UntypedActorFactory;
-import akka.testkit.JavaTestKit;
-import akka.testkit.TestActorRef;
 
 /**
  * An {@linkplain IWorker} may die while it is trying to complete a job. In this
@@ -71,14 +68,11 @@ public class WorkerDiesTest extends ActorSystemTest {
 
 				// Create and expose an agent
 				@SuppressWarnings("serial")
-				TestActorRef<ThrottledAgent> agentRef = TestActorRef.create(system, new Props(
-						new UntypedActorFactory() {
-							@Override
-							public Actor create() throws Exception {
-								return new ThrottledAgent(new HashSet<String>(Arrays
-										.asList(TestWorker.class.getName(), IncompetentTestWorker.class.getName())));
-							}
-						}), settings.AGENT_NAME);
+				TestActorRef<ThrottledAgent> agentRef = TestActorRef.create(system,
+						Props.create(ThrottledAgent.class, new HashSet<>(
+								Arrays.asList(TestWorker.class.getName(),
+										IncompetentTestWorker.class.getName()))),
+						settings.AGENT_NAME);
 				final ThrottledAgent agent = agentRef.underlyingActor();
 
 				// Enqueue a job
