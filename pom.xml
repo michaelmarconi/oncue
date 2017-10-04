@@ -139,19 +139,16 @@
                 <groupId>com.typesafe.play</groupId>
                 <artifactId>play_2.10</artifactId>
                 <version>${play2.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>com.typesafe.play</groupId>
                 <artifactId>play-test_2.10</artifactId>
                 <version>${play2.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>com.typesafe.play</groupId>
                 <artifactId>play-java_2.10</artifactId>
                 <version>${play2.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>org.scala-lang</groupId>
@@ -221,7 +218,7 @@
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty</artifactId>
-                <version>3.7.0.Final</version>
+                <version>3.9.1.Final</version>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>

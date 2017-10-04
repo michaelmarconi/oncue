@@ -80,7 +80,43 @@
 							<goal>enhance</goal>
 						</goals>
 					</execution>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>dist</goal>
+						</goals>
+					</execution>
 				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<version>1.12</version>
+				<executions>
+					<execution>
+						<id>attach-artifacts</id>
+						<phase>package</phase>
+						<goals>
+							<goal>attach-artifact</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<!-- These empty tags keep IntelliJ quiet -->
+					<name />
+					<regex />
+					<source />
+					<value />
+					<fileSet />
+					<artifacts>
+						<artifact>
+							<file>${project.build.directory}/oncue-service-${project.version}-dist.zip</file>
+							<type>zip</type>
+							<classifier>dist</classifier>
+						</artifact>
+					</artifacts>
+				</configuration>
 			</plugin>
 
 			<plugin>
