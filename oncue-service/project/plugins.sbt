@@ -5,4 +5,10 @@ logLevel := Level.Warn
 resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
 
 // Use the Play sbt plugin for Play projects
-addSbtPlugin("play" % "sbt-plugin" % "2.1.0")
+addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.3.0")
+
+// Enable coffeescript
+addSbtPlugin("com.typesafe.sbt" % "sbt-coffeescript" % "1.0.0")
+
+// Enable less
+addSbtPlugin("com.typesafe.sbt" % "sbt-less" % "1.0.6")

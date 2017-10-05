@@ -62,6 +62,10 @@
 				<directory>${basedir}/public</directory>
 				<targetPath>public</targetPath>
 			</resource>
+			<resource>
+				<directory>${basedir}/target/sbt/web/public/main</directory>
+				<targetPath>public</targetPath>
+			</resource>
 		</resources>
 
 		<plugins>
@@ -73,6 +77,13 @@
 				<configuration>
 					<mainLang>java</mainLang>
 				</configuration>
+				<dependencies>
+					<dependency>
+						<groupId>com.google.code.play2-maven-plugin</groupId>
+						<artifactId>play2-provider-play23</artifactId>
+						<version>${play2.plugin.version}</version>
+					</dependency>
+				</dependencies>
 				<executions>
 					<execution>
 						<id>default-play2-enhance</id>
@@ -85,6 +96,50 @@
 						<goals>
 							<goal>dist</goal>
 						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>com.google.code.sbt-compiler-maven-plugin</groupId>
+				<artifactId>sbt-compiler-maven-plugin</artifactId>
+				<version>${sbt-compiler.plugin.version}</version>
+			</plugin>
+
+			<plugin>
+				<groupId>com.google.code.sbtrun-maven-plugin</groupId>
+				<artifactId>sbtrun-maven-plugin</artifactId>
+				<version>${sbtrun.plugin.version}</version>
+				<executions>
+					<execution>
+						<id>compile-assets</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<args>web-assets:assets</args>
+							<jvmArgs>-Dscala.version=${scala.version}</jvmArgs>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>2.6</version>
+				<executions>
+					<execution>
+						<id>default-jar</id>
+						<configuration>
+							<archive>
+								<manifest>
+									<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+									<addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+								</manifest>
+							</archive>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>
@@ -117,12 +172,6 @@
 						</artifact>
 					</artifacts>
 				</configuration>
-			</plugin>
-
-			<plugin>
-				<groupId>com.google.code.sbt-compiler-maven-plugin</groupId>
-				<artifactId>sbt-compiler-maven-plugin</artifactId>
-				<version>${sbt-compiler.plugin.version}</version>
 			</plugin>
 		</plugins>
 	</build>
